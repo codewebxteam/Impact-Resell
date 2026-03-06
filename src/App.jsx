@@ -24,6 +24,7 @@ import EBooks from "./pages/EBooks";
 import EBookDetails from "./pages/EBookDetails";
 import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
+import VerifyCertificate from "./pages/VerifyCertificate";
 
 // --- Dashboard (Student) ---
 import DashboardLayout from "./components/dashboard/DashboardLayout";
@@ -38,7 +39,7 @@ import Profile from "./pages/dashboard/Profile";
 import PartnerLayout from "./pages/partner/PartnerLayout";
 import PartnerDashboard from "./pages/partner/PartnerDashboard";
 import Financials from "./pages/partner/Financials";
-import AgencySetup from "./pages/partner/AgencySetup"; // [FIXED PATH]
+import AgencySetup from "./pages/partner/AgencySetup";
 import CouponIntelligence from "./pages/partner/CouponIntelligence";
 import SalesIntelligence from "./pages/partner/SalesIntelligence";
 import StudentIntelligence from "./pages/partner/StudentIntelligence";
@@ -120,9 +121,7 @@ const AppContent = () => {
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5edff4]"></div>
           <p className="text-slate-400 font-bold animate-pulse">
-            {!isMainSite && agency
-              ? `Loading ${agency.name}...`
-              : "Initializing Academy..."}
+            {!isMainSite ? "Loading Academy..." : "Initializing Academy..."}
           </p>
         </div>
       </div>
@@ -144,6 +143,29 @@ const AppContent = () => {
             </>
           }
         />
+
+        {/* VERIFICATION ROUTES (Publicly Accessible) */}
+        <Route
+          path="/verify"
+          element={
+            <>
+              <Navbar />
+              <VerifyCertificate />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/verify/:certificateId"
+          element={
+            <>
+              <Navbar />
+              <VerifyCertificate />
+              <Footer />
+            </>
+          }
+        />
+
         <Route
           path="/courses"
           element={
@@ -233,6 +255,7 @@ const AppContent = () => {
           <Route path="sales" element={<SalesIntelligence />} />
           <Route path="settings" element={<AgencySetup />} />
           <Route path="profile" element={<Profile />} />
+          {/* REMOVED: Nested absolute /verify route that was causing the error */}
         </Route>
 
         {/* ADMIN DASHBOARD ROUTES */}

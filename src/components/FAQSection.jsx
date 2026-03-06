@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, MessageCircleQuestion } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// --- FAQ Data (Updated) ---
+// --- FAQ Data (Strictly from your Uploaded File) ---
 const faqs = [
   {
     id: 1,
@@ -48,6 +48,7 @@ const FAQSection = () => {
   const [activeIndex, setActiveIndex] = useState(0);
 
   return (
+    // Updated: bg-linear-to-b for Tailwind 4.1 consistency
     <section className="w-full relative bg-linear-to-b from-[#f0fdff] to-white py-20 px-4 font-sans overflow-hidden">
       {/* Background Decoration */}
       <div className="absolute top-0 left-0 size-full overflow-hidden pointer-events-none">
@@ -85,6 +86,7 @@ const FAQSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
+              // Updated Styling: rounded-3xl with group hover effects
               className={`group border rounded-3xl overflow-hidden transition-all duration-300
                 ${
                   activeIndex === index
@@ -93,15 +95,15 @@ const FAQSection = () => {
                 }
               `}
             >
-              {/* Question Header (Button) */}
+              {/* Question Header */}
               <button
                 onClick={() =>
                   setActiveIndex(activeIndex === index ? null : index)
                 }
-                className="w-full flex items-center justify-between p-6 md:p-8 text-left cursor-pointer"
+                className="w-full flex items-center justify-between p-6 md:p-8 text-left cursor-pointer outline-none"
               >
                 <span
-                  className={`text-base md:text-lg font-bold transition-colors ${
+                  className={`text-base md:text-lg font-bold transition-colors pr-4 ${
                     activeIndex === index
                       ? "text-slate-900"
                       : "text-slate-600 group-hover:text-slate-900"
@@ -110,7 +112,7 @@ const FAQSection = () => {
                   {faq.question}
                 </span>
 
-                {/* Icon Wrapper */}
+                {/* Animated Icon Wrapper */}
                 <div
                   className={`size-8 md:size-10 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
                   ${
@@ -127,7 +129,7 @@ const FAQSection = () => {
                 </div>
               </button>
 
-              {/* Answer Content (Animated) */}
+              {/* Answer Content */}
               <AnimatePresence>
                 {activeIndex === index && (
                   <motion.div
@@ -137,7 +139,6 @@ const FAQSection = () => {
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                   >
                     <div className="px-6 md:px-8 pb-8 pt-0">
-                      {/* Divider */}
                       <div className="w-full h-px bg-slate-100 mb-4" />
                       <p className="text-slate-500 text-sm md:text-base leading-relaxed">
                         {faq.answer}
@@ -153,7 +154,6 @@ const FAQSection = () => {
         {/* Support Box */}
         <div className="mt-16 text-center">
           <div className="bg-slate-900 rounded-4xl p-8 md:p-12 relative overflow-hidden">
-            {/* Glows */}
             <div className="absolute top-0 right-0 size-64 bg-[#5edff4]/20 blur-[80px] rounded-full pointer-events-none" />
 
             <div className="relative z-10 flex flex-col items-center">
@@ -165,7 +165,7 @@ const FAQSection = () => {
                 team.
               </p>
               <Link to="/contact">
-                <button className="px-8 py-3.5 rounded-full bg-[#5edff4] text-slate-900 font-bold text-sm hover:bg-white transition-all shadow-lg shadow-[#5edff4]/20 hover:shadow-white/20 active:scale-95 cursor-pointer">
+                <button className="px-8 py-3.5 rounded-full bg-[#5edff4] text-slate-900 font-bold text-sm hover:bg-white transition-all shadow-lg shadow-[#5edff4]/20 active:scale-95 cursor-pointer">
                   Get in Touch
                 </button>
               </Link>

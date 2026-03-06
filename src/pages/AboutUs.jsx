@@ -23,8 +23,8 @@ const AboutUs = () => {
 
   // [LOGIC] Dynamic Name
   const academyName =
-    !isMainSite && agency ? agency.name : "Alife Stable Academy";
-  const shortName = !isMainSite && agency ? agency.name : "Alife Stable";
+    !isMainSite && agency ? agency.name : "Impact School Of AI";
+  const shortName = !isMainSite && agency ? agency.name : "Impact School Of AI";
 
   return (
     <div className="min-h-screen w-full bg-slate-50 font-sans selection:bg-[#5edff4] selection:text-slate-900">

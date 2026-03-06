@@ -83,7 +83,8 @@ const IntelligenceHub = () => {
   const partnerId = currentUser?.uid;
 
   // --- MAIN STATE ---
-  const [timeRange, setTimeRange] = useState("7D");
+  // Default set to "All Time" as requested
+  const [timeRange, setTimeRange] = useState("All Time");
   const [velocityToggle, setVelocityToggle] = useState("Weekly");
   const [customDates, setCustomDates] = useState({ start: "", end: "" });
 
@@ -110,7 +111,7 @@ const IntelligenceHub = () => {
   const [studentData, setStudentData] = useState({ total: 0, partner: 0 });
   const [velocityData, setVelocityData] = useState(FALLBACK_WEEKLY);
 
-  // [UPDATED] Distribution States
+  // Distribution States
   const [coursePieData, setCoursePieData] = useState([]);
   const [ebookPieData, setEbookPieData] = useState([]);
 
@@ -137,6 +138,34 @@ const IntelligenceHub = () => {
 
       snapshot.docs.forEach((doc) => {
         const data = doc.data();
+
+        // Time Filtering Logic
+        if (timeRange !== "All Time") {
+          const orderDate = data.createdAt?.toDate?.() || new Date();
+          const now = new Date();
+          let isWithinRange = true;
+
+          if (timeRange === "Today") {
+            isWithinRange = orderDate.toDateString() === now.toDateString();
+          } else if (timeRange === "7D") {
+            const diff = (now - orderDate) / (1000 * 60 * 60 * 24);
+            isWithinRange = diff <= 7;
+          } else if (timeRange === "30D") {
+            const diff = (now - orderDate) / (1000 * 60 * 60 * 24);
+            isWithinRange = diff <= 30;
+          } else if (
+            timeRange === "Custom" &&
+            customDates.start &&
+            customDates.end
+          ) {
+            const start = new Date(customDates.start);
+            const end = new Date(customDates.end);
+            isWithinRange = orderDate >= start && orderDate <= end;
+          }
+
+          if (!isWithinRange) return;
+        }
+
         totalRev += Number(data.amount || data.price || 0);
 
         if (data.studentId || data.userId)
@@ -148,7 +177,7 @@ const IntelligenceHub = () => {
           data.ebookTitle ||
           data.assetName ||
           "Unknown Item";
-        const type = data.type || "course"; // Default to course if type missing
+        const type = data.type || "course";
 
         if (type === "course") {
           coursesSold++;
@@ -161,7 +190,7 @@ const IntelligenceHub = () => {
 
       // Update Macro Stats
       setRevenueData({ totalRevenue: totalRev, partnerRevenue: totalRev });
-      setCourseData({ total: coursesSold, partner: coursesSold }); // Assuming 'Acquisitions' tracks courses
+      setCourseData({ total: coursesSold, partner: coursesSold });
       setStudentData({ total: studentsSet.size, partner: studentsSet.size });
 
       // Update Pie Charts
@@ -173,13 +202,10 @@ const IntelligenceHub = () => {
     });
 
     return () => unsubscribe();
-  }, [partnerId]);
+  }, [partnerId, timeRange, customDates]);
 
-  // 2. Fetch Velocity Data (Kept Service for complex date logic, or fallbacks)
+  // 2. Fetch Velocity Data
   useEffect(() => {
-    // This part can be enhanced to use the same 'orders' listener if needed,
-    // but sticking to service for velocity aggregation logic is often cleaner
-    // unless you want that raw too. For now, we update it via service or fallback.
     intelligenceService
       .getRevenueVelocity(velocityToggle, timeRange, customDates)
       .then((velocity) => {
@@ -366,13 +392,20 @@ const IntelligenceHub = () => {
               onChange={(e) => setTimeRange(e.target.value)}
               className="appearance-none bg-slate-950 text-white pl-10 pr-10 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer"
             >
-              {["Today", "7D", "30D", "Quarter", "Year", "Custom"].map(
-                (opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ),
-              )}
+              {/* Added "All Time" to selection */}
+              {[
+                "All Time",
+                "Today",
+                "7D",
+                "30D",
+                "Quarter",
+                "Year",
+                "Custom",
+              ].map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
             </select>
             <Filter
               size={14}

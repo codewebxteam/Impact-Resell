@@ -7,7 +7,7 @@ import {
   Heart,
   X,
   MessageCircle,
-  ShieldCheck,
+  ShieldCheck, // Icon for Partner Link
 } from "lucide-react";
 import { useAgency } from "../context/AgencyContext";
 
@@ -31,17 +31,17 @@ const SocialIcon = ({ Icon, href }) => (
 );
 
 const Footer = () => {
-  const [activePolicy, setActivePolicy] = useState(null); // 'privacy' | 'refund' | null
+  const [activePolicy, setActivePolicy] = useState(null);
 
   // [LOGIC] Agency Context Hook
   const { agency, isMainSite } = useAgency();
 
-  // [FIXED] Dynamic Data Variables (Default is now Alife Stable Academy)
+  // [LOGIC] Dynamic Data Variables
   const academyName =
-    !isMainSite && agency ? agency.name : "Alife Stable Academy";
+    !isMainSite && agency ? agency.name : "Impact School Of AI";
 
   const supportEmail =
-    !isMainSite && agency?.email ? agency.email : "support@alifestable.com"; // [FIXED] Default Email
+    !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
 
   const supportPhone =
     !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
@@ -51,9 +51,9 @@ const Footer = () => {
   const instaLink =
     !isMainSite && agency?.instagram
       ? agency.instagram
-      : "https://www.instagram.com/"; // [FIXED] Removed Impact link
+      : "https://www.instagram.com/";
 
-  // [LOGIC] Dynamic Year for Copyright
+  // [LOGIC] Dynamic Year
   const currentYear = new Date().getFullYear();
 
   // [CONTENT] Policy Content
@@ -221,6 +221,10 @@ const Footer = () => {
     Company: [
       { name: "About Us", href: "/about" },
       { name: "Contact Us", href: "/contact" },
+      // [ADDED] Register as Partner (Only on Main Site)
+      ...(isMainSite
+        ? [{ name: "Register as a Partner", href: "#", isPartner: true }]
+        : []),
     ],
     Resources: [
       { name: "Verify Certificate", href: "/verify" },
@@ -312,12 +316,14 @@ const Footer = () => {
                     <a
                       href={link.href}
                       onClick={(e) => {
+                        // Handle Partner Modal
                         if (link.isPartner) {
                           e.preventDefault();
                           window.dispatchEvent(
                             new CustomEvent("openPartnerModal"),
                           );
                         }
+                        // Handle Policy Modals
                         if (link.type) {
                           e.preventDefault();
                           setActivePolicy(link.type);
@@ -342,10 +348,9 @@ const Footer = () => {
           ))}
         </div>
 
-        {/* Bottom Section - COPYRIGHT & SOCIALS */}
+        {/* Bottom Section */}
         <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-slate-800/50 gap-6">
           <div className="flex items-center gap-2 text-slate-500 text-sm">
-            {/* [FIXED] Dynamic Year & Academy Name */}
             <span>
               © {currentYear} {academyName}. All rights reserved.
             </span>

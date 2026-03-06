@@ -1,30 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCourse } from "../context/CourseContext";
+import { useAgency } from "../context/AgencyContext"; // [KEEP] Subdomain Logic untouched
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { Loader2, FileText, Download, Lock } from "lucide-react";
+import {
+  Loader2,
+  FileText,
+  Download,
+  Lock,
+  PlayCircle,
+  Sparkles,
+} from "lucide-react";
 
 // Components
 import CourseHero from "../components/course-details/CourseHero";
 import Curriculum from "../components/course-details/Curriculum";
 import PricingCard from "../components/course-details/PricingCard";
 import AuthModal from "../components/AuthModal";
+import CourseVideoPlayer from "../components/CourseVideoPlayer";
 
 const CourseDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { enrollCourse, isEnrolled } = useCourse(); // [UPDATED] Get isEnrolled
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const { isEnrolled } = useCourse();
+  const { loading: agencyLoading, isMainSite, agency } = useAgency(); // [KEEP] Subdomain Logic
 
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // [NEW] Check if user owns the course
+  const [activeVideoPlaylist, setActiveVideoPlaylist] = useState(null);
+  const [startIndex, setStartIndex] = useState(0);
+
   const userHasAccess = course ? isEnrolled(course.id) : false;
+
+  // Admin controlled Demo Videos logic
+  const demoVideos = useMemo(() => {
+    if (course?.demoVideos && Array.isArray(course.demoVideos)) {
+      return course.demoVideos;
+    }
+    return [];
+  }, [course?.demoVideos]);
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -36,186 +56,236 @@ const CourseDetails = () => {
           const data = docSnap.data();
           setCourse({
             id: docSnap.id,
+            courseId: docSnap.id,
             ...data,
-            // [UPDATED] Defaults: Replaced "Alife Academy" with "Mentor"
             instructor: data.instructor || "Mentor",
-            rating: data.rating || 4.8,
-            reviews: data.reviews || 120,
-            students: data.students || 1500,
-            lectures: data.lectures || "1 Module",
-            duration: data.duration || "Self-paced",
             category: data.category || "General",
             image:
               data.image ||
               (data.videoId
                 ? `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`
                 : "https://placehold.co/800x400"),
-            description:
-              data.description ||
-              "Unlock your potential with this comprehensive course designed for all levels. Learn at your own pace and master new skills.",
-            instructorBio:
-              "Experienced mentor providing top-tier education and guidance in the industry.",
             syllabusContent: data.syllabus || "No syllabus provided.",
             driveLink: data.driveLink || "",
+            paymentLink: data.paymentLink || "",
+            mainVideoId: data.mainVideoId || null,
           });
         } else {
           setError("Course not found");
         }
       } catch (err) {
-        console.error("Error fetching course:", err);
         setError("Failed to load course details");
       } finally {
         setLoading(false);
       }
     };
-
     fetchCourseDetails();
   }, [id]);
 
-  const handleEnroll = async () => {
-    if (currentUser) {
-      try {
-        await enrollCourse(course);
-        navigate("/dashboard/my-courses");
-      } catch (error) {
-        console.error("Enrollment error:", error);
-        alert(error.message || "Enrollment failed. Please try again.");
-      }
-    } else {
+  const handleEnroll = () => {
+    if (!course?.paymentLink) return alert("Payment link not configured.");
+    if (!currentUser) {
+      localStorage.setItem("pendingCheckoutCourse", JSON.stringify(course));
       setIsAuthOpen(true);
+      return;
     }
+    window.location.href = course.paymentLink;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="size-10 text-[#5edff4] animate-spin" />
-      </div>
-    );
-  }
+  const openPlayer = (playlist, index = 0) => {
+    setActiveVideoPlaylist(playlist);
+    setStartIndex(index);
+  };
 
-  if (error || !course) {
+  // UI loading check with Subdomain Logic
+  if (loading || agencyLoading)
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
-        <h2 className="text-2xl font-bold text-slate-900">
-          Oops! Course not found.
-        </h2>
-        <button
-          onClick={() => navigate("/courses")}
-          className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold"
-        >
-          Browse All Courses
-        </button>
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5edff4]"></div>
+          <p className="text-slate-400 font-bold animate-pulse">
+            {!isMainSite && agency
+              ? `Loading ${agency.name}...`
+              : "Initializing Academy..."}
+          </p>
+        </div>
       </div>
     );
-  }
+
+  if (!course)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Course data is unavailable.</p>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20">
-      {/* 1. Hero Section */}
       <CourseHero course={course} />
 
-      <div className="max-w-7xl mx-auto px-6 mt-12">
-        <div className="grid lg:grid-cols-3 gap-12">
-          {/* 2. Main Content */}
-          <div className="lg:col-span-2 space-y-12">
-            {/* About Course */}
-            <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                About this Course
-              </h2>
-              <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed whitespace-pre-line">
-                <p>{course.description}</p>
-              </div>
-            </div>
+      {/* Mobile Pricing Sticky */}
+      <div className="px-6 lg:hidden relative z-20 -mt-10 mb-8">
+        <PricingCard
+          course={course}
+          onEnroll={handleEnroll}
+          isEnrolled={userHasAccess}
+        />
+      </div>
 
-            {/* Study Material Section (Only if Link Exists) */}
-            {course.driveLink && (
-              <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="size-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-                    <FileText size={24} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">
-                      Study Material & Notes
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                      Supplementary resources for this course
-                    </p>
+      <div className="max-w-7xl mx-auto px-6 lg:mt-12">
+        <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+          <div className="lg:col-span-2 space-y-12">
+            {/* 1. Introduction Video */}
+            {course?.mainVideoId && (
+              <div className="bg-white rounded-[32px] overflow-hidden border border-slate-100 shadow-sm">
+                <div className="p-6 border-b border-slate-50 flex items-center gap-3">
+                  <PlayCircle className="text-[#0891b2]" size={24} />
+                  <h2 className="text-xl font-bold text-slate-900">
+                    Course Introduction
+                  </h2>
+                </div>
+                <div
+                  className="relative aspect-video bg-black group cursor-pointer"
+                  onClick={() =>
+                    openPlayer([
+                      {
+                        videoId: course.mainVideoId,
+                        title: "Course Introduction",
+                      },
+                    ])
+                  }
+                >
+                  <img
+                    src={`https://img.youtube.com/vi/${course.mainVideoId}/maxresdefault.jpg`}
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity"
+                    alt="Intro"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="size-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+                      <PlayCircle className="text-white size-12" />
+                    </div>
                   </div>
                 </div>
+              </div>
+            )}
 
-                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-sm">
-                      Course Resources Bundle
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Includes PDF notes, assignments, and source code.
-                    </p>
+            {/* 2. Study Material Section */}
+            {course?.driveLink && (
+              <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="size-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+                      <FileText size={28} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900">
+                        Study Material & Notes
+                      </h2>
+                      <p className="text-sm text-slate-500">
+                        Premium resources included with enrollment
+                      </p>
+                    </div>
                   </div>
+                  <div className="w-full md:w-auto">
+                    {userHasAccess ? (
+                      <a
+                        href={course.driveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-100"
+                      >
+                        <Download size={18} /> Download Now
+                      </a>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-100 text-slate-400 rounded-xl font-bold border border-slate-200 cursor-not-allowed w-full"
+                      >
+                        <Lock size={18} /> Enroll to Access
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
-                  {userHasAccess ? (
-                    <a
-                      href={course.driveLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+            {/* 3. Demo Lessons Grid */}
+            {demoVideos.length > 0 && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-slate-900 px-2">
+                  Free Starter Lessons
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {demoVideos.map((video, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white rounded-[24px] overflow-hidden border border-slate-100 shadow-sm group cursor-pointer"
+                      onClick={() => openPlayer(demoVideos, idx)}
                     >
-                      <Download size={16} /> Download
-                    </a>
-                  ) : (
-                    <button
-                      disabled
-                      className="flex items-center gap-2 px-6 py-3 bg-slate-200 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed"
+                      <div className="aspect-video relative bg-slate-900">
+                        <img
+                          src={`https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`}
+                          className="w-full h-full object-cover opacity-70 group-hover:opacity-50 transition-all"
+                          alt={video.title}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <PlayCircle className="text-white size-12 opacity-80 group-hover:scale-110 transition-transform" />
+                        </div>
+                      </div>
+                      <div className="p-4 bg-white border-t border-slate-50">
+                        <h3 className="font-bold text-slate-800 text-sm line-clamp-1">
+                          {video.title}
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold">
+                          Lesson {idx + 1}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {!userHasAccess && (
+                    <div
+                      onClick={handleEnroll}
+                      className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[24px] p-6 flex flex-col items-center justify-center text-center border border-slate-700 cursor-pointer hover:scale-[1.02] transition-transform group"
                     >
-                      <Lock size={16} /> Enroll to Access
-                    </button>
+                      <div className="size-12 bg-[#5edff4]/10 rounded-2xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+                        <Sparkles className="text-[#5edff4] size-6" />
+                      </div>
+                      <h3 className="text-white font-bold text-lg mb-1">
+                        Unlock Full Access
+                      </h3>
+                      <button className="px-6 py-2 bg-[#5edff4] text-slate-900 rounded-xl font-bold text-sm mt-4">
+                        Enroll Now
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Curriculum */}
             <Curriculum course={course} syllabus={course.syllabusContent} />
-
-            {/* Instructor */}
-            <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                Meet your Instructor
-              </h2>
-              <div className="flex items-start gap-6">
-                <div className="size-16 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center font-bold text-2xl text-slate-400">
-                  {course.instructor[0]}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    {course.instructor}
-                  </h3>
-                  <p className="text-sm text-[#0891b2] font-medium mb-4">
-                    Senior Mentor
-                  </p>
-                  <p className="text-slate-600 leading-relaxed text-sm">
-                    {course.instructorBio}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* 3. Sidebar (Pricing Card) */}
-          <div className="lg:col-span-1 relative">
+          {/* Desktop Pricing Sticky */}
+          <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24">
               <PricingCard
                 course={course}
                 onEnroll={handleEnroll}
-                isEnrolled={userHasAccess} // [IMPORTANT] Pass Enrolled Status
+                isEnrolled={userHasAccess}
               />
             </div>
           </div>
         </div>
       </div>
+
+      {activeVideoPlaylist && (
+        <CourseVideoPlayer
+          course={course}
+          playlist={activeVideoPlaylist}
+          initialIndex={startIndex}
+          onClose={() => setActiveVideoPlaylist(null)}
+        />
+      )}
 
       <AuthModal
         isOpen={isAuthOpen}

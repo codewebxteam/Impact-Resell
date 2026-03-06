@@ -15,7 +15,7 @@ export const useAgency = () => useContext(AgencyContext);
 // --- DEFAULT AGENCY DATA (For Main Site) ---
 // ताकी App कभी Crash न हो अगर agency null हो
 const DEFAULT_AGENCY = {
-  name: "Alife Stable Academy",
+  name: "Impact School Of AI",
   themeColor: "#0f172a", // Navy Blue (Default)
   accentColor: "#5edff4", // Cyan (Default)
   email: "support@alifestable.com",
@@ -120,7 +120,7 @@ export const AgencyProvider = ({ children }) => {
         document.title = `${agency?.name} | Learning Portal`;
       } else {
         // Main Site Title
-        document.title = "Alife Stable Academy | Learn Smarter";
+        document.title = "Impact School Of AI";
       }
     }
   }, [agency, isMainSite, loading]);
