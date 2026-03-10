@@ -6,7 +6,12 @@ import React, {
   useCallback,
 } from "react";
 import { db } from "../firebase/config";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  getDocFromCache,
+  getDocFromServer,
+} from "firebase/firestore";
 
 const AgencyContext = createContext();
 
@@ -29,7 +34,6 @@ export const AgencyProvider = ({ children }) => {
   const refreshAgency = useCallback(async () => {
     setLoading(true);
 
-    // Timer taaki agar internet slow ho toh website stuck na ho
     const timeoutId = setTimeout(() => {
       if (loading) {
         console.warn("⏳ Agency fetch timed out, showing default site.");
@@ -37,13 +41,12 @@ export const AgencyProvider = ({ children }) => {
         setIsMainSite(true);
         setLoading(false);
       }
-    }, 5000); // 5 Seconds Timeout
+    }, 8000); // Increased to 8 seconds for better reliability
 
     try {
       const hostname = window.location.hostname;
       let subdomain = null;
 
-      // Subdomain extraction logic
       const parts = hostname.split(".");
       if (hostname.includes("localhost")) {
         if (parts.length > 1 && parts[0] !== "www")
@@ -56,18 +59,32 @@ export const AgencyProvider = ({ children }) => {
       if (!subdomain) {
         setAgency(DEFAULT_AGENCY);
         setIsMainSite(true);
-        clearTimeout(timeoutId);
         setLoading(false);
+        clearTimeout(timeoutId);
         return;
       }
 
       const subDocRef = doc(db, "subdomains", subdomain);
-      const subSnap = await getDoc(subDocRef);
+
+      // --- OFFLINE-FIRST LOGIC ---
+      // Trying to get from cache first to avoid "Client is Offline" errors
+      let subSnap;
+      try {
+        subSnap = await getDocFromCache(subDocRef);
+      } catch (e) {
+        subSnap = await getDocFromServer(subDocRef);
+      }
 
       if (subSnap.exists()) {
         const { ownerId } = subSnap.data();
         const agencyDocRef = doc(db, "agencies", ownerId);
-        const agencySnap = await getDoc(agencyDocRef);
+
+        let agencySnap;
+        try {
+          agencySnap = await getDocFromCache(agencyDocRef);
+        } catch (e) {
+          agencySnap = await getDocFromServer(agencyDocRef);
+        }
 
         if (agencySnap.exists()) {
           const data = agencySnap.data();
@@ -93,6 +110,7 @@ export const AgencyProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("❌ Agency Context Error:", error);
+      // Fallback to default if offline and not in cache
       setAgency(DEFAULT_AGENCY);
       setIsMainSite(true);
     } finally {
@@ -105,16 +123,15 @@ export const AgencyProvider = ({ children }) => {
     refreshAgency();
   }, [refreshAgency]);
 
-  // CSS Variables update logic
   useEffect(() => {
     if (!loading) {
       document.documentElement.style.setProperty(
         "--brand-color",
-        agency?.themeColor,
+        agency?.themeColor || "#0f172a",
       );
       document.documentElement.style.setProperty(
         "--accent-color",
-        agency?.accentColor,
+        agency?.accentColor || "#5edff4",
       );
       document.title = isMainSite
         ? "Impact School Of AI"
