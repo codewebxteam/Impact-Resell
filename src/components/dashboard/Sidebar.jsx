@@ -26,8 +26,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   // [LOGIC] Dynamic Colors & Name
   const accentColor = agency?.accentColor || "#5edff4";
-  const appName = !isMainSite && agency ? agency.name : "Alife Stable";
-  const appSuffix = isMainSite ? "Academy" : "Institute";
+  const appName = !isMainSite && agency ? agency.name : "Impact School Of AI";
 
   const handleLogout = async () => {
     await logout();
@@ -76,12 +75,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span className="font-bold text-lg tracking-wide text-white leading-none">
               {appName}
             </span>
-            <span
-              className="text-[10px] font-bold tracking-widest uppercase"
-              style={{ color: accentColor }}
-            >
-              {appSuffix}
-            </span>
+            
           </div>
         </div>
         <button
