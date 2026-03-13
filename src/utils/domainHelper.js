@@ -6,7 +6,7 @@
  */
 
 // Configuration for Main Domain
-const MAIN_DOMAIN = "alifestableacademy.com"; // Future proofing
+const MAIN_DOMAIN = "i-cpp.com"; 
 
 /**
  * Extracts the subdomain from the current window location.
