@@ -107,7 +107,7 @@ const PartnerLayout = () => {
   // Copy Logic
   const handleCopyDomain = () => {
     if (!partnerAgency?.subdomain) return;
-    const domain = `${partnerAgency?.subdomain}.alifestableacademy.com`;
+    const domain = `${partnerAgency?.subdomain}.i-cpp.com`;
     navigator.clipboard.writeText(domain);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -203,7 +203,7 @@ const PartnerLayout = () => {
                   {partnerAgency?.name || "My Academy"}
                 </p>
                 <p className="text-[9px] font-bold text-slate-500 truncate">
-                  {partnerAgency?.subdomain}.alifestableacademy.com
+                  {partnerAgency?.subdomain}.i-cpp.com
                 </p>
               </>
             ) : (
@@ -362,7 +362,7 @@ const PartnerLayout = () => {
                   <div className="px-2 py-1 flex items-center gap-2 text-[10px] text-slate-400 font-medium bg-slate-50 rounded-lg justify-center mb-2">
                     <Globe size={12} />
                     <span className="truncate max-w-[200px]">
-                      {partnerAgency.subdomain}.alifestableacademy.com
+                      {partnerAgency.subdomain}.i-cpp.com
                     </span>
                   </div>
                 )}
