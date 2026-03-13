@@ -77,7 +77,7 @@ const CertificateItem = ({ courseData }) => {
 
   // [LOGIC] Dynamic Issuer Name & Link
   const issuerName =
-    !isMainSite && agency ? agency.name : "Alife Stable Academy";
+    !isMainSite && agency ? agency.name : "Impact School Of AI";
   const verificationLink = `${window.location.origin}/verify`; // Current Domain Link
 
   // Progress Logic (Rounded)

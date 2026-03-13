@@ -109,7 +109,7 @@ const AdminLayout = () => {
             <ShieldCheck size={22} className="text-white" />
           </div>
           <div>
-            <span className="text-xl font-black tracking-tighter uppercase block leading-none">
+            <span className="text-xl font-black tracking-tighter uppercase block leading-none text-slate-900">
               Admin <span className="text-indigo-600 font-medium">Pro</span>
             </span>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -182,7 +182,7 @@ const AdminLayout = () => {
                   <div className="size-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
                     <ShieldCheck size={20} />
                   </div>
-                  <span className="text-lg font-black uppercase">
+                  <span className="text-lg font-black uppercase text-slate-900">
                     Admin Pro
                   </span>
                 </div>
@@ -238,17 +238,18 @@ const AdminLayout = () => {
               <Menu size={20} />
             </button>
 
-            <div className="hidden sm:block">
+            <div className="hidden sm:block text-slate-900">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
                 Superuser / <span className="text-slate-900">Console</span>
               </p>
               <h2 className="text-xl lg:text-2xl font-black text-slate-900 tracking-tight uppercase tracking-tighter leading-none">
-                Main Dashboard
+                {navItems.find((item) => item.path === location.pathname)
+                  ?.label || "Main Dashboard"}
               </h2>
             </div>
           </div>
 
-          {/* --- [UPDATED] RIGHT HEADER WITH PROFILE DROPDOWN --- */}
+          {/* --- RIGHT HEADER WITH PROFILE DROPDOWN --- */}
           <div className="flex items-center gap-3 lg:gap-6">
             <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
               <Lock size={14} className="text-emerald-500" />
@@ -264,7 +265,9 @@ const AdminLayout = () => {
                 className="flex items-center gap-3 px-2 py-1.5 lg:px-3 lg:py-2 bg-white border border-slate-200 rounded-2xl shadow-sm hover:bg-slate-50 transition-all"
               >
                 <div className="size-8 lg:size-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-lg shadow-slate-200">
-                  {currentUser?.displayName?.[0] || "A"}
+                  {currentUser?.displayName?.[0] ||
+                    currentUser?.email?.[0]?.toUpperCase() ||
+                    "A"}
                 </div>
                 <div className="hidden lg:block text-left mr-1">
                   <p className="text-xs font-bold text-slate-900 leading-none">
@@ -292,7 +295,7 @@ const AdminLayout = () => {
                     className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[60]"
                   >
                     <div className="p-5 border-b border-slate-50 bg-slate-50/50">
-                      <p className="text-sm font-bold text-slate-900">
+                      <p className="text-sm font-bold text-slate-900 truncate">
                         {currentUser?.email}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">
@@ -332,8 +335,8 @@ const AdminLayout = () => {
                           {resetStatus === "loading"
                             ? "Sending Email..."
                             : resetStatus === "success"
-                            ? "Email Sent!"
-                            : "Reset Password"}
+                              ? "Email Sent!"
+                              : "Reset Password"}
                         </span>
                       </button>
                     </div>

@@ -16,7 +16,15 @@ import {
   Package,
 } from "lucide-react"; //
 import { useNavigate } from "react-router-dom"; //
-import { doc, getDoc } from "firebase/firestore"; //
+import {
+  doc,
+  getDoc,
+  query,
+  collection,
+  where,
+  getDocs,
+  updateDoc,
+} from "firebase/firestore"; //
 import { db } from "../firebase/config"; //
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
@@ -94,25 +102,43 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     }
   };
 
-  // Mock Verification for Partner ID
-  const handlePartnerVerify = () => {
+  // Real Verification for Partner ID using Firestore
+  const handlePartnerVerify = async () => {
     if (!formData.partnerId) {
       setErrors({ ...errors, partnerId: "Please enter a Partner ID" });
       return;
     }
+    if (!formData.email) {
+      setErrors({ ...errors, email: "Please enter email first" });
+      return;
+    }
+
     setVerifying(true);
 
-    // Simulate Verification API
-    setTimeout(() => {
-      setVerifying(false);
-      if (formData.partnerId === "PARTNER") {
+    try {
+      // Query Firestore for the code assigned to this specific email
+      const q = query(
+        collection(db, "partnerCodes"),
+        where("email", "==", formData.email.toLowerCase().trim()),
+        where("code", "==", formData.partnerId.trim()),
+        where("status", "==", "unused"),
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
         setPartnerVerified(true);
         setErrors({ ...errors, partnerId: null });
       } else {
         setPartnerVerified(false);
-        setErrors({ ...errors, partnerId: "Invalid ID (Try 'PARTNER')" });
+        setErrors({ ...errors, partnerId: "Invalid code or email mismatch" });
       }
-    }, 1500);
+    } catch (error) {
+      console.error("Verification error:", error);
+      setErrors({ ...errors, partnerId: "Verification service error" });
+    } finally {
+      setVerifying(false);
+    }
   };
 
   // [FIXED LOGIC] Uses Firebase Login/Signup with Proper Redirection
@@ -128,10 +154,6 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
       return;
     }
 
-    if (mode === "partner" && !formData.packageName) {
-      setErrors({ ...errors, packageName: "Please select a plan" });
-      return;
-    }
 
     setLoading(true);
 
@@ -159,11 +181,24 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           formData.email,
           formData.password,
           formData.name,
-          userRole
+          userRole,
         ); //
 
-        // Direct redirection after signup for Partners
+        // If Partner, mark the code as used in Firestore
         if (mode === "partner") {
+          const q = query(
+            collection(db, "partnerCodes"),
+            where("email", "==", formData.email.toLowerCase().trim()),
+            where("code", "==", formData.partnerId.trim()),
+          );
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            const codeDoc = querySnapshot.docs[0];
+            await updateDoc(doc(db, "partnerCodes", codeDoc.id), {
+              status: "used",
+              usedAt: new Date().toISOString(),
+            });
+          }
           navigate("/agency-setup"); //
         } else {
           navigate("/dashboard"); //
@@ -327,24 +362,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
                 <div className="relative group">
                   <Package className="absolute left-4 top-3.5 size-5 text-slate-400 group-focus-within:text-[#5edff4] pointer-events-none" />
-                  <select
-                    name="packageName"
-                    value={formData.packageName}
-                    onChange={handleChange}
-                    className={`w-full bg-slate-50 border rounded-xl py-3 pl-12 pr-4 outline-none focus:ring-1 transition-all font-medium text-slate-700 appearance-none cursor-pointer
-                    ${
-                      errors.packageName
-                        ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                        : "border-slate-200 focus:border-[#5edff4] focus:ring-[#5edff4]"
-                    }`}
-                  >
-                    <option value="" disabled>
-                      Choose your Plan
-                    </option>
-                    <option value="Starter">Starter Plan</option>
-                    <option value="Booster">Booster Plan</option>
-                    <option value="Academic">Academic Plan</option>
-                  </select>
+                  
                   <div className="absolute right-4 top-4 pointer-events-none">
                     <div className="border-t-4 border-l-4 border-transparent border-t-slate-400"></div>
                   </div>
@@ -430,7 +448,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                       <span
                         className={`text-[10px] font-black uppercase ${strength.color.replace(
                           "bg-",
-                          "text-"
+                          "text-",
                         )}`}
                       >
                         {strength.label}
@@ -526,9 +544,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-slate-200"></span>
                   </div>
-                  
                 </div>
-              
               </>
             )}
 
@@ -567,8 +583,8 @@ const InputGroup = ({ icon: Icon, error, success, ...props }) => (
         error
           ? "border-red-300 focus:border-red-500 focus:ring-red-500"
           : success
-          ? "border-green-300 focus:border-green-500 focus:ring-green-500 bg-green-50"
-          : "border-slate-200 focus:border-[#5edff4] focus:ring-[#5edff4]"
+            ? "border-green-300 focus:border-green-500 focus:ring-green-500 bg-green-50"
+            : "border-slate-200 focus:border-[#5edff4] focus:ring-[#5edff4]"
       } disabled:bg-slate-100 disabled:text-slate-400`}
       required
     />
