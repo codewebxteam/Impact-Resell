@@ -349,67 +349,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
               </>
             )}
 
-            {/* 3. PARTNER SPECIFIC FIELDS */}
-            {mode === "partner" && (
-              <>
-                <InputGroup
-                  icon={Briefcase}
-                  name="agencyName"
-                  placeholder="Agency Name"
-                  value={formData.agencyName}
-                  onChange={handleChange}
-                />
-
-                <div className="relative group">
-                  <Package className="absolute left-4 top-3.5 size-5 text-slate-400 group-focus-within:text-[#5edff4] pointer-events-none" />
-                  
-                  <div className="absolute right-4 top-4 pointer-events-none">
-                    <div className="border-t-4 border-l-4 border-transparent border-t-slate-400"></div>
-                  </div>
-                  {errors.packageName && (
-                    <p className="text-xs text-red-500 mt-1 ml-1">
-                      {errors.packageName}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex gap-2 items-start">
-                  <div className="flex-1">
-                    <InputGroup
-                      icon={BadgeCheck}
-                      name="partnerId"
-                      placeholder="Partner ID"
-                      value={formData.partnerId}
-                      onChange={handleChange}
-                      error={errors.partnerId}
-                      disabled={partnerVerified}
-                      success={partnerVerified}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handlePartnerVerify}
-                    disabled={
-                      verifying || partnerVerified || !formData.partnerId
-                    }
-                    className={`h-[46px] px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center min-w-20 cursor-pointer
-                      ${
-                        partnerVerified
-                          ? "bg-green-100 text-green-700 border border-green-200"
-                          : "bg-slate-900 text-white hover:bg-[#5edff4] hover:text-slate-900"
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {verifying ? (
-                      <Loader2 className="animate-spin size-5" />
-                    ) : partnerVerified ? (
-                      "Verified"
-                    ) : (
-                      "Verify"
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
+            
 
             {/* 4. PASSWORD SECTION (FOR SIGNUP & PARTNER) */}
             {(mode === "signup" || mode === "partner") && (
