@@ -13,12 +13,12 @@ import {
   Zap,
   FileSpreadsheet,
   Loader2,
-  Building2, // Added for Partner Icon
+  Building2,
 } from "lucide-react";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../../firebase/config";
-import StudentProfile from "../partner/StudentProfile"; // Reusing the profile component
-import * as XLSX from "xlsx"; // Added for Excel Export
+import StudentProfile from "../partner/StudentProfile";
+import * as XLSX from "xlsx";
 
 const StudentData = () => {
   // --- STATE ---
@@ -35,44 +35,67 @@ const StudentData = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // --- 1. FETCH REAL DATA (PARTNER ONLY) ---
+  // --- 1. FETCH REAL DATA (ADMIN GLOBAL - REALTIME) ---
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch All Users
-        const usersSnap = await getDocs(collection(db, "users"));
-        const users = usersSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+    setLoading(true);
 
-        // [STRICT FILTER] Only students linked to a Partner
-        const partnerStudents = users.filter(
-          (u) => u.partnerId && u.partnerId !== "direct",
-        );
+    // Admin panel ke liye global orders scan karna best hai student details ke liye
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
 
-        setStudents(partnerStudents);
-      } catch (error) {
-        console.error("Error fetching students:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const allOrders = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-    fetchData();
+      const studentMap = {};
+
+      allOrders.forEach((order) => {
+        const email = order.studentEmail;
+        if (!email) return;
+
+        if (!studentMap[email]) {
+          studentMap[email] = {
+            id: `STU-${email}`,
+            displayName: order.studentName || email.split("@")[0],
+            email: email,
+            partnerId: order.partnerId || "direct",
+            partnerName:
+              order.agencyName || order.partnerName || "Independent Partner",
+            createdAt: order.createdAt, // Firebase Timestamp
+            enrolledCourses: [],
+            totalSpent: 0,
+          };
+        }
+
+        // Mapping courses from orders
+        const courseName =
+          order.courseTitle || order.productName || "Unknown Asset";
+        if (!studentMap[email].enrolledCourses.includes(courseName)) {
+          studentMap[email].enrolledCourses.push(courseName);
+        }
+
+        studentMap[email].totalSpent += Number(order.sellingPrice || 0);
+      });
+
+      const studentList = Object.values(studentMap);
+      setStudents(studentList);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // --- EXCEL EXPORT ---
   const exportToExcel = () => {
     const exportData = filteredData.map((s) => ({
-      "Student Name": s.displayName || s.name || "N/A",
+      "Student Name": s.displayName || "N/A",
       Email: s.email,
-      "Partner Name": s.partnerName || "Unknown Agency",
+      "Partner Name": s.partnerName,
       "Partner ID": s.partnerId,
-      "Enrolled Courses": s.enrolledCourses?.length || 0,
-      "Join Date": s.createdAt
-        ? new Date(s.createdAt.seconds * 1000).toLocaleDateString("en-GB")
+      "Courses Count": s.enrolledCourses?.length || 0,
+      "Join Date": s.createdAt?.toDate
+        ? s.createdAt.toDate().toLocaleDateString("en-GB")
         : "N/A",
     }));
 
@@ -85,16 +108,16 @@ const StudentData = () => {
     );
   };
 
-  // --- 2. FILTER LOGIC ---
+  // --- 2. FILTER LOGIC (FIXED FOR ALL TIME & SPECIFIC) ---
   const filteredData = useMemo(() => {
     let data = students;
 
-    // A. Time Filter
+    // A. Time Filter Logic
     if (timeFilter !== "All Time") {
       const now = new Date();
       data = data.filter((s) => {
-        if (!s.createdAt) return false;
-        const joinDate = new Date(s.createdAt.seconds * 1000);
+        if (!s.createdAt?.toDate) return false;
+        const joinDate = s.createdAt.toDate();
 
         if (timeFilter === "Today") {
           return joinDate.toDateString() === now.toDateString();
@@ -115,8 +138,8 @@ const StudentData = () => {
         }
         if (timeFilter === "Custom" && customDates.start && customDates.end) {
           const start = new Date(customDates.start);
-          start.setHours(0, 0, 0, 0);
           const end = new Date(customDates.end);
+          start.setHours(0, 0, 0, 0);
           end.setHours(23, 59, 59, 999);
           return joinDate >= start && joinDate <= end;
         }
@@ -131,7 +154,8 @@ const StudentData = () => {
         (s) =>
           (s.displayName || "").toLowerCase().includes(query) ||
           (s.email || "").toLowerCase().includes(query) ||
-          (s.partnerName || "").toLowerCase().includes(query),
+          (s.partnerName || "").toLowerCase().includes(query) ||
+          (s.partnerId || "").toLowerCase().includes(query),
       );
     }
 
@@ -152,12 +176,12 @@ const StudentData = () => {
   // --- METRICS ---
   const metrics = useMemo(() => {
     return {
-      total: students.length, // Only Partner Students
-      active: students.filter((s) => (s.enrolledCourses?.length || 0) > 0)
-        .length, // Bought at least 1 course
-      newThisMonth: students.filter((s) => {
-        if (!s.createdAt) return false;
-        const d = new Date(s.createdAt.seconds * 1000);
+      total: filteredData.length,
+      active: filteredData.filter((s) => (s.enrolledCourses?.length || 0) > 0)
+        .length,
+      newThisMonth: filteredData.filter((s) => {
+        if (!s.createdAt?.toDate) return false;
+        const d = s.createdAt.toDate();
         const now = new Date();
         return (
           d.getMonth() === now.getMonth() &&
@@ -165,7 +189,7 @@ const StudentData = () => {
         );
       }).length,
     };
-  }, [students]);
+  }, [filteredData]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-10 bg-[#F8FAFC] min-h-screen font-sans text-slate-900">
@@ -174,7 +198,7 @@ const StudentData = () => {
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="animate-spin text-indigo-600" size={48} />
             <p className="text-sm font-bold text-slate-400">
-              Loading Student Data...
+              Synchronizing Registry...
             </p>
           </div>
         </div>
@@ -187,7 +211,7 @@ const StudentData = () => {
                 Student Directory
               </h1>
               <p className="text-sm text-slate-400 font-medium italic">
-                Partner-Acquired Students Only
+                Global Network Student Acquisition
               </p>
             </div>
 
@@ -237,26 +261,26 @@ const StudentData = () => {
             </div>
           </div>
 
-          {/* --- KPI CARDS (Partner Focused) --- */}
+          {/* --- KPI CARDS --- */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <KPICard
-              label="Total Partner Students"
+              label="Total Network Students"
               val={metrics.total.toLocaleString()}
-              sub="Acquired via Agencies"
+              sub="Acquired Ecosystem"
               icon={<Users />}
               color="blue"
             />
             <KPICard
               label="Active Learners"
               val={metrics.active.toLocaleString()}
-              sub="Enrolled in ≥1 Course"
+              sub="Verified Access"
               icon={<GraduationCap />}
               color="emerald"
             />
             <KPICard
-              label="New This Month"
+              label="New Admissions"
               val={`+${metrics.newThisMonth}`}
-              sub="Recent Acquisitions"
+              sub="Current Filter Period"
               icon={<Zap />}
               color="orange"
             />
@@ -270,7 +294,7 @@ const StudentData = () => {
                   <Globe size={20} />
                 </div>
                 <h3 className="text-lg font-black text-slate-900 uppercase">
-                  Student Registry
+                  Registry Ledger
                 </h3>
               </div>
 
@@ -280,7 +304,7 @@ const StudentData = () => {
                   <Search size={16} className="text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search Name, Email, Partner..."
+                    placeholder="Search Student, Agency..."
                     className="bg-transparent text-xs font-bold outline-none w-full placeholder:text-slate-400"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -301,10 +325,10 @@ const StudentData = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    <th className="px-8 py-5">Student Details</th>
-                    <th className="px-8 py-5">Acquired By (Agency)</th>
-                    <th className="px-8 py-5">Enrollments</th>
-                    <th className="px-8 py-5">Join Date</th>
+                    <th className="px-8 py-5">Student Identity</th>
+                    <th className="px-8 py-5">Agency Source</th>
+                    <th className="px-8 py-5">Courses</th>
+                    <th className="px-8 py-5">Registry Date</th>
                     <th className="px-8 py-5 text-right">Action</th>
                   </tr>
                 </thead>
@@ -318,11 +342,11 @@ const StudentData = () => {
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
                           <div className="size-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xs uppercase">
-                            {(s.displayName || s.email)[0]}
+                            {(s.displayName || "?")[0]}
                           </div>
                           <div>
                             <p className="text-xs font-black text-slate-900">
-                              {s.displayName || "No Name"}
+                              {s.displayName}
                             </p>
                             <p className="text-[10px] font-bold text-slate-400">
                               {s.email}
@@ -335,26 +359,23 @@ const StudentData = () => {
                           <Building2 size={14} className="text-slate-400" />
                           <div>
                             <p className="text-xs font-bold text-indigo-600">
-                              {s.partnerName || "Unknown Agency"}
+                              {s.partnerName}
                             </p>
                             <p className="text-[9px] font-bold text-slate-400 uppercase">
-                              ID:{" "}
-                              {s.partnerId ? s.partnerId.slice(0, 8) : "N/A"}...
+                              ID: {s.partnerId?.slice(0, 8)}...
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-6">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase">
-                          {s.enrolledCourses?.length || 0} Courses
+                          {s.enrolledCourses.length} Items
                         </span>
                       </td>
                       <td className="px-8 py-6">
                         <p className="text-xs font-bold text-slate-500">
-                          {s.createdAt
-                            ? new Date(
-                                s.createdAt.seconds * 1000,
-                              ).toLocaleDateString("en-GB")
+                          {s.createdAt?.toDate
+                            ? s.createdAt.toDate().toLocaleDateString("en-GB")
                             : "N/A"}
                         </p>
                       </td>
@@ -373,6 +394,11 @@ const StudentData = () => {
                   ))}
                 </tbody>
               </table>
+              {currentItems.length === 0 && (
+                <div className="p-20 text-center font-black text-slate-300">
+                  NO STUDENT RECORDS FOUND
+                </div>
+              )}
             </div>
 
             {/* Pagination */}

@@ -19,34 +19,30 @@ import {
   Mail,
   Hash,
   Trash2,
-  CheckCircle,
-  Clock,
-  Ticket,
-  Activity,
   Key,
 } from "lucide-react";
 import PartnerProfile from "./PartnerProfile";
-import { listenToPartners } from "../../firebase/partners.service";
 import { db } from "../../firebase/config";
 import {
   collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
+  onSnapshot,
   query,
   orderBy,
+  addDoc,
+  deleteDoc,
+  doc,
+  getDocs,
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
 
 const PartnerIntelligence = () => {
-  // --- EXISTING STATE ---
+  // --- CORE STATE ---
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [activeTab, setActiveTab] = useState("ledger"); // 'ledger' or 'access'
 
-  // Filters & Pagination
+  // --- FILTERS & PAGINATION ---
   const [timeFilter, setTimeFilter] = useState("All Time");
   const [customDates, setCustomDates] = useState({ start: "", end: "" });
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,28 +50,78 @@ const PartnerIntelligence = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // --- NEW ACCESS CONTROL STATE ---
+  // --- ACCESS CONTROL STATE ---
   const [email, setEmail] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
   const [allotLoading, setAllotLoading] = useState(false);
   const [codes, setCodes] = useState([]);
   const [codeSearch, setCodeSearch] = useState("");
-  const [fetchingCodes, setFetchingCodes] = useState(false);
   const [codeStats, setCodeStats] = useState({ total: 0, used: 0, unused: 0 });
 
-  // --- DATA FETCHING (PARTNERS) ---
+  // --- 1. REAL-TIME PARTNERS & ORDERS SYNC (NEW SCHEMA) ---
   useEffect(() => {
     setLoading(true);
-    const unsubscribe = listenToPartners((data) => {
-      setPartners(data);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    // Listen to agencies
+    const unsubAgencies = onSnapshot(
+      collection(db, "agencies"),
+      (agencySnap) => {
+        // Listen to orders
+        const unsubOrders = onSnapshot(
+          collection(db, "orders"),
+          (ordersSnap) => {
+            const allOrders = ordersSnap.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
+            }));
+
+            const formattedPartners = agencySnap.docs.map((doc) => {
+              const data = doc.data();
+              const pId = doc.id;
+              const partnerOrders = allOrders.filter(
+                (o) => o.partnerId === pId,
+              );
+
+              return {
+                id: pId,
+                agency: data.name || "Unnamed Academy",
+                owner: data.ownerId || "N/A",
+                email: data.email || "N/A",
+                phone: data.whatsapp || "N/A",
+                domain: data.subdomain || "N/A",
+                status: data.status || "Active",
+                joinDate: data.updatedAt?.toDate
+                  ? data.updatedAt.toDate()
+                  : new Date(),
+                sales: {
+                  courses: partnerOrders.filter(
+                    (o) => o.productType === "Course",
+                  ).length,
+                  ebooks: partnerOrders.filter(
+                    (o) => o.productType === "E-Book",
+                  ).length,
+                  totalUnits: partnerOrders.length,
+                },
+                financials: {
+                  generated: partnerOrders.reduce(
+                    (acc, curr) => acc + Number(curr.sellingPrice || 0),
+                    0,
+                  ),
+                },
+              };
+            });
+
+            setPartners(formattedPartners);
+            setLoading(false);
+          },
+        );
+        return () => unsubOrders();
+      },
+    );
+    return () => unsubAgencies();
   }, []);
 
-  // --- DATA FETCHING (PARTNER CODES) ---
+  // --- 2. ACCESS CODES FETCHING ---
   const fetchCodes = async () => {
-    setFetchingCodes(true);
     try {
       const q = query(
         collection(db, "partnerCodes"),
@@ -90,9 +136,7 @@ const PartnerIntelligence = () => {
       const used = data.filter((c) => c.status === "used").length;
       setCodeStats({ total: data.length, used, unused: data.length - used });
     } catch (e) {
-      console.error(e);
-    } finally {
-      setFetchingCodes(false);
+      console.error("Error fetching codes:", e);
     }
   };
 
@@ -100,7 +144,7 @@ const PartnerIntelligence = () => {
     if (activeTab === "access") fetchCodes();
   }, [activeTab]);
 
-  // --- ALLOTMENT HANDLER ---
+  // --- 3. ALLOTMENT HANDLER ---
   const handleAllot = async (e) => {
     e.preventDefault();
     setAllotLoading(true);
@@ -121,30 +165,7 @@ const PartnerIntelligence = () => {
     }
   };
 
-  // --- EXISTING LOGIC (TIME FILTER, ELITE, LEDGER) ---
-  const exportToExcel = () => {
-    const exportData = filteredLedgerData.map((p) => ({
-      "Partner ID": p.id,
-      "Agency Name": p.agency,
-      Owner: p.owner,
-      Email: p.email,
-      Phone: p.phone,
-      Status: p.status,
-      "Join Date": p.joinDate
-        ? new Date(p.joinDate).toLocaleDateString("en-GB")
-        : "N/A",
-      "Total Units": p.sales.totalUnits,
-      "Total Volume": p.financials.generated,
-    }));
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Partners");
-    XLSX.writeFile(
-      wb,
-      `Partners_Report_${new Date().toISOString().split("T")[0]}.xlsx`,
-    );
-  };
-
+  // --- 4. TIME FILTER LOGIC ---
   const timeFilteredPartners = useMemo(() => {
     if (timeFilter === "All Time") return partners;
     const now = new Date();
@@ -173,6 +194,7 @@ const PartnerIntelligence = () => {
     });
   }, [partners, timeFilter, customDates]);
 
+  // --- 5. ELITE & LEDGER LOGIC ---
   const elitePartners = useMemo(() => {
     return [...timeFilteredPartners]
       .sort((a, b) => b.financials.generated - a.financials.generated)
@@ -184,7 +206,8 @@ const PartnerIntelligence = () => {
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch =
         p.agency?.toLowerCase().includes(searchLower) ||
-        p.email?.toLowerCase().includes(searchLower);
+        p.email?.toLowerCase().includes(searchLower) ||
+        p.id?.toLowerCase().includes(searchLower);
       const matchesStatus = statusFilter === "All" || p.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -210,7 +233,7 @@ const PartnerIntelligence = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
-  const totalPages = Math.ceil(filteredLedgerData.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredLedgerData.length / itemsPerPage) || 1;
 
   const filteredCodes = codes.filter(
     (c) =>
@@ -218,11 +241,30 @@ const PartnerIntelligence = () => {
       c.code.toLowerCase().includes(codeSearch.toLowerCase()),
   );
 
+  // --- EXCEL EXPORT ---
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(
+      filteredLedgerData.map((p) => ({
+        ID: p.id,
+        Agency: p.agency,
+        Email: p.email,
+        Volume: p.financials.generated,
+        Status: p.status,
+      })),
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Partners");
+    XLSX.writeFile(wb, `Partner_Report.xlsx`);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-10 bg-[#F8FAFC] min-h-screen font-sans text-slate-900">
       {loading ? (
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Loader2 className="animate-spin text-indigo-600" size={48} />
+          <p className="text-sm font-bold text-slate-400">
+            Syncing Intelligence Data...
+          </p>
         </div>
       ) : (
         <div className="max-w-7xl mx-auto space-y-10">
@@ -236,7 +278,6 @@ const PartnerIntelligence = () => {
                 Agency Performance & Sales Audit
               </p>
             </div>
-            {/* DATE FILTER */}
             <div className="flex items-center bg-white px-4 py-2.5 rounded-2xl border border-slate-200 shadow-sm">
               <Calendar size={16} className="text-slate-400 mr-3" />
               <select
@@ -279,14 +320,14 @@ const PartnerIntelligence = () => {
             />
             <KPICard
               label="Total Business Volume"
-              val={`₹${(metrics.totalVolume / 100000).toFixed(2)}L`}
+              val={`₹${Math.round(metrics.totalVolume).toLocaleString()}`}
               sub="Total Purchases"
               icon={<Globe />}
               color="indigo"
             />
             <KPICard
               label="Avg. Agency Vol."
-              val={`₹${(metrics.avgVolume / 1000).toFixed(1)}k`}
+              val={`₹${Math.round(metrics.avgVolume).toLocaleString()}`}
               sub="Per Partner"
               icon={<ShoppingBag />}
               color="orange"
@@ -350,8 +391,7 @@ const PartnerIntelligence = () => {
             </div>
 
             {activeTab === "ledger" ? (
-              /* --- LEDGER CONTENT --- */
-              <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="animate-in fade-in duration-500">
                 <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
                   <h3 className="text-lg font-black text-slate-900 uppercase">
                     Audit Ledger
@@ -412,7 +452,7 @@ const PartnerIntelligence = () => {
                                   {p.agency}
                                 </p>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase">
-                                  {p.id}
+                                  {p.id.slice(0, 10)}...
                                 </p>
                               </div>
                             </div>
@@ -420,6 +460,10 @@ const PartnerIntelligence = () => {
                           <td className="px-8 py-6">
                             <p className="text-xs font-black text-slate-900">
                               {p.sales.totalUnits} Items
+                            </p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase">
+                              {p.sales.courses} Courses • {p.sales.ebooks}{" "}
+                              E-Books
                             </p>
                           </td>
                           <td className="px-8 py-6">
@@ -444,15 +488,34 @@ const PartnerIntelligence = () => {
                     </tbody>
                   </table>
                 </div>
+                <div className="p-6 border-t border-slate-50 flex justify-between items-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase">
+                    Page {currentPage} of {totalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="p-2 bg-white border border-slate-200 rounded-lg"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className="p-2 bg-white border border-slate-200 rounded-lg"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
-              /* --- ACCESS CONTROL CONTENT --- */
-              <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="p-8 animate-in fade-in duration-500">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* ALLOTMENT FORM */}
                   <div className="lg:col-span-1 space-y-6">
                     <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                      <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center">
                         <p className="text-[8px] font-black text-slate-400 uppercase">
                           Total
                         </p>
@@ -460,7 +523,7 @@ const PartnerIntelligence = () => {
                           {codeStats.total}
                         </p>
                       </div>
-                      <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
+                      <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-center">
                         <p className="text-[8px] font-black text-emerald-400 uppercase">
                           Used
                         </p>
@@ -468,9 +531,9 @@ const PartnerIntelligence = () => {
                           {codeStats.used}
                         </p>
                       </div>
-                      <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                      <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 text-center">
                         <p className="text-[8px] font-black text-amber-400 uppercase">
-                          Waiting
+                          Wait
                         </p>
                         <p className="text-sm font-black text-amber-600">
                           {codeStats.unused}
@@ -479,8 +542,7 @@ const PartnerIntelligence = () => {
                     </div>
                     <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                       <h3 className="text-sm font-black mb-4 flex items-center gap-2">
-                        <Plus className="size-4 text-[#0891b2]" /> New Partner
-                        Access
+                        <Plus className="size-4 text-[#0891b2]" /> New Access
                       </h3>
                       <form onSubmit={handleAllot} className="space-y-4">
                         <div className="relative">
@@ -507,7 +569,7 @@ const PartnerIntelligence = () => {
                         </div>
                         <button
                           disabled={allotLoading}
-                          className="w-full bg-slate-900 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:bg-indigo-600 transition-all"
+                          className="w-full bg-slate-900 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:bg-cyan-600 transition-all"
                         >
                           {allotLoading ? (
                             <Loader2
@@ -521,8 +583,6 @@ const PartnerIntelligence = () => {
                       </form>
                     </div>
                   </div>
-
-                  {/* CODES TABLE */}
                   <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center gap-3 bg-slate-50 px-5 py-3 rounded-2xl border border-slate-100">
                       <Search size={16} className="text-slate-400" />
@@ -540,7 +600,7 @@ const PartnerIntelligence = () => {
                           <tr>
                             <th className="px-6 py-4">Partner</th>
                             <th className="px-6 py-4">Code</th>
-                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4 text-center">Status</th>
                             <th className="px-6 py-4 text-right">Action</th>
                           </tr>
                         </thead>
@@ -550,10 +610,10 @@ const PartnerIntelligence = () => {
                               <td className="px-6 py-4 font-bold text-slate-700">
                                 {item.email}
                               </td>
-                              <td className="px-6 py-4 font-mono font-black text-indigo-600">
+                              <td className="px-6 py-4 font-mono font-black text-cyan-600">
                                 {item.code}
                               </td>
-                              <td className="px-6 py-4">
+                              <td className="px-6 py-4 text-center">
                                 <span
                                   className={`px-2 py-1 rounded-full text-[8px] font-black uppercase ${item.status === "used" ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"}`}
                                 >
@@ -590,7 +650,6 @@ const PartnerIntelligence = () => {
         </div>
       )}
 
-      {/* PARTNER PROFILE MODAL */}
       <AnimatePresence>
         {selectedPartner && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
@@ -623,7 +682,9 @@ const KPICard = ({ label, val, sub, icon, color }) => {
         {label}
       </p>
       <h3 className="text-2xl font-black text-slate-900 mt-1">{val}</h3>
-      <p className="text-[10px] font-bold text-slate-400 mt-1">{sub}</p>
+      <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">
+        {sub}
+      </p>
     </div>
   );
 };

@@ -16,10 +16,11 @@ import {
   XCircle,
   BookOpen,
   TrendingUp,
-  Award, // [ADDED] For Top Agency
-  Star, // [ADDED] For Top Course
+  Award,
+  Star,
 } from "lucide-react";
-import { listenToAllOrders } from "../../firebase/orders.service";
+import { db } from "../../firebase/config"; // Direct config for admin logic
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 
 const SalesManager = () => {
   // State
@@ -36,34 +37,44 @@ const SalesManager = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // --- GLOBAL DATA SYNC (ADMIN) ---
   useEffect(() => {
-    const unsubscribe = listenToAllOrders((orders) => {
-      // [STRICT] Filter: Keep ONLY Partner Sales
-      const validPartnerOrders = orders.filter(
-        (order) => order.partnerId && order.partnerId !== "direct",
-      );
+    // Admin ko sara data chahiye, isliye no partnerId filter
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
 
-      const formattedOrders = validPartnerOrders.map((order) => {
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log("ADMIN LEDGER: Found total orders:", snapshot.size);
+
+      const formattedOrders = snapshot.docs.map((doc) => {
+        const order = doc.data();
         const dateObj = order.createdAt?.toDate
           ? order.createdAt.toDate()
           : new Date();
 
         return {
-          id: order.id,
-          student: order.studentName || "Unknown Student",
-          asset: order.productName || "Unknown Asset",
-          type: order.productType === "ebook" ? "E-Book" : "Course",
+          id: doc.id,
+          student: order.studentName || order.studentEmail || "Unknown Student",
+          asset: order.courseTitle || order.productName || "Untitled Asset",
+          // Syncing with your actual productType schema
+          type:
+            order.productType === "E-Book" || order.productType === "ebook"
+              ? "E-Book"
+              : "Course",
           date: dateObj.toISOString().split("T")[0],
           fullDate: dateObj,
-          amount: Number(order.price) || 0,
-          commission: order.commission || Number(order.price) * 0.2 || 0,
-          partnerId: order.partnerId,
-          partnerName: order.partnerName || "Unknown Agency",
+          // Fixed: using sellingPrice from your new schema
+          amount: Number(order.sellingPrice || order.price || 0),
+          // Calculation as per your financial logic
+          commission: Number(order.adminPrice || 0),
+          partnerId: order.partnerId || "Direct",
+          partnerName:
+            order.agencyName || order.partnerName || "Independent Partner",
           status: order.status || "Success",
-          gateway: "Razorpay",
-          invoiceId: `INV-${order.id.slice(0, 8).toUpperCase()}`,
+          gateway: order.paymentGateway || "Razorpay",
+          invoiceId: `INV-${doc.id.slice(0, 8).toUpperCase()}`,
         };
       });
+
       setTransactions(formattedOrders);
       setLoading(false);
     });
@@ -132,7 +143,7 @@ const SalesManager = () => {
     setCurrentPage(1);
   }, [timeFilter, searchQuery, customDates]);
 
-  // --- METRICS (PERFORMANCE FOCUS) ---
+  // --- METRICS (GLOBAL FOCUS) ---
   const metrics = useMemo(() => {
     const totalRev = filteredData.reduce((acc, curr) => acc + curr.amount, 0);
 
@@ -193,7 +204,7 @@ const SalesManager = () => {
         <div className="text-center space-y-4">
           <div className="size-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-slate-500 font-black uppercase tracking-widest text-xs">
-            Syncing Ledger...
+            Syncing Global Ledger...
           </p>
         </div>
       </div>
@@ -207,10 +218,10 @@ const SalesManager = () => {
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
           <div>
             <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">
-              Sales Intelligence
+              Global Sales Hub
             </h1>
             <p className="text-sm text-slate-400 font-medium italic">
-              Partner Revenue Streams & Financial Splits
+              Platform-Wide Revenue Streams & Partner Splits
             </p>
           </div>
 
@@ -257,28 +268,27 @@ const SalesManager = () => {
           </div>
         </div>
 
-        {/* --- KPI CARDS (Performance Focus) --- */}
+        {/* --- KPI CARDS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
-            label="Total Volume"
+            label="Total Network Volume"
             val={`₹${metrics.totalRev.toLocaleString()}`}
             color="blue"
             icon={<Banknote />}
             renderSub={() => (
               <div className="flex gap-3 mt-2">
                 <span className="text-[9px] font-bold text-slate-500 flex items-center gap-1">
-                  <BookOpen size={10} /> {metrics.counts.courses} C
+                  <BookOpen size={10} /> {metrics.counts.courses} Courses
                 </span>
                 <span className="text-[9px] font-bold text-slate-500 flex items-center gap-1">
-                  <FileText size={10} /> {metrics.counts.ebooks} E
+                  <FileText size={10} /> {metrics.counts.ebooks} E-Books
                 </span>
               </div>
             )}
           />
 
-          {/* [UPDATED] Top Agency Card */}
           <KPICard
-            label="Top Agency"
+            label="Top Performance Agency"
             val={
               metrics.topAgency.name.length > 15
                 ? metrics.topAgency.name.slice(0, 15) + "..."
@@ -289,29 +299,28 @@ const SalesManager = () => {
             renderSub={() => (
               <div className="flex gap-3 mt-2">
                 <span className="text-[9px] font-bold text-indigo-500">
-                  Revenue: ₹{metrics.topAgency.revenue.toLocaleString()}
+                  Contrib: ₹{metrics.topAgency.revenue.toLocaleString()}
                 </span>
               </div>
             )}
           />
 
           <KPICard
-            label="Active Partners"
+            label="Verified Partners"
             val={metrics.activePartners}
             color="emerald"
             icon={<Users />}
             renderSub={() => (
               <div className="flex gap-3 mt-2">
                 <span className="text-[9px] font-bold text-slate-500">
-                  Contributing Agencies
+                  Global Network Reach
                 </span>
               </div>
             )}
           />
 
-          {/* [UPDATED] Top Course Card */}
           <KPICard
-            label="Top Course"
+            label="Global Bestseller"
             val={
               metrics.topCourse.name.length > 15
                 ? metrics.topCourse.name.slice(0, 15) + "..."
@@ -322,7 +331,7 @@ const SalesManager = () => {
             renderSub={() => (
               <div className="flex flex-col gap-1 mt-2">
                 <span className="text-[9px] font-bold text-orange-500">
-                  {metrics.topCourse.sales} Units Sold
+                  {metrics.topCourse.sales} Units Dispatched
                 </span>
               </div>
             )}
@@ -337,17 +346,16 @@ const SalesManager = () => {
                 <ArrowUpRight size={20} />
               </div>
               <h3 className="text-lg font-black text-slate-900 uppercase">
-                Partner Ledger
+                Platform Ledger
               </h3>
             </div>
 
-            {/* SEARCH & EXPORT */}
             <div className="flex items-center gap-3 w-full md:w-auto">
               <div className="flex-1 md:w-72 flex items-center gap-3 bg-slate-50 px-5 py-3 rounded-xl border border-slate-100 focus-within:border-indigo-300 transition-all">
                 <Search size={16} className="text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search Partner, ID..."
+                  placeholder="Search Student, Agency, ID..."
                   className="bg-transparent text-xs font-bold outline-none w-full placeholder:text-slate-400"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -356,7 +364,7 @@ const SalesManager = () => {
 
               <button
                 className="flex items-center justify-center size-10 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-200 hover:scale-105 transition-all"
-                title="Export Ledger"
+                title="Export Platform Data"
               >
                 <Download size={18} />
               </button>
@@ -369,7 +377,7 @@ const SalesManager = () => {
                 <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   <th className="px-8 py-5">Txn ID & Date</th>
                   <th className="px-8 py-5">Student & Product</th>
-                  <th className="px-8 py-5">Agency / Partner</th>
+                  <th className="px-8 py-5">Sourcing Agency</th>
                   <th className="px-8 py-5">Amount</th>
                   <th className="px-8 py-5 text-center">Status</th>
                   <th className="px-8 py-5 text-right">Action</th>
@@ -414,7 +422,7 @@ const SalesManager = () => {
                         <span className="text-xs font-bold text-indigo-600">
                           {t.partnerName}
                         </span>
-                        <span className="text-[9px] font-bold text-slate-400 mt-0.5">
+                        <span className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">
                           ID: {t.partnerId.slice(0, 8)}...
                         </span>
                       </div>
@@ -427,7 +435,7 @@ const SalesManager = () => {
                           </span>
                         </div>
                         <p className="text-[9px] text-emerald-500 font-bold">
-                          Comm: ₹{t.commission.toLocaleString()}
+                          Admin Cut: ₹{t.commission.toLocaleString()}
                         </p>
                       </div>
                     </td>
@@ -440,7 +448,7 @@ const SalesManager = () => {
                       <button
                         onClick={() => setSelectedTxn(t)}
                         className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all"
-                        title="View Invoice"
+                        title="View Details"
                       >
                         <FileText size={14} />
                       </button>
@@ -490,7 +498,7 @@ const SalesManager = () => {
             >
               <div className="bg-slate-900 p-8 text-white relative">
                 <h3 className="text-xl font-black uppercase tracking-tight">
-                  Invoice Details
+                  Transaction Audit
                 </h3>
                 <p className="text-xs text-slate-400 font-bold uppercase mt-1">
                   {selectedTxn.invoiceId}
@@ -505,27 +513,33 @@ const SalesManager = () => {
               <div className="p-8 space-y-6">
                 <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                   <span className="text-xs font-bold text-slate-400 uppercase">
-                    Amount Paid
+                    Platform Revenue
                   </span>
                   <span className="text-2xl font-black text-slate-900">
                     ₹{selectedTxn.amount}
                   </span>
                 </div>
                 <div className="space-y-3">
-                  <InvoiceRow label="Product Type" val={selectedTxn.type} />
-                  <InvoiceRow label="Asset" val={selectedTxn.asset} />
-                  <InvoiceRow label="Student" val={selectedTxn.student} />
-                  <InvoiceRow label="Date" val={selectedTxn.date} />
-                  <InvoiceRow label="Partner" val={selectedTxn.partnerName} />
+                  <InvoiceRow label="Asset Type" val={selectedTxn.type} />
+                  <InvoiceRow label="Product Name" val={selectedTxn.asset} />
+                  <InvoiceRow label="Purchased By" val={selectedTxn.student} />
+                  <InvoiceRow label="Transaction Date" val={selectedTxn.date} />
                   <InvoiceRow
-                    label="Commission"
+                    label="Agency Sourced"
+                    val={selectedTxn.partnerName}
+                  />
+                  <InvoiceRow
+                    label="Admin Margin"
                     val={`₹${selectedTxn.commission}`}
                     highlight="text-emerald-600"
                   />
-                  <InvoiceRow label="Gateway" val={selectedTxn.gateway} />
+                  <InvoiceRow
+                    label="Payment Gateway"
+                    val={selectedTxn.gateway}
+                  />
                 </div>
                 <button className="w-full py-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                  <Download size={16} /> Download PDF
+                  <Download size={16} /> Export Audit Log
                 </button>
               </div>
             </motion.div>

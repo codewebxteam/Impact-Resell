@@ -47,7 +47,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-// Fallback data - Partner Only
+// Fallback data - Admin Global
 const FALLBACK_WEEKLY = [
   { name: "Sun", sales: 0 },
   { name: "Mon", sales: 0 },
@@ -80,10 +80,8 @@ const COLORS = [
 const IntelligenceHub = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const partnerId = currentUser?.uid;
 
   // --- MAIN STATE ---
-  // Default set to "All Time" as requested
   const [timeRange, setTimeRange] = useState("All Time");
   const [velocityToggle, setVelocityToggle] = useState("Weekly");
   const [customDates, setCustomDates] = useState({ start: "", end: "" });
@@ -102,7 +100,7 @@ const IntelligenceHub = () => {
   const [limit, setLimit] = useState("");
   const [expiry, setExpiry] = useState("");
 
-  // --- ANALYTICS STATES (Populated directly from DB now) ---
+  // --- ANALYTICS STATES ---
   const [revenueData, setRevenueData] = useState({
     totalRevenue: 0,
     partnerRevenue: 0,
@@ -117,34 +115,35 @@ const IntelligenceHub = () => {
 
   // --- EFFECTS ---
 
-  // 1. Fetch Real-time Orders & Calculate Distributions
+  // 1. Fetch GLOBAL Orders & GRAPH DATA (Admin Perspective)
   useEffect(() => {
-    if (!partnerId) return;
+    console.log("DEBUG: Initializing Admin Global Data Fetch...");
 
-    // Listen to ORDERS for this Partner
-    const q = query(
-      collection(db, "orders"),
-      where("partnerId", "==", partnerId),
-    );
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log(
+        `DEBUG: Found ${snapshot.size} total documents in orders collection.`,
+      );
+
       let totalRev = 0;
       let coursesSold = 0;
       let ebooksSold = 0;
       const studentsSet = new Set();
-
       const courseMap = {};
       const ebookMap = {};
 
+      // Logic for Graph (Velocity)
+      const graphMap = {};
+
       snapshot.docs.forEach((doc) => {
         const data = doc.data();
+        const orderDate = data.createdAt?.toDate?.() || new Date();
+        const now = new Date();
 
-        // Time Filtering Logic
+        // Time Filtering Logic for Metrics
+        let isWithinRange = true;
         if (timeRange !== "All Time") {
-          const orderDate = data.createdAt?.toDate?.() || new Date();
-          const now = new Date();
-          let isWithinRange = true;
-
           if (timeRange === "Today") {
             isWithinRange = orderDate.toDateString() === now.toDateString();
           } else if (timeRange === "7D") {
@@ -162,36 +161,65 @@ const IntelligenceHub = () => {
             const end = new Date(customDates.end);
             isWithinRange = orderDate >= start && orderDate <= end;
           }
-
           if (!isWithinRange) return;
         }
 
-        totalRev += Number(data.amount || data.price || 0);
+        // Calculation
+        const price = Number(data.sellingPrice || 0);
+        totalRev += price;
+        if (data.studentEmail) studentsSet.add(data.studentEmail);
 
-        if (data.studentId || data.userId)
-          studentsSet.add(data.studentId || data.userId);
+        const assetName = data.courseTitle || "Unknown Item";
+        const type = data.productType || "Course";
 
-        // Distributions Logic
-        const assetName =
-          data.courseTitle ||
-          data.ebookTitle ||
-          data.assetName ||
-          "Unknown Item";
-        const type = data.type || "course";
-
-        if (type === "course") {
+        if (type === "Course") {
           coursesSold++;
           courseMap[assetName] = (courseMap[assetName] || 0) + 1;
-        } else if (type === "ebook") {
+        } else if (type === "E-Book") {
           ebooksSold++;
           ebookMap[assetName] = (ebookMap[assetName] || 0) + 1;
         }
+
+        // GRAPH MAPPING LOGIC (GLOBAL)
+        const dayKey = orderDate.toLocaleDateString("en-US", {
+          weekday: "short",
+        });
+        const monthKey = orderDate.toLocaleDateString("en-US", {
+          month: "short",
+        });
+        const key = velocityToggle === "Weekly" ? dayKey : monthKey;
+        graphMap[key] = (graphMap[key] || 0) + price;
       });
 
-      // Update Macro Stats
+      // Update Metrics
       setRevenueData({ totalRevenue: totalRev, partnerRevenue: totalRev });
       setCourseData({ total: coursesSold, partner: coursesSold });
       setStudentData({ total: studentsSet.size, partner: studentsSet.size });
+
+      // Update Graph (Velocity)
+      const baseLabels =
+        velocityToggle === "Weekly"
+          ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+          : [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+
+      const formattedVelocity = baseLabels.map((label) => ({
+        name: label,
+        sales: graphMap[label] || 0,
+      }));
+      setVelocityData(formattedVelocity);
 
       // Update Pie Charts
       const formatPieData = (map) =>
@@ -202,80 +230,36 @@ const IntelligenceHub = () => {
     });
 
     return () => unsubscribe();
-  }, [partnerId, timeRange, customDates]);
+  }, [timeRange, customDates, velocityToggle]);
 
-  // 2. Fetch Velocity Data
+  // 3. Fetch GLOBAL Coupons & Redemptions
   useEffect(() => {
-    intelligenceService
-      .getRevenueVelocity(velocityToggle, timeRange, customDates)
-      .then((velocity) => {
-        if (velocity.length > 0) {
-          const partnerOnlyVelocity = velocity.map((v) => ({
-            name: v.name,
-            sales: v.partner || v.sales || 0,
-          }));
-          setVelocityData(partnerOnlyVelocity);
-        } else {
-          setVelocityData(
-            velocityToggle === "Weekly" ? FALLBACK_WEEKLY : FALLBACK_MONTHLY,
-          );
-        }
-      })
-      .catch(() =>
-        setVelocityData(
-          velocityToggle === "Weekly" ? FALLBACK_WEEKLY : FALLBACK_MONTHLY,
-        ),
-      );
-  }, [timeRange, velocityToggle, customDates]);
-
-  // 3. Fetch Real-time Coupon Data & Redemptions
-  useEffect(() => {
-    if (!partnerId) return;
-
-    // Listen for Coupons
-    const couponRef = query(
-      collection(db, "coupons"),
-      where("partnerId", "==", partnerId),
-      orderBy("createdAt", "desc"),
-    );
-
-    const unsubCoupons = onSnapshot(couponRef, (snap) => {
+    const unsubCoupons = onSnapshot(collection(db, "coupons"), (snap) => {
       const now = new Date();
-      const raw = snap.docs.map((doc) => {
-        const data = doc.data();
-        return {
+      setCoupons(
+        snap.docs.map((doc) => ({
           id: doc.id,
-          ...data,
-          status: data.expiry?.toDate?.() < now ? "Expired" : "Active",
-        };
-      });
-      setCoupons(raw);
+          ...doc.data(),
+          status: doc.data().expiry?.toDate?.() < now ? "Expired" : "Active",
+        })),
+      );
     });
 
-    // Listen for Redemptions (Functional Audit Log)
-    const redemptionRef = query(
+    const unsubRedemptions = onSnapshot(
       collection(db, "couponRedemptions"),
-      where("partnerId", "==", partnerId),
-      orderBy("createdAt", "desc"),
+      (snap) => {
+        setRedemptions(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      },
     );
-
-    const unsubRedemptions = onSnapshot(redemptionRef, (snap) => {
-      const rawRedemptions = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setRedemptions(rawRedemptions);
-    });
 
     return () => {
       unsubCoupons();
       unsubRedemptions();
     };
-  }, [partnerId]);
+  }, []);
 
   // --- HANDLERS ---
 
-  // Coupon Handlers
   const generateRandomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
@@ -295,34 +279,29 @@ const IntelligenceHub = () => {
   };
 
   const handleDeleteCoupon = async (couponId) => {
-    if (!window.confirm("Are you sure you want to delete this coupon?")) return;
+    if (!window.confirm("Are you sure?")) return;
     try {
       await deleteDoc(doc(db, "coupons", couponId));
     } catch (err) {
-      console.error("Error deleting coupon:", err);
+      console.error(err);
     }
   };
 
   const handleCreateCoupon = async () => {
     if (isSaving) return;
     setIsSaving(true);
-
     try {
-      if (!currentUser || !partnerId) return;
       if (!couponCode || !value || !limit || !expiry) {
         alert("Please fill all fields");
         return;
       }
-
       const payload = {
-        partnerId,
         code: couponCode.toUpperCase(),
         type: discountType === "percentage" ? "Percentage" : "Flat",
         value: Number(value),
         limit: Number(limit),
         expiry: Timestamp.fromDate(new Date(expiry)),
       };
-
       if (editingCoupon) {
         await updateDoc(doc(db, "coupons", editingCoupon.id), payload);
       } else {
@@ -331,9 +310,9 @@ const IntelligenceHub = () => {
           used: 0,
           status: "Active",
           createdAt: Timestamp.now(),
+          partnerId: currentUser?.uid,
         });
       }
-
       setShowCreateModal(false);
       setEditingCoupon(null);
       setCouponCode("");
@@ -341,8 +320,7 @@ const IntelligenceHub = () => {
       setLimit("");
       setExpiry("");
     } catch (error) {
-      console.error("Error saving coupon:", error);
-      alert("Failed to save coupon");
+      console.error(error);
     } finally {
       setIsSaving(false);
     }
@@ -357,10 +335,10 @@ const IntelligenceHub = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase">
-            Intelligence Neural Hub
+            Admin Neural Hub
           </h2>
           <p className="text-sm text-slate-400 font-medium italic">
-            Partner Performance & Analytics
+            Global Network Performance & Assets
           </p>
         </div>
 
@@ -392,7 +370,6 @@ const IntelligenceHub = () => {
               onChange={(e) => setTimeRange(e.target.value)}
               className="appearance-none bg-slate-950 text-white pl-10 pr-10 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer"
             >
-              {/* Added "All Time" to selection */}
               {[
                 "All Time",
                 "Today",
@@ -422,21 +399,21 @@ const IntelligenceHub = () => {
       {/* --- 1. MACRO KPI ARCHITECTURE --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MacroCard
-          title="Total Revenue"
+          title="Global Revenue"
           val={
             revenueData.totalRevenue >= 100000
               ? `₹${(revenueData.totalRevenue / 100000).toFixed(1)}L`
               : `₹${revenueData.totalRevenue.toLocaleString()}`
           }
           subData={[
-            { label: "Partner Sales", value: "100%" },
-            { label: "Status", value: "Verified" },
+            { label: "Database", value: "Global" },
+            { label: "Status", value: "Synced" },
           ]}
           icon={<Globe size={20} />}
           color="indigo"
         />
         <MacroCard
-          title="Acquisitions"
+          title="Total Assets Sold"
           val={courseData.total.toLocaleString()}
           subData={[
             { label: "Courses", value: courseData.total },
@@ -449,28 +426,21 @@ const IntelligenceHub = () => {
           color="emerald"
         />
 
-        {/* ACTIVE CAMPAIGNS CARD */}
         <div
-          onClick={() => {
-            setEditingCoupon(null);
-            setCouponCode("");
-            setValue("");
-            setLimit("");
-            setExpiry("");
-            setShowCreateModal(true);
-          }}
+          onClick={() => setShowCreateModal(true)}
           className="bg-slate-950 p-7 rounded-[40px] border border-slate-900 shadow-xl cursor-pointer group transition-all hover:scale-[1.02] relative overflow-hidden"
         >
-          <div className="absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 transition-all group-hover:rotate-12 transform">
-            <Ticket size={100} className="text-white" />
-          </div>
+          <Ticket
+            size={100}
+            className="absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 transition-all group-hover:rotate-12 transform text-white"
+          />
           <div className="size-14 bg-white/10 rounded-[20px] mb-6 flex items-center justify-center text-white backdrop-blur-md">
             <Ticket size={24} />
           </div>
           <div className="flex justify-between items-end relative z-10">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                Active Campaigns
+                Global Campaigns
               </p>
               <h3 className="text-3xl font-black text-white tracking-tighter">
                 {coupons.filter((c) => c.status === "Active").length}
@@ -480,19 +450,19 @@ const IntelligenceHub = () => {
               <Plus size={16} />
             </div>
           </div>
-          <div className="mt-4 flex gap-2 relative z-10">
-            <span className="text-[9px] font-black px-2.5 py-1.5 bg-white/10 text-slate-300 rounded-xl border border-white/5 uppercase tracking-tighter">
-              Redeemed: {redemptions.length}
+          <div className="mt-4">
+            <span className="text-[9px] font-black px-2.5 py-1.5 bg-white/10 text-slate-300 rounded-xl border border-white/5 uppercase">
+              Global Redeemed: {redemptions.length}
             </span>
           </div>
         </div>
 
         <MacroCard
-          title="Students"
+          title="Total Students"
           val={studentData.total.toLocaleString()}
           subData={[
             { label: "Active", value: studentData.total },
-            { label: "Type", value: "Partner" },
+            { label: "Type", value: "All Partners" },
           ]}
           icon={<Users size={20} />}
           color="blue"
@@ -505,30 +475,22 @@ const IntelligenceHub = () => {
           <div className="flex justify-between items-center mb-10">
             <div>
               <h3 className="text-lg font-black uppercase tracking-widest">
-                Partner Performance
+                Global Performance
               </h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">
-                Sales Velocity Overview
+                Platform Velocity Overview
               </p>
             </div>
             <div className="flex p-1.5 bg-slate-100 rounded-2xl">
               <button
                 onClick={() => setVelocityToggle("Weekly")}
-                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${
-                  velocityToggle === "Weekly"
-                    ? "bg-white text-slate-900 shadow-lg"
-                    : "text-slate-400"
-                }`}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase ${velocityToggle === "Weekly" ? "bg-white text-slate-900 shadow-lg" : "text-slate-400"}`}
               >
                 Weekly
               </button>
               <button
                 onClick={() => setVelocityToggle("Monthly")}
-                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${
-                  velocityToggle === "Monthly"
-                    ? "bg-white text-slate-900 shadow-lg"
-                    : "text-slate-400"
-                }`}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase ${velocityToggle === "Monthly" ? "bg-white text-slate-900 shadow-lg" : "text-slate-400"}`}
               >
                 Monthly
               </button>
@@ -581,20 +543,18 @@ const IntelligenceHub = () => {
           </div>
         </div>
 
-        {/* COUPON MONITOR */}
         <div className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-sm flex flex-col h-full">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
-              Live Coupon Monitor
+              Global Coupon Monitor
             </h3>
             <button
-              onClick={() => navigate("/partner/coupon-intelligence")}
-              className="size-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"
+              onClick={() => navigate("/admin/coupon-intelligence")}
+              className="size-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400"
             >
               <ArrowUpRight size={14} />
             </button>
           </div>
-
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             {coupons.length > 0 ? (
               coupons.map((coupon) => (
@@ -616,38 +576,29 @@ const IntelligenceHub = () => {
                     <div className="flex gap-1">
                       <button
                         onClick={() => handleEditCoupon(coupon)}
-                        className="p-1.5 text-slate-300 hover:text-indigo-500 transition-colors"
+                        className="p-1.5 text-slate-300 hover:text-indigo-500"
                       >
                         <Pencil size={12} />
                       </button>
                       <button
                         onClick={() => handleDeleteCoupon(coupon.id)}
-                        className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                        className="p-1.5 text-slate-300 hover:text-red-500"
                       >
                         <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
-
                   <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mb-2">
                     <div
-                      className={`h-full ${
-                        coupon.status === "Expired"
-                          ? "bg-red-400"
-                          : "bg-indigo-500"
-                      }`}
+                      className={`h-full ${coupon.status === "Expired" ? "bg-red-400" : "bg-indigo-500"}`}
                       style={{
-                        width: `${Math.min(
-                          (coupon.used / coupon.limit) * 100,
-                          100,
-                        )}%`,
+                        width: `${Math.min((coupon.used / coupon.limit) * 100, 100)}%`,
                       }}
                     />
                   </div>
-
                   <div className="flex justify-between items-center text-[9px] font-black uppercase text-slate-400">
                     <span>
-                      {coupon.used} / {coupon.limit} Used
+                      {coupon.used}/{coupon.limit} Used
                     </span>
                     <span
                       className={
@@ -667,7 +618,7 @@ const IntelligenceHub = () => {
               <div className="h-40 flex flex-col items-center justify-center text-slate-300 border-2 border-dashed border-slate-100 rounded-[24px]">
                 <Ticket size={24} className="mb-2 opacity-50" />
                 <span className="text-[10px] font-black uppercase">
-                  No Active Coupons
+                  No Global Coupons
                 </span>
               </div>
             )}
@@ -675,17 +626,14 @@ const IntelligenceHub = () => {
         </div>
       </div>
 
-      {/* --- 4 & 5. REDEMPTION AUDIT & SALES DISTRIBUTION --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* REDEMPTION AUDIT (FUNCTIONAL) */}
         <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-lg font-black uppercase tracking-widest">
-              Redemption Audit
+              Global Redemptions
             </h3>
             <Tag className="text-emerald-500" size={20} />
           </div>
-
           <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
             {redemptions.length > 0 ? (
               redemptions.slice(0, 5).map((r) => (
@@ -703,7 +651,7 @@ const IntelligenceHub = () => {
                     <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">
                       Used{" "}
                       <span className="text-indigo-500">{r.couponCode}</span> on{" "}
-                      {r.purchasedItem?.split(" ").slice(0, 2).join(" ")}...
+                      {r.purchasedItem?.split(" ")[0]}...
                     </p>
                   </div>
                   <div className="text-right">
@@ -719,23 +667,22 @@ const IntelligenceHub = () => {
             ) : (
               <div className="text-center py-10">
                 <p className="text-xs text-slate-400 font-bold">
-                  No redemptions yet
+                  No global redemptions
                 </p>
               </div>
             )}
           </div>
           <button
-            onClick={() => navigate("/partner/coupon-intelligence")}
-            className="w-full mt-6 py-3 bg-slate-50 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
+            onClick={() => navigate("/admin/coupon-intelligence")}
+            className="w-full mt-6 py-3 bg-slate-50 text-slate-500 rounded-xl text-[10px] font-black uppercase"
           >
             View Full Log
           </button>
         </div>
 
-        {/* E-Book Sales (FUNCTIONAL) */}
         <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm">
           <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-10 text-center">
-            E-Book Distribution
+            E-Book Market Share
           </h3>
           <div className="h-[200px]">
             {ebookPieData.length > 0 ? (
@@ -750,39 +697,25 @@ const IntelligenceHub = () => {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {ebookPieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
+                    {ebookPieData.map((e, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "none",
-                      boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                    }}
-                    itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
-                  />
-                  <Legend
-                    iconSize={8}
-                    wrapperStyle={{ fontSize: "10px", paddingTop: "10px" }}
-                  />
+                  <Tooltip />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-slate-300 font-bold text-xs">
-                No E-Book Sales Yet
+                No Data
               </div>
             )}
           </div>
         </div>
 
-        {/* Course Sales (FUNCTIONAL) */}
         <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm">
           <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-10 text-center">
-            Course Distribution
+            Course Market Share
           </h3>
           <div className="h-[200px]">
             {coursePieData.length > 0 ? (
@@ -797,40 +730,26 @@ const IntelligenceHub = () => {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {coursePieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
+                    {coursePieData.map((e, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "none",
-                      boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                    }}
-                    itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
-                  />
-                  <Legend
-                    iconSize={8}
-                    wrapperStyle={{ fontSize: "10px", paddingTop: "10px" }}
-                  />
+                  <Tooltip />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-slate-300 font-bold text-xs">
-                No Course Sales Yet
+                No Data
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* --- CREATE COUPON MODAL --- */}
       <AnimatePresence>
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -843,19 +762,16 @@ const IntelligenceHub = () => {
               >
                 <X size={20} className="text-slate-400" />
               </button>
-
               <h3 className="text-2xl font-black text-slate-900 mb-1">
-                {editingCoupon ? "Edit Campaign" : "New Campaign"}
+                {editingCoupon ? "Edit Global Asset" : "New Global Asset"}
               </h3>
               <p className="text-sm text-slate-400 mb-6">
-                Create a high-conversion discount strategy.
+                Deploy a network-wide discount strategy.
               </p>
-
               <div className="space-y-5">
-                {/* Code Input */}
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
-                    Campaign Code
+                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
+                    Code
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -864,99 +780,76 @@ const IntelligenceHub = () => {
                       onChange={(e) =>
                         setCouponCode(e.target.value.toUpperCase())
                       }
-                      placeholder="SUMMER2025"
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-indigo-500 transition-all uppercase placeholder:text-slate-300"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold uppercase outline-none focus:border-indigo-500 transition-all placeholder:text-slate-300"
                     />
                     <button
                       onClick={generateRandomCode}
                       className="p-3 bg-slate-100 rounded-xl text-slate-500 hover:bg-slate-200 transition-colors"
-                      title="Generate Random Code"
                     >
                       <RefreshCw size={20} />
                     </button>
                   </div>
                 </div>
-
-                {/* Type & Value */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
-                      Discount Type
+                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
+                      Type
                     </label>
-                    <div className="flex p-1 bg-slate-100 rounded-xl">
-                      <button
-                        onClick={() => setDiscountType("percentage")}
-                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                          discountType === "percentage"
-                            ? "bg-white text-slate-900 shadow-sm"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        % Off
-                      </button>
-                      <button
-                        onClick={() => setDiscountType("flat")}
-                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                          discountType === "flat"
-                            ? "bg-white text-slate-900 shadow-sm"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        Flat ₹
-                      </button>
-                    </div>
+                    <select
+                      value={discountType}
+                      onChange={(e) => setDiscountType(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-indigo-500 transition-all"
+                    >
+                      <option value="percentage">% Off</option>
+                      <option value="flat">₹ Flat</option>
+                    </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
+                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
                       Value
                     </label>
                     <input
                       type="number"
                       value={value}
                       onChange={(e) => setValue(e.target.value)}
-                      placeholder={discountType === "percentage" ? "20" : "500"}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-300"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-indigo-500 transition-all placeholder:text-slate-300"
                     />
                   </div>
                 </div>
-
-                {/* Limit & Expiry */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
-                      Usage Limit
+                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
+                      Limit
                     </label>
                     <input
                       type="number"
                       value={limit}
                       onChange={(e) => setLimit(e.target.value)}
-                      placeholder="100"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-300"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-indigo-500 transition-all placeholder:text-slate-300"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
-                      Expiry Date
+                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
+                      Expiry
                     </label>
                     <input
                       type="date"
                       value={expiry}
                       onChange={(e) => setExpiry(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-indigo-500 transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-indigo-500 transition-all"
                     />
                   </div>
                 </div>
-
                 <button
                   onClick={handleCreateCoupon}
                   disabled={isSaving}
-                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all shadow-xl shadow-indigo-200 mt-4 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-200 mt-4 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSaving
-                    ? "Processing..."
+                    ? "Saving..."
                     : editingCoupon
-                      ? "Update Campaign"
-                      : "Launch Campaign"}
+                      ? "Update Asset"
+                      : "Deploy Asset"}
                 </button>
               </div>
             </motion.div>
@@ -967,12 +860,10 @@ const IntelligenceHub = () => {
   );
 };
 
-// --- MICRO-COMPONENTS ---
 const MacroCard = ({ title, val, subData, icon, color, onClick }) => {
   const styles = {
     indigo: "bg-indigo-50 text-indigo-600",
     emerald: "bg-emerald-50 text-emerald-600",
-    orange: "bg-orange-50 text-orange-600",
     blue: "bg-blue-50 text-blue-600",
   };
   return (
@@ -996,7 +887,7 @@ const MacroCard = ({ title, val, subData, icon, color, onClick }) => {
         {subData.map((item, index) => (
           <span
             key={index}
-            className="text-[9px] font-black px-2.5 py-1.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 uppercase tracking-tighter"
+            className="text-[9px] font-black px-2.5 py-1.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 uppercase"
           >
             {item.label}: <span className="text-slate-900">{item.value}</span>
           </span>
