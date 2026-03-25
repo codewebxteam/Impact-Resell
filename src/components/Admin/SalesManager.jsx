@@ -38,48 +38,70 @@ const SalesManager = () => {
   const itemsPerPage = 10;
 
   // --- GLOBAL DATA SYNC (ADMIN) ---
+  // src/components/Admin/SalesManager.jsx mein is logic ko update karein
+
   useEffect(() => {
-    // Admin ko sara data chahiye, isliye no partnerId filter
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    setLoading(true);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log("ADMIN LEDGER: Found total orders:", snapshot.size);
+    // 1. Pehle Agencies (Partners) ki real-time list lete hain
+    const unsubAgencies = onSnapshot(
+      collection(db, "agencies"),
+      (agencySnap) => {
+        const agencyMap = {};
+        agencySnap.docs.forEach((doc) => {
+          // Agency ID ko key banakar uska asli 'name' store kar lete hain
+          agencyMap[doc.id] = doc.data().name || "Unnamed Academy";
+        });
 
-      const formattedOrders = snapshot.docs.map((doc) => {
-        const order = doc.data();
-        const dateObj = order.createdAt?.toDate
-          ? order.createdAt.toDate()
-          : new Date();
+        // 2. Ab Orders ko listen karte hain
+        const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+        const unsubOrders = onSnapshot(q, (snapshot) => {
+          const formattedOrders = snapshot.docs.map((doc) => {
+            const order = doc.data();
+            const dateObj = order.createdAt?.toDate
+              ? order.createdAt.toDate()
+              : new Date();
 
-        return {
-          id: doc.id,
-          student: order.studentName || order.studentEmail || "Unknown Student",
-          asset: order.courseTitle || order.productName || "Untitled Asset",
-          // Syncing with your actual productType schema
-          type:
-            order.productType === "E-Book" || order.productType === "ebook"
-              ? "E-Book"
-              : "Course",
-          date: dateObj.toISOString().split("T")[0],
-          fullDate: dateObj,
-          // Fixed: using sellingPrice from your new schema
-          amount: Number(order.sellingPrice || order.price || 0),
-          // Calculation as per your financial logic
-          commission: Number(order.adminPrice || 0),
-          partnerId: order.partnerId || "Direct",
-          partnerName:
-            order.agencyName || order.partnerName || "Independent Partner",
-          status: order.status || "Success",
-          gateway: order.paymentGateway || "Razorpay",
-          invoiceId: `INV-${doc.id.slice(0, 8).toUpperCase()}`,
-        };
-      });
+            return {
+              id: doc.id,
+              student:
+                order.studentName || order.studentEmail || "Unknown Student",
+              asset: order.courseTitle || order.productName || "Untitled Asset",
+              type:
+                order.productType === "E-Book" || order.productType === "ebook"
+                  ? "E-Book"
+                  : "Course",
+              date: dateObj.toISOString().split("T")[0],
+              fullDate: dateObj,
+              amount: Number(order.sellingPrice || order.price || 0),
+              commission: Number(order.adminPrice || 0),
+              partnerId: order.partnerId || "Direct",
 
-      setTransactions(formattedOrders);
-      setLoading(false);
-    });
+              // ✨ YAHAN HAI FIX ✨
+              // Agar order mein partnerId hai, toh agencyMap se uska asli naam uthao
+              // Agar map mein nahi mil raha tabhi fallback use karo
+              partnerName:
+                order.partnerId && agencyMap[order.partnerId]
+                  ? agencyMap[order.partnerId]
+                  : order.agencyName ||
+                    order.partnerName ||
+                    "Independent Partner",
 
-    return () => unsubscribe();
+              status: order.status || "Success",
+              gateway: order.paymentGateway || "Razorpay",
+              invoiceId: `INV-${doc.id.slice(0, 8).toUpperCase()}`,
+            };
+          });
+
+          setTransactions(formattedOrders);
+          setLoading(false);
+        });
+
+        return () => unsubOrders();
+      },
+    );
+
+    return () => unsubAgencies();
   }, []);
 
   // --- FILTER LOGIC ---
@@ -548,7 +570,7 @@ const SalesManager = () => {
       </AnimatePresence>
     </div>
   );
-};
+};;
 
 // Helpers
 const KPICard = ({ label, val, color, icon, renderSub }) => {
