@@ -14,7 +14,14 @@ import {
   ChevronDown,
   Lock, // [NEW] Added Lock icon for Reset Password
 } from "lucide-react";
-import { NavLink, useLocation, useNavigate, Link } from "react-router-dom";
+// --- [NEW] Added useSearchParams here ---
+import {
+  NavLink,
+  useLocation,
+  useNavigate,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 import AuthModal from "./AuthModal";
 import { useAuth } from "../context/AuthContext";
 import { useAgency } from "../context/AgencyContext";
@@ -23,6 +30,9 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // --- [NEW] URL params reader ---
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // --- Destructure userData for Role Detection ---
   const { currentUser, userData, logout } = useAuth();
@@ -78,6 +88,20 @@ const Navbar = () => {
       window.removeEventListener("openPartnerModal", handlePartnerModalTrigger);
     };
   }, []);
+
+  // --- [NEW] Trigger Modal from URL Query Params ---
+  useEffect(() => {
+    const authQuery = searchParams.get("auth");
+
+    if (authQuery === "partner") {
+      setAuthMode("partner");
+      setIsAuthOpen(true);
+
+      // Clean the URL so it doesn't re-trigger on refresh
+      searchParams.delete("auth");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const openAuth = (mode) => {
     setAuthMode(mode);
@@ -146,16 +170,13 @@ const Navbar = () => {
               )}
             </div>
             <div className="flex flex-col">
-              {/* [FIXED] Use agency.name instead of agency.agencyName */}
               <span className="text-sm sm:text-lg font-bold tracking-tight text-slate-900 leading-none">
                 {agency?.name || "Impact School Of AI"}
               </span>
               <span
                 className="text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase block"
                 style={{ color: accentColor }}
-              >
-               {/* {isMainSite ? "Academy" : "Institute"} */}
-              </span>
+              ></span>
             </div>
           </NavLink>
 
