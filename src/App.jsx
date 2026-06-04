@@ -53,6 +53,7 @@ import SalesManager from "./components/Admin/SalesManager";
 import PaymentManager from "./components/Admin/PaymentManager";
 import CourseManager from "./components/Admin/CourseManager";
 import EBookManager from "./components/Admin/EBookManager";
+import ResellManager from "./components/Admin/ResellManager";
 
 // --- Scroll To Top Helper ---
 const ScrollToTop = () => {
@@ -274,6 +275,7 @@ const AppContent = () => {
           <Route path="payments" element={<PaymentManager />} />
           <Route path="courses" element={<CourseManager />} />
           <Route path="ebooks" element={<EBookManager />} />
+          <Route path="partner-access" element={<ResellManager/>}/>
         </Route>
 
         {/* STUDENT DASHBOARD ROUTES */}

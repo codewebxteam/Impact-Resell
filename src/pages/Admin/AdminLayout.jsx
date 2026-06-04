@@ -18,6 +18,7 @@ import {
   Settings,
   Loader2,
   CheckCircle,
+  BadgeCheck, // Naya icon Resell tab ke liye
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -51,6 +52,12 @@ const AdminLayout = () => {
       icon: <GraduationCap size={20} />,
     },
     { label: "E-Books", path: "/Admin/ebooks", icon: <BookOpen size={20} /> },
+    // --- Naya Resell Rights Tab ---
+    {
+      label: "Partners Access",
+      path: "/Admin/partner-access",
+      icon: <BadgeCheck size={20} />,
+    },
   ];
 
   useEffect(() => {
