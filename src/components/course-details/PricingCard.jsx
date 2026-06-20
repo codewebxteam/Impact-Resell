@@ -177,9 +177,8 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
                 className="w-full py-4 text-slate-900 font-bold text-lg rounded-xl transition-all shadow-lg active:scale-95 mb-4 cursor-pointer"
                 style={{
                   backgroundColor: agency?.accentColor || "#5edff4",
-                  boxShadow: `0 10px 15px -3px ${
-                    agency?.accentColor || "#5edff4"
-                  }33`,
+                  boxShadow: `0 10px 15px -3px ${agency?.accentColor || "#5edff4"
+                    }33`,
                 }}
               >
                 {displayPrice === "Free" ? "Enroll for Free" : "Buy Now"}
@@ -187,19 +186,14 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
             )
           )}
 
-          {/* Money-back guarantee — only on subdomain */}
-          {!isMainSite && (
-            <p className="text-center text-xs text-slate-500 mb-6">
-              30-Day Money-Back Guarantee
-            </p>
-          )}
+
+
 
           <div className="space-y-4">
             <h4 className="font-bold text-slate-900 text-sm">
               This course includes:
             </h4>
-            <FeatureItem icon={Infinity} text="Lifetime access" />
-            <FeatureItem icon={Smartphone} text="Access on mobile and TV" />
+            <FeatureItem icon={Smartphone} text="Access on mobile and Laptop" />
             {course.driveLink && (
               <FeatureItem icon={FileText} text="Downloadable Study Material" />
             )}

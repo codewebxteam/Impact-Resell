@@ -243,9 +243,8 @@ const AgencySetup = () => {
         <div className="text-center mb-8 lg:mb-10 space-y-2">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-slate-200 rounded-full shadow-sm mb-2">
             <span
-              className={`size-2 rounded-full ${
-                isEditMode ? "bg-emerald-500" : "bg-indigo-500"
-              } animate-pulse`}
+              className={`size-2 rounded-full ${isEditMode ? "bg-emerald-500" : "bg-indigo-500"
+                } animate-pulse`}
             />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
               {isEditMode ? "Live Mode" : "Setup Mode"}
@@ -298,22 +297,19 @@ const AgencySetup = () => {
                     onClick={() => {
                       if (isEditMode) setStep(s.id);
                     }}
-                    className={`flex items-center gap-3 p-3 rounded-xl transition-all min-w-[120px] lg:min-w-0 ${
-                      step === s.id
+                    className={`flex items-center gap-3 p-3 rounded-xl transition-all min-w-[120px] lg:min-w-0 ${step === s.id
                         ? "bg-white/10 text-white shadow-lg border border-white/5"
                         : step > s.id
-                        ? "text-emerald-400"
-                        : "text-slate-500"
-                    } ${
-                      isEditMode
+                          ? "text-emerald-400"
+                          : "text-slate-500"
+                      } ${isEditMode
                         ? "cursor-pointer hover:bg-white/5"
                         : "cursor-default"
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        step > s.id ? "bg-emerald-500/10" : "bg-black/20"
-                      }`}
+                      className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${step > s.id ? "bg-emerald-500/10" : "bg-black/20"
+                        }`}
                     >
                       {step > s.id ? <CheckCircle2 size={14} /> : s.icon}
                     </div>
@@ -378,18 +374,17 @@ const AgencySetup = () => {
                           <input
                             type="text"
                             placeholder="my-academy"
-                            className={`w-full bg-slate-50 border-2 p-4 pr-32 rounded-2xl font-black text-slate-900 outline-none transition-all lowercase ${
-                              subdomainStatus === "available"
+                            className={`w-full bg-slate-50 border-2 p-4 pr-32 rounded-2xl font-black text-slate-900 outline-none transition-all lowercase ${subdomainStatus === "available"
                                 ? "border-emerald-100 focus:border-emerald-200"
                                 : subdomainStatus === "unavailable"
-                                ? "border-red-100 focus:border-red-200"
-                                : "border-transparent focus:border-indigo-100"
-                            }`}
+                                  ? "border-red-100 focus:border-red-200"
+                                  : "border-transparent focus:border-indigo-100"
+                              }`}
                             value={formData.subdomain}
                             onChange={handleSubdomainChange}
                           />
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs pointer-events-none hidden sm:block">
-                            .academy.com
+                            .i-cpp.com
                           </span>
                         </div>
 
@@ -539,7 +534,7 @@ const AgencySetup = () => {
                       </section>
 
                       {/* E-Books */}
-                      <section>
+                      {/*  <section>
                         <div className="flex items-center gap-2 mb-4">
                           <BookOpen size={18} className="text-orange-600" />
                           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
@@ -606,7 +601,7 @@ const AgencySetup = () => {
                             );
                           })}
                         </div>
-                      </section>
+                      </section> */ }
                     </div>
                   </motion.div>
                 )}
@@ -739,7 +734,7 @@ const AgencySetup = () => {
                           Subdomain
                         </span>
                         <span className="text-sm font-black text-indigo-600">
-                          {formData.subdomain}.academy.com
+                          {formData.subdomain}.i-cpp.com
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
