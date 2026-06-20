@@ -192,6 +192,7 @@ const Courses = () => {
                         onBuy={() => handleBuyClick(course, dynamicPrice)}
                         onPlay={() => handlePlayVideo(course.id)}
                         displayPrice={dynamicPrice}
+                        isMainSite={isMainSite}
                       />
                     );
                   })}
@@ -235,7 +236,7 @@ const Courses = () => {
 };
 
 // --- COURSE CARD COMPONENT ---
-const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice }) => {
+const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSite }) => {
   const imageUrl =
     course.image ||
     (course.videoId
@@ -333,25 +334,28 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice }) => {
         </div>
 
         <div className="mt-auto pt-4 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex flex-col">
-              {originalPrice && (
-                <span className="text-xs text-slate-400 line-through">
-                  {originalPrice}
+          {/* Price & Action — only on subdomain (partner site), hidden on main site */}
+          {!isMainSite && (
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-col">
+                {originalPrice && (
+                  <span className="text-xs text-slate-400 line-through">
+                    {originalPrice}
+                  </span>
+                )}
+                {/* PRICE DISPLAY */}
+                <span
+                  className={`text-xl font-bold ${
+                    priceDisplay === "Free" ? "text-green-600" : "text-slate-900"
+                  }`}
+                >
+                  {priceDisplay}
                 </span>
-              )}
-              {/* PRICE DISPLAY */}
-              <span
-                className={`text-xl font-bold ${
-                  priceDisplay === "Free" ? "text-green-600" : "text-slate-900"
-                }`}
-              >
-                {priceDisplay}
-              </span>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${isMainSite ? "grid-cols-1" : "grid-cols-2"}`}>
             <Link
               to={`/courses/${course.id}`}
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 hover:text-slate-900 transition-all text-center"
@@ -359,25 +363,28 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice }) => {
               Explore
             </Link>
 
-            {isEnrolled ? (
-              <button
-                onClick={onPlay}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#5edff4] text-slate-900 text-xs font-bold hover:bg-[#4ecee4] transition-all shadow-lg cursor-pointer"
-              >
-                <Play className="size-4" /> Watch Now
-              </button>
-            ) : (
-              <button
-                onClick={onBuy}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-lg cursor-pointer
-                  ${
-                    priceDisplay === "Free"
-                      ? "bg-green-600 hover:bg-green-500 shadow-green-600/20"
-                      : "bg-slate-900 hover:bg-[#5edff4] hover:text-slate-900 shadow-slate-900/10 hover:shadow-[#5edff4]/30"
-                  }`}
-              >
-                {priceDisplay === "Free" ? "Enroll" : "Buy Now"}
-              </button>
+            {/* Buy / Watch buttons — only on subdomain */}
+            {!isMainSite && (
+              isEnrolled ? (
+                <button
+                  onClick={onPlay}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#5edff4] text-slate-900 text-xs font-bold hover:bg-[#4ecee4] transition-all shadow-lg cursor-pointer"
+                >
+                  <Play className="size-4" /> Watch Now
+                </button>
+              ) : (
+                <button
+                  onClick={onBuy}
+                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-lg cursor-pointer
+                    ${
+                      priceDisplay === "Free"
+                        ? "bg-green-600 hover:bg-green-500 shadow-green-600/20"
+                        : "bg-slate-900 hover:bg-[#5edff4] hover:text-slate-900 shadow-slate-900/10 hover:shadow-[#5edff4]/30"
+                    }`}
+                >
+                  {priceDisplay === "Free" ? "Enroll" : "Buy Now"}
+                </button>
+              )
             )}
           </div>
         </div>

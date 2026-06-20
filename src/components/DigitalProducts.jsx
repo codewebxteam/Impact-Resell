@@ -29,7 +29,7 @@ const ProductCard = ({ product, index }) => {
   const Icon = style.icon;
 
   // [ADDED] Dynamic Price Logic
-  const { getPrice } = useAgency();
+  const { getPrice, isMainSite } = useAgency();
   const finalPrice = getPrice(product.id, product.price);
 
   // 3D Tilt Logic
@@ -115,20 +115,22 @@ const ProductCard = ({ product, index }) => {
             {product.title}
           </h3>
 
-          <div className="flex items-baseline gap-1 mb-3">
-            <span className="text-2xl md:text-3xl font-bold text-white">
-              {/* [UPDATED] Using Final Price */}
-              {finalPrice == 0 || finalPrice === "Free"
-                ? "Free"
-                : `₹${finalPrice}`}
-            </span>
-            {/* Show original only if different and not free */}
-            {product.originalPrice && finalPrice !== "Free" && (
-              <span className="text-slate-500 text-[10px] md:text-xs line-through">
-                ₹{product.originalPrice}
+          {/* Price — only on partner subdomain, hidden on main site */}
+          {!isMainSite && (
+            <div className="flex items-baseline gap-1 mb-3">
+              <span className="text-2xl md:text-3xl font-bold text-white">
+                {finalPrice == 0 || finalPrice === "Free"
+                  ? "Free"
+                  : `₹${finalPrice}`}
               </span>
-            )}
-          </div>
+              {/* Show original only if different and not free */}
+              {product.originalPrice && finalPrice !== "Free" && (
+                <span className="text-slate-500 text-[10px] md:text-xs line-through">
+                  ₹{product.originalPrice}
+                </span>
+              )}
+            </div>
+          )}
 
           <p className="text-slate-400 text-xs leading-relaxed mb-5 min-h-8 line-clamp-2">
             {product.description}

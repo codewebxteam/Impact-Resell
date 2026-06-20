@@ -19,13 +19,14 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
-  const { login, signup } = useAuth();
+  const { login, signup, resetPassword } = useAuth();
   const navigate = useNavigate();
 
-  const [mode, setMode] = useState(defaultMode); // 'login' | 'signup' | 'partner'
+  const [mode, setMode] = useState(defaultMode); // 'login' | 'signup' | 'partner' | 'forgotPassword'
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Partner Verification State
   const [partnerVerified, setPartnerVerified] = useState(false);
@@ -66,6 +67,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
       setMode(defaultMode);
       setErrors({});
       setPartnerVerified(false);
+      setResetEmailSent(false);
       setFormData({
         name: "",
         email: "",
@@ -80,6 +82,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   useEffect(() => {
     setErrors({});
     setPartnerVerified(false); // Reset verification if mode changes
+    setResetEmailSent(false);
   }, [mode]);
 
   // Handlers
@@ -138,6 +141,30 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
       setErrors({ ...errors, email: "Verification service error. Try again." });
     } finally {
       setVerifying(false);
+    }
+  };
+
+  // --- FORGOT PASSWORD HANDLER ---
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!formData.email || !formData.email.includes("@")) {
+      setErrors({ email: "Please enter a valid email address." });
+      return;
+    }
+    setLoading(true);
+    setErrors({});
+    try {
+      await resetPassword(formData.email);
+      setResetEmailSent(true);
+    } catch (error) {
+      console.error("Reset Password Error:", error);
+      let msg = "Something went wrong. Please try again.";
+      if (error.code === "auth/user-not-found") msg = "No account found with this email.";
+      if (error.code === "auth/invalid-email") msg = "Please enter a valid email address.";
+      if (error.code === "auth/too-many-requests") msg = "Too many attempts. Please try again later.";
+      setErrors({ email: msg });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -225,16 +252,18 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="px-8 pt-8 flex justify-between items-start shrink-0">
-          <div>
+        <div>
             <h2 className="text-2xl font-bold text-slate-900">
               {mode === "login" && "Welcome Back"}
               {mode === "signup" && "Create Account"}
               {mode === "partner" && "Partner Registration"}
+              {mode === "forgotPassword" && "Reset Password"}
             </h2>
             <p className="text-sm text-slate-500 mt-1">
               {mode === "login" && "Enter your details to access your account."}
               {mode === "signup" && "Start your learning journey today."}
               {mode === "partner" && "Verify your pre-approved email to join."}
+              {mode === "forgotPassword" && "Enter your email to receive a reset link."}
             </p>
           </div>
           <button
@@ -284,11 +313,78 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                 <div className="flex justify-end">
                   <button
                     type="button"
+                    onClick={() => setMode("forgotPassword")}
                     className="text-sm font-bold text-[#0891b2] hover:text-[#5edff4]"
                   >
                     Forgot Password?
                   </button>
                 </div>
+              </>
+            )}
+
+            {/* FORGOT PASSWORD MODE */}
+            {mode === "forgotPassword" && (
+              <>
+                {resetEmailSent ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center space-y-4 py-4"
+                  >
+                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Check your inbox!</h3>
+                      <p className="text-sm text-slate-500 mt-1">
+                        We've sent a password reset link to<br />
+                        <span className="font-bold text-slate-700">{formData.email}</span>
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-400">Didn't receive it? Check your spam folder.</p>
+                    <button
+                      type="button"
+                      onClick={() => { setMode("login"); setResetEmailSent(false); }}
+                      className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-[#0891b2] transition-all mt-2"
+                    >
+                      Back to Login
+                    </button>
+                  </motion.div>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <InputGroup
+                      icon={Mail}
+                      name="email"
+                      type="email"
+                      placeholder="Your registered email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      error={errors.email}
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-slate-900 text-white font-bold text-lg py-3.5 rounded-xl hover:bg-[#0891b2] transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <Loader2 className="animate-spin size-6" />
+                      ) : (
+                        <><Mail className="size-5" /> Send Reset Link</>
+                      )}
+                    </button>
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => setMode("login")}
+                        className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                      >
+                        ← Back to Login
+                      </button>
+                    </div>
+                  </form>
+                )}
               </>
             )}
 

@@ -13,6 +13,7 @@ import { Check, ArrowRight, Zap, Crown, Star, Bookmark } from "lucide-react";
 import { Link } from "react-router-dom";
 import { collection, getDocs, limit, query } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { useAgency } from "../context/AgencyContext";
 
 // ==========================================
 // SECTION 1: DYNAMIC CARD DESIGNS (Styled)
@@ -20,10 +21,11 @@ import { db } from "../firebase/config";
 
 // Style 1: White Card
 const FrontendCard = ({ data }) => {
+  const { isMainSite, getPrice } = useAgency();
   const info = {
     title: data?.title || "Course Title",
     desc: data?.description || "Master new skills with our expert led courses.",
-    price: data?.price || "2,999",
+    price: getPrice(data?.id, data?.price || "2,999"),
     features: ["Instant Access", "Video Lessons", "Secure Content"],
   };
 
@@ -42,14 +44,16 @@ const FrontendCard = ({ data }) => {
         </p>
       </div>
       <div className="relative z-10">
-        <div className="flex items-baseline gap-1 mb-4 md:mb-6">
-          <span className="text-3xl md:text-4xl font-bold text-slate-900">
-            {info.price === 0 || info.price === "Free"
-              ? "Free"
-              : `₹${info.price}`}
-          </span>
-          <span className="text-slate-400 text-sm">/course</span>
-        </div>
+        {!isMainSite && (
+          <div className="flex items-baseline gap-1 mb-4 md:mb-6">
+            <span className="text-3xl md:text-4xl font-bold text-slate-900">
+              {info.price == 0 || info.price === "Free"
+                ? "Free"
+                : `₹${info.price}`}
+            </span>
+            <span className="text-slate-400 text-sm">/course</span>
+          </div>
+        )}
         <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
           {info.features.map((item) => (
             <li
@@ -76,10 +80,11 @@ const FrontendCard = ({ data }) => {
 
 // Style 2: Cyan Gradient Card
 const FullStackCard = ({ data }) => {
+  const { isMainSite, getPrice } = useAgency();
   const info = {
     title: data?.title || "Full Stack",
     desc: data?.description || "MERN Stack Specialization.",
-    price: data?.price || "5,999",
+    price: getPrice(data?.id, data?.price || "5,999"),
     features: ["Frontend + Backend", "Database Mastery", "Live Projects"],
   };
 
@@ -102,13 +107,15 @@ const FullStackCard = ({ data }) => {
         </p>
       </div>
       <div className="relative z-10">
-        <div className="flex items-baseline gap-1 mb-4 md:mb-6">
-          <span className="text-3xl md:text-4xl font-bold text-white">
-            {info.price === 0 || info.price === "Free"
-              ? "Free"
-              : `₹${info.price}`}
-          </span>
-        </div>
+        {!isMainSite && (
+          <div className="flex items-baseline gap-1 mb-4 md:mb-6">
+            <span className="text-3xl md:text-4xl font-bold text-white">
+              {info.price == 0 || info.price === "Free"
+                ? "Free"
+                : `₹${info.price}`}
+            </span>
+          </div>
+        )}
         <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
           {info.features.map((item) => (
             <li
@@ -135,10 +142,11 @@ const FullStackCard = ({ data }) => {
 
 // Style 3: Dark Card
 const DataScienceCard = ({ data }) => {
+  const { isMainSite, getPrice } = useAgency();
   const info = {
     title: data?.title || "AI & Data Science",
     desc: data?.description || "Machine Learning Masters.",
-    price: data?.price || "7,999",
+    price: getPrice(data?.id, data?.price || "7,999"),
     features: ["Python & SQL", "ML Algorithms", "Big Data"],
   };
 
@@ -158,13 +166,15 @@ const DataScienceCard = ({ data }) => {
         </p>
       </div>
       <div className="relative z-10">
-        <div className="flex items-baseline gap-1 mb-4 md:mb-6">
-          <span className="text-3xl md:text-4xl font-bold text-white">
-            {info.price === 0 || info.price === "Free"
-              ? "Free"
-              : `₹${info.price}`}
-          </span>
-        </div>
+        {!isMainSite && (
+          <div className="flex items-baseline gap-1 mb-4 md:mb-6">
+            <span className="text-3xl md:text-4xl font-bold text-white">
+              {info.price == 0 || info.price === "Free"
+                ? "Free"
+                : `₹${info.price}`}
+            </span>
+          </div>
+        )}
         <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
           {info.features.map((item) => (
             <li

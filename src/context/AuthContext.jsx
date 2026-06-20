@@ -5,6 +5,7 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, db } from "../firebase/config"; // [UPDATED] Import db for Firestore
 import { doc, setDoc, getDoc, serverTimestamp} from "firebase/firestore"; // [NEW] Firestore methods
@@ -135,6 +136,11 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
+  // 4. Reset Password Function — user ke email pe Firebase reset link bhejta hai
+  const resetPassword = (email) => {
+    return sendPasswordResetEmail(auth, email);
+  };
+
   // 4. [UPDATED] Monitor Auth State & Fetch Firestore Data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -160,6 +166,7 @@ export const AuthProvider = ({ children }) => {
     signup,
     login,
     logout,
+    resetPassword,
   };
 
   return (

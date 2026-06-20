@@ -122,7 +122,10 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
                 </span>
               </div>
             </div>
-          ) : (
+          ) : null}
+
+          {/* Price section — only on partner subdomain */}
+          {!isEnrolled && !isMainSite && (
             <div className="flex items-center gap-3 mb-6 flex-wrap">
               <span className="text-4xl font-black text-slate-900">
                 {displayPrice}
@@ -151,40 +154,45 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
               Go to Dashboard
             </button>
           ) : (
-            <button
-              // [UPDATED CLICK HANDLER]
-              onClick={() => {
-                // 1. Check Login First
-                if (!currentUser) {
-                  setIsAuthOpen(true);
-                  return;
-                }
-                // 2. Then Check Partner/Main Logic
-                if (!isMainSite && displayPrice !== "Free") {
-                  handlePartnerBuy();
-                } else {
-                  onEnroll({
-                    ...course,
-                    finalPrice: dynamicPrice,
-                    commission: !isMainSite ? "Calculated at Checkout" : 0,
-                  });
-                }
-              }}
-              className="w-full py-4 text-slate-900 font-bold text-lg rounded-xl transition-all shadow-lg active:scale-95 mb-4 cursor-pointer"
-              style={{
-                backgroundColor: agency?.accentColor || "#5edff4",
-                boxShadow: `0 10px 15px -3px ${
-                  agency?.accentColor || "#5edff4"
-                }33`,
-              }}
-            >
-              {displayPrice === "Free" ? "Enroll for Free" : "Buy Now"}
-            </button>
+            /* Buy Now button — only on partner subdomain, hidden on main domain */
+            !isMainSite && (
+              <button
+                onClick={() => {
+                  // 1. Check Login First
+                  if (!currentUser) {
+                    setIsAuthOpen(true);
+                    return;
+                  }
+                  // 2. Then Check Partner/Main Logic
+                  if (!isMainSite && displayPrice !== "Free") {
+                    handlePartnerBuy();
+                  } else {
+                    onEnroll({
+                      ...course,
+                      finalPrice: dynamicPrice,
+                      commission: !isMainSite ? "Calculated at Checkout" : 0,
+                    });
+                  }
+                }}
+                className="w-full py-4 text-slate-900 font-bold text-lg rounded-xl transition-all shadow-lg active:scale-95 mb-4 cursor-pointer"
+                style={{
+                  backgroundColor: agency?.accentColor || "#5edff4",
+                  boxShadow: `0 10px 15px -3px ${
+                    agency?.accentColor || "#5edff4"
+                  }33`,
+                }}
+              >
+                {displayPrice === "Free" ? "Enroll for Free" : "Buy Now"}
+              </button>
+            )
           )}
 
-          <p className="text-center text-xs text-slate-500 mb-6">
-            30-Day Money-Back Guarantee
-          </p>
+          {/* Money-back guarantee — only on subdomain */}
+          {!isMainSite && (
+            <p className="text-center text-xs text-slate-500 mb-6">
+              30-Day Money-Back Guarantee
+            </p>
+          )}
 
           <div className="space-y-4">
             <h4 className="font-bold text-slate-900 text-sm">
