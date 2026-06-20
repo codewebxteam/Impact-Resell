@@ -123,20 +123,18 @@ const CourseDetails = () => {
     <div className="min-h-screen bg-slate-50 font-sans pb-20">
       <CourseHero course={course} />
 
-      {/* Mobile Pricing Sticky — only on partner subdomain */}
-      {!isMainSite && (
-        <div className="px-6 lg:hidden relative z-20 -mt-10 mb-8">
-          <PricingCard
-            course={course}
-            onEnroll={handleEnroll}
-            isEnrolled={userHasAccess}
-          />
-        </div>
-      )}
+      {/* Mobile Pricing Sticky */}
+      <div className="px-6 lg:hidden relative z-20 -mt-10 mb-8">
+        <PricingCard
+          course={course}
+          onEnroll={handleEnroll}
+          isEnrolled={userHasAccess}
+        />
+      </div>
 
       <div className="max-w-7xl mx-auto px-6 lg:mt-12">
-        <div className={`grid gap-8 lg:gap-12 ${isMainSite ? "grid-cols-1" : "lg:grid-cols-3"}`}>
-          <div className={isMainSite ? "space-y-12" : "lg:col-span-2 space-y-12"}>
+        <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+          <div className="lg:col-span-2 space-y-12">
             {/* 1. Introduction Video */}
             {course?.mainVideoId && (
               <div className="bg-white rounded-[32px] overflow-hidden border border-slate-100 shadow-sm">
@@ -267,18 +265,16 @@ const CourseDetails = () => {
             <Curriculum course={course} syllabus={course.syllabusContent} />
           </div>
 
-          {/* Desktop Pricing Sticky — only on partner subdomain */}
-          {!isMainSite && (
-            <div className="hidden lg:block lg:col-span-1">
-              <div className="sticky top-24">
-                <PricingCard
-                  course={course}
-                  onEnroll={handleEnroll}
-                  isEnrolled={userHasAccess}
-                />
-              </div>
+          {/* Desktop Pricing Sticky */}
+          <div className="hidden lg:block lg:col-span-1">
+            <div className="sticky top-24">
+              <PricingCard
+                course={course}
+                onEnroll={handleEnroll}
+                isEnrolled={userHasAccess}
+              />
             </div>
-          )}
+          </div>
         </div>
       </div>
 

@@ -334,45 +334,46 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
         </div>
 
         <div className="mt-auto pt-4 border-t border-slate-100">
-          {/* Price & Action — only on subdomain (partner site), hidden on main site */}
-          {!isMainSite && (
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex flex-col">
-                {originalPrice && (
-                  <span className="text-xs text-slate-400 line-through">
-                    {originalPrice}
+          <div className="flex items-center justify-between mb-3 min-h-[28px]">
+            <div className="flex flex-col">
+              {!isMainSite && (
+                <>
+                  {originalPrice && (
+                    <span className="text-xs text-slate-400 line-through">
+                      {originalPrice}
+                    </span>
+                  )}
+                  {/* PRICE DISPLAY */}
+                  <span
+                    className={`text-xl font-bold ${
+                      priceDisplay === "Free" ? "text-green-600" : "text-slate-900"
+                    }`}
+                  >
+                    {priceDisplay}
                   </span>
-                )}
-                {/* PRICE DISPLAY */}
-                <span
-                  className={`text-xl font-bold ${
-                    priceDisplay === "Free" ? "text-green-600" : "text-slate-900"
-                  }`}
-                >
-                  {priceDisplay}
-                </span>
-              </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
 
-          <div className={`grid gap-3 ${isMainSite ? "grid-cols-1" : "grid-cols-2"}`}>
+          <div className="grid grid-cols-2 gap-3">
             <Link
               to={`/courses/${course.id}`}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 hover:text-slate-900 transition-all text-center"
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 hover:text-slate-900 transition-all text-center ${isMainSite && !isEnrolled ? "col-span-2" : ""}`}
             >
               Explore
             </Link>
 
-            {/* Buy / Watch buttons — only on subdomain */}
-            {!isMainSite && (
-              isEnrolled ? (
-                <button
-                  onClick={onPlay}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#5edff4] text-slate-900 text-xs font-bold hover:bg-[#4ecee4] transition-all shadow-lg cursor-pointer"
-                >
-                  <Play className="size-4" /> Watch Now
-                </button>
-              ) : (
+            {/* Buy / Watch buttons */}
+            {isEnrolled ? (
+              <button
+                onClick={onPlay}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#5edff4] text-slate-900 text-xs font-bold hover:bg-[#4ecee4] transition-all shadow-lg cursor-pointer"
+              >
+                <Play className="size-4" /> Watch Now
+              </button>
+            ) : (
+              !isMainSite && (
                 <button
                   onClick={onBuy}
                   className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-lg cursor-pointer
