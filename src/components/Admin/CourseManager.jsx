@@ -18,9 +18,7 @@ import {
   Sparkles,
   BookOpen,
   PlayCircle,
-  Video,
-  GraduationCap,
-  FileText, // Added for Notes icon
+  Video, // Added for Demo icon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -44,7 +42,7 @@ const CourseManager = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
-  // Initial form state with Demo & Drive Support
+  // Initial form state
   const initialFormState = {
     title: "",
     description: "",
@@ -54,14 +52,16 @@ const CourseManager = () => {
     paymentLink: "",
     introVideoUrl: "",
     lectures: [],
-    demoVideos: [],
-    tempDemoTitle: "",
+    demoVideos: [], // [NEW] Demo videos array
+    tempDemoTitle: "", // [NEW] Temp title for adding demos
     driveLink: "",
+    isComingSoon: false, // [NEW] Coming soon toggle
+    priority: 0, // Priority field for sorting
   };
 
   const [formData, setFormData] = useState(initialFormState);
   const [tempVideoUrl, setTempVideoUrl] = useState("");
-  const [tempDemoUrl, setTempDemoUrl] = useState("");
+  const [tempDemoUrl, setTempDemoUrl] = useState(""); // [NEW] Temp URL for demos
 
   useEffect(() => {
     fetchCourses();
@@ -75,7 +75,14 @@ const CourseManager = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      courseList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      courseList.sort((a, b) => {
+        const priorityA = parseInt(a.priority) || 0;
+        const priorityB = parseInt(b.priority) || 0;
+        if (priorityB !== priorityA) {
+          return priorityB - priorityA;
+        }
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
       setCourses(courseList);
     } catch (error) {
       console.error("Error fetching courses:", error);
@@ -146,9 +153,11 @@ const CourseManager = () => {
         ? `https://www.youtube.com/watch?v=${course.mainVideoId}`
         : "",
       lectures: existingLectures,
-      demoVideos: course.demoVideos || [],
+      demoVideos: course.demoVideos || [], // Load existing demos
       tempDemoTitle: "",
       driveLink: course.driveLink || "",
+      isComingSoon: course.isComingSoon || false, // Load coming soon status
+      priority: course.priority || 0,
     });
     setTempVideoUrl("");
     setTempDemoUrl("");
@@ -169,6 +178,7 @@ const CourseManager = () => {
     setTempVideoUrl("");
   };
 
+  // [NEW] Add Demo Video Function
   const addDemoVideo = () => {
     const vidId = extractVideoId(tempDemoUrl);
     if (!vidId) return alert("Invalid Demo Link");
@@ -185,6 +195,7 @@ const CourseManager = () => {
       ...formData,
       demoVideos: [...formData.demoVideos, newItem],
       tempDemoTitle: "",
+      tempDemoUrl: "",
     });
     setTempDemoUrl("");
   };
@@ -196,6 +207,7 @@ const CourseManager = () => {
     });
   };
 
+  // [NEW] Remove Demo Video Function
   const removeDemoVideo = (id) => {
     setFormData({
       ...formData,
@@ -205,7 +217,7 @@ const CourseManager = () => {
 
   const handleFinalSubmit = async () => {
     if (!formData.title || formData.lectures.length === 0 || !formData.price) {
-      alert("⚠️ Title, Price and at least one Video are required!");
+      alert("⚠️ Please fill all required fields marked with *");
       return;
     }
 
@@ -220,14 +232,16 @@ const CourseManager = () => {
         description: formData.description,
         syllabus: formData.syllabus,
         lectures: formData.lectures,
-        demoVideos: formData.demoVideos,
+        demoVideos: formData.demoVideos, // [NEW] Save Demos
         url: firstVid.url,
         videoId: firstVid.videoId,
-        driveLink: formData.driveLink, // Correctly mapped to Firestore
+        driveLink: formData.driveLink,
         price: formData.price.toString(),
         originalPrice: formData.discountPrice.toString(),
         paymentLink: formData.paymentLink,
         mainVideoId: introId,
+        isComingSoon: formData.isComingSoon, // Save coming soon status
+        priority: parseInt(formData.priority, 10) || 0,
         updatedAt: new Date().toISOString(),
         image: thumbUrl,
         instructor: "Admin",
@@ -270,7 +284,7 @@ const CourseManager = () => {
   const steps = [
     { id: 1, label: "Info", icon: <Layout size={18} /> },
     { id: 2, label: "Content", icon: <Youtube size={18} /> },
-    { id: 3, label: "Demo", icon: <Video size={18} /> },
+    { id: 3, label: "Demo", icon: <Video size={18} /> }, // [NEW] Added Demo Step
     { id: 4, label: "Price", icon: <DollarSign size={18} /> },
     { id: 5, label: "Launch", icon: <Rocket size={18} /> },
   ];
@@ -279,23 +293,18 @@ const CourseManager = () => {
     <div className="space-y-8 pb-20">
       {/* PAGE HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
-        <div className="flex items-center gap-4">
-          <div className="size-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-slate-900/20">
-            <GraduationCap size={28} />
-          </div>
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              Mission Control{" "}
-              <Rocket className="text-indigo-500 animate-pulse" size={24} />
-            </h1>
-            <p className="text-slate-500 font-medium">
-              Manage your courses and launch new content.
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            Mission Control{" "}
+            <Rocket className="text-indigo-500 animate-pulse" size={24} />
+          </h1>
+          <p className="text-slate-500 font-medium">
+            Manage your courses and launch new content.
+          </p>
         </div>
         <button
           onClick={handleLaunchNew}
-          className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg hover:bg-slate-800 transition-all active:scale-95 group"
+          className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-all active:scale-95 group"
         >
           <Plus
             size={18}
@@ -319,7 +328,7 @@ const CourseManager = () => {
         </div>
         <div className="hidden sm:flex items-center gap-2 px-4 border-l border-slate-100">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Active Inventory:
+            Active Courses:
           </span>
           <span className="text-sm font-black text-slate-900">
             {courses.length}
@@ -335,62 +344,87 @@ const CourseManager = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <AnimatePresence mode="popLayout">
-            {currentCourses.map((course) => (
-              <motion.div
-                layout
-                key={course.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col"
-              >
-                <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden relative mb-4">
-                  {course.image ? (
-                    <img
-                      src={course.image}
-                      alt="Thumbnail"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-slate-300">
-                      <List size={32} />
+            {currentCourses.length > 0 ? (
+              currentCourses.map((course) => (
+                <motion.div
+                  layout
+                  key={course.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col relative"
+                >
+                  {/* [NEW] Coming Soon Badge Indicator in Admin Panel */}
+                  {course.isComingSoon && (
+                    <div className="absolute top-4 left-4 z-10 bg-amber-500 text-white text-[10px] uppercase font-black px-2 py-1 rounded-md shadow-sm">
+                      Coming Soon
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg">
-                    {course.lectures ? course.lectures.length : 1} Videos
-                  </div>
-                </div>
 
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-slate-900 leading-tight mb-2 line-clamp-2">
-                    {course.title || "Untitled Course"}
-                  </h3>
-                  <p className="text-xs text-slate-500 line-clamp-2 mb-4">
-                    {course.description || "No description provided."}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
-                  <span className="text-lg font-black text-slate-900">
-                    ₹{course.price}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(course)}
-                      className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(course.id)}
-                      className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden relative mb-4">
+                    {course.image ? (
+                      <img
+                        src={course.image}
+                        alt="Thumbnail"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={(e) => {
+                          e.target.src =
+                            "https://img.youtube.com/vi/default/maxresdefault.jpg";
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-slate-300">
+                        <List size={32} />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg">
+                      {course.lectures ? course.lectures.length : 1} Videos
+                    </div>
                   </div>
+
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-slate-900 leading-tight mb-2 line-clamp-2">
+                      {course.title || "Untitled Course"}
+                    </h3>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">
+                      {course.description || "No description provided."}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
+                    <span className="text-lg font-black text-slate-900">
+                      ₹{course.price}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(course)}
+                        className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(course.id)}
+                        className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full py-20 text-center">
+                <div className="size-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                  <BookOpen size={32} />
                 </div>
-              </motion.div>
-            ))}
+                <h3 className="text-lg font-bold text-slate-900">
+                  No courses found
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Create your first course to get started.
+                </p>
+              </div>
+            )}
           </AnimatePresence>
         </div>
       )}
@@ -401,7 +435,7 @@ const CourseManager = () => {
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50"
+            className="p-2 bg-white border border-slate-200 rounded-xl disabled:opacity-50 hover:bg-slate-50"
           >
             <ChevronLeft size={20} />
           </button>
@@ -411,7 +445,7 @@ const CourseManager = () => {
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50"
+            className="p-2 bg-white border border-slate-200 rounded-xl disabled:opacity-50 hover:bg-slate-50"
           >
             <ChevronRight size={20} />
           </button>
@@ -433,8 +467,10 @@ const CourseManager = () => {
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="bg-white w-full max-w-3xl max-h-[90vh] sm:rounded-[32px] rounded-t-[32px] shadow-2xl relative z-10 flex flex-col overflow-hidden"
             >
+              {/* Header */}
               <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
                 <div>
                   <h3 className="text-lg font-black text-slate-900">
@@ -444,7 +480,11 @@ const CourseManager = () => {
                     {steps.map((step) => (
                       <div
                         key={step.id}
-                        className={`h-1 w-6 rounded-full transition-colors ${currentStep >= step.id ? "bg-indigo-500" : "bg-slate-200"}`}
+                        className={`h-1 w-6 rounded-full transition-colors ${
+                          currentStep >= step.id
+                            ? "bg-indigo-500"
+                            : "bg-slate-200"
+                        }`}
                       />
                     ))}
                   </div>
@@ -457,6 +497,7 @@ const CourseManager = () => {
                 </button>
               </div>
 
+              {/* Body */}
               <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -466,15 +507,46 @@ const CourseManager = () => {
                     exit={{ opacity: 0, x: -10 }}
                     className="space-y-6"
                   >
+                    {/* STEP 1: INFO */}
                     {currentStep === 1 && (
                       <div className="space-y-4">
+                        {/* [NEW] Coming Soon Toggle */}
+                        <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-xl mb-4">
+                          <div>
+                            <label className="text-sm font-black text-amber-900 block">
+                              Coming Soon Status
+                            </label>
+                            <p className="text-xs text-amber-700 font-medium">
+                              If enabled, users will see a "Coming Soon"
+                              watermark and won't be able to purchase or access
+                              the course yet.
+                            </p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer ml-4 shrink-0">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={formData.isComingSoon}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  isComingSoon: e.target.checked,
+                                })
+                              }
+                            />
+                            <div className="w-11 h-6 bg-amber-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                          </label>
+                        </div>
+
                         <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">
-                            Title *
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex gap-1">
+                            Title <span className="text-red-500">*</span>
                           </label>
                           <input
+                            autoFocus
                             type="text"
-                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none font-bold"
+                            placeholder="e.g. Master React JS"
+                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-slate-900"
                             value={formData.title}
                             onChange={(e) =>
                               setFormData({
@@ -484,14 +556,34 @@ const CourseManager = () => {
                             }
                           />
                         </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex gap-1">
+                            Priority
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Higher number = higher priority"
+                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-slate-900"
+                            value={formData.priority}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                priority: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+
                         <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                          <label className="text-xs font-black text-indigo-700 uppercase mb-2 block">
-                            Course Intro Video Link (YouTube)
+                          <label className="text-xs font-black text-indigo-700 uppercase mb-2 flex items-center gap-2">
+                            <PlayCircle size={14} /> Course Intro Video Link
+                            (YouTube)
                           </label>
                           <input
                             type="text"
-                            placeholder="https://..."
-                            className="w-full bg-white p-3 rounded-xl border border-indigo-200 outline-none font-bold"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            className="w-full bg-white p-3 rounded-xl border border-indigo-200 focus:border-indigo-500 outline-none font-bold text-indigo-900 placeholder:text-indigo-300"
                             value={formData.introVideoUrl}
                             onChange={(e) =>
                               setFormData({
@@ -501,13 +593,15 @@ const CourseManager = () => {
                             }
                           />
                         </div>
+
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">
                             Description
                           </label>
                           <textarea
-                            rows="2"
-                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none"
+                            rows="3"
+                            placeholder="Brief overview..."
+                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-medium text-slate-700"
                             value={formData.description}
                             onChange={(e) =>
                               setFormData({
@@ -517,23 +611,44 @@ const CourseManager = () => {
                             }
                           />
                         </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">
+                            Syllabus
+                          </label>
+                          <textarea
+                            rows="4"
+                            placeholder="• Topic 1&#10;• Topic 2"
+                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-medium text-slate-700 font-mono text-sm"
+                            value={formData.syllabus}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                syllabus: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
                       </div>
                     )}
 
+                    {/* STEP 2: CONTENT */}
                     {currentStep === 2 && (
-                      <div className="space-y-4">
+                      <div className="space-y-6">
+                        <div className="bg-indigo-50 p-4 rounded-xl text-indigo-800 text-xs font-bold flex items-center gap-2">
+                          <Youtube size={16} /> Add Course Lectures.
+                        </div>
                         <div className="flex gap-2">
                           <input
                             type="text"
                             placeholder="Paste YouTube Link..."
-                            className="flex-1 bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none font-bold"
+                            className="flex-1 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm"
                             value={tempVideoUrl}
                             onChange={(e) => setTempVideoUrl(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && addVideo()}
                           />
                           <button
                             onClick={addVideo}
-                            className="bg-slate-900 text-white px-4 rounded-xl font-bold"
+                            className="bg-slate-900 text-white px-4 rounded-xl font-bold hover:bg-indigo-600 transition-colors"
                           >
                             Add
                           </button>
@@ -542,13 +657,13 @@ const CourseManager = () => {
                           {formData.lectures.map((lecture, index) => (
                             <div
                               key={lecture.id}
-                              className="flex items-center gap-3 p-2 bg-white border border-slate-100 rounded-xl"
+                              className="flex items-center gap-3 p-2 bg-white border border-slate-100 rounded-xl shadow-sm"
                             >
-                              <span className="w-6 text-xs font-black text-slate-300">
+                              <span className="w-6 text-center text-xs font-black text-slate-300">
                                 #{index + 1}
                               </span>
                               <p className="text-xs font-bold text-slate-700 flex-1 truncate">
-                                {lecture.url}
+                                {lecture.title}
                               </p>
                               <button
                                 onClick={() => removeVideo(lecture.id)}
@@ -562,13 +677,18 @@ const CourseManager = () => {
                       </div>
                     )}
 
+                    {/* [NEW] STEP 3: DEMO VIDEOS */}
                     {currentStep === 3 && (
                       <div className="space-y-6">
+                        <div className="bg-blue-50 p-4 rounded-xl text-blue-800 text-xs font-bold flex items-center gap-2">
+                          <Video size={16} /> Add Free Starter Lessons / Demo
+                          Videos.
+                        </div>
                         <div className="space-y-3">
                           <input
                             type="text"
-                            placeholder="Demo Title (e.g., Intro Lesson)"
-                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none font-bold"
+                            placeholder="Demo Title (e.g., Intro to UI Design)"
+                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm"
                             value={formData.tempDemoTitle}
                             onChange={(e) =>
                               setFormData({
@@ -581,13 +701,13 @@ const CourseManager = () => {
                             <input
                               type="text"
                               placeholder="YouTube Link..."
-                              className="flex-1 bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none font-bold"
+                              className="flex-1 bg-slate-50 p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm"
                               value={tempDemoUrl}
                               onChange={(e) => setTempDemoUrl(e.target.value)}
                             />
                             <button
                               onClick={addDemoVideo}
-                              className="bg-blue-600 text-white px-6 rounded-xl font-bold"
+                              className="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 transition-colors"
                             >
                               Add Demo
                             </button>
@@ -597,14 +717,16 @@ const CourseManager = () => {
                           {formData.demoVideos.map((video, index) => (
                             <div
                               key={video.id}
-                              className="flex items-center gap-3 p-2 bg-white border border-blue-100 rounded-xl"
+                              className="flex items-center gap-3 p-2 bg-white border border-blue-100 rounded-xl shadow-sm"
                             >
-                              <span className="w-6 text-xs font-black text-blue-300">
-                                D{index + 1}
+                              <span className="w-6 text-center text-xs font-black text-blue-300">
+                                Demo {index + 1}
                               </span>
-                              <p className="text-xs font-bold text-slate-700 flex-1 truncate">
-                                {video.title}
-                              </p>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-slate-700 truncate">
+                                  {video.title}
+                                </p>
+                              </div>
                               <button
                                 onClick={() => removeDemoVideo(video.id)}
                                 className="text-slate-400 hover:text-red-500 p-2"
@@ -617,17 +739,12 @@ const CourseManager = () => {
                       </div>
                     )}
 
+                    {/* STEP 4: PRICE & LINKS */}
                     {currentStep === 4 && (
-                      <div className="space-y-6">
-                        <div className="text-center mb-4">
-                          <h3 className="text-xl font-black text-slate-900">
-                            Pricing & Resources
-                          </h3>
-                        </div>
-
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-1">
                               Selling Price (₹) *
                             </label>
                             <input
@@ -660,14 +777,14 @@ const CourseManager = () => {
                           </div>
                         </div>
 
-                        <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">
+                        <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                          <label className="text-xs font-black text-emerald-700 uppercase mb-2">
                             Payment Link *
                           </label>
                           <input
                             type="text"
-                            placeholder="Razorpay/Stripe link..."
-                            className="w-full bg-emerald-50 p-3 rounded-xl border border-emerald-200 outline-none font-bold"
+                            placeholder="https://..."
+                            className="w-full bg-white p-3 rounded-xl border border-emerald-200 outline-none font-bold"
                             value={formData.paymentLink}
                             onChange={(e) =>
                               setFormData({
@@ -678,16 +795,14 @@ const CourseManager = () => {
                           />
                         </div>
 
-                        {/* STUDY MATERIAL / NOTES SECTION */}
-                        <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                          <label className="text-xs font-black text-indigo-700 uppercase mb-2 flex items-center gap-2">
-                            <FileText size={14} /> Study Material / Notes Link
-                            (Google Drive)
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-1">
+                            Drive Link (Resources)
                           </label>
                           <input
                             type="text"
-                            placeholder="https://drive.google.com/..."
-                            className="w-full bg-white p-3 rounded-xl border border-indigo-200 outline-none font-bold text-slate-700"
+                            placeholder="Resource Link"
+                            className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none"
                             value={formData.driveLink}
                             onChange={(e) =>
                               setFormData({
@@ -696,25 +811,26 @@ const CourseManager = () => {
                               })
                             }
                           />
-                          <p className="text-[10px] text-indigo-400 mt-2 font-bold italic">
-                            * Ye link sirf enrolled students ko hi dikhega.
-                          </p>
                         </div>
                       </div>
                     )}
 
+                    {/* STEP 5: LAUNCH */}
                     {currentStep === 5 && (
                       <div className="text-center py-8">
-                        <div className="size-24 bg-gradient-to-tr from-indigo-500 to-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-indigo-200">
-                          <Rocket size={40} />
-                        </div>
+                        <motion.div
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="size-24 bg-gradient-to-tr from-indigo-500 to-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-indigo-200"
+                        >
+                          <Rocket size={40} className="ml-1 -mt-1" />
+                        </motion.div>
                         <h3 className="text-2xl font-black text-slate-900 mb-2">
                           Ready for Liftoff? 🚀
                         </h3>
-                        <p className="text-slate-500 font-medium text-sm">
+                        <p className="text-slate-500 font-medium text-sm max-w-xs mx-auto">
                           Publishing <strong>{formData.title}</strong> with{" "}
-                          {formData.lectures.length} lectures and{" "}
-                          {formData.demoVideos.length} demos.
+                          {formData.demoVideos.length} demo videos.
                         </p>
                       </div>
                     )}
@@ -722,6 +838,7 @@ const CourseManager = () => {
                 </AnimatePresence>
               </div>
 
+              {/* Footer Buttons */}
               <div className="p-4 border-t border-slate-100 flex justify-between bg-slate-50/50">
                 <button
                   onClick={() => setCurrentStep((s) => Math.max(1, s - 1))}
@@ -741,7 +858,7 @@ const CourseManager = () => {
                   <button
                     onClick={handleFinalSubmit}
                     disabled={loading}
-                    className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold text-sm flex items-center gap-2"
+                    className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-indigo-700 shadow-xl"
                   >
                     {loading ? (
                       <Loader2 size={16} className="animate-spin" />

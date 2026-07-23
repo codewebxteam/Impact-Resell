@@ -46,7 +46,7 @@ const Footer = () => {
   const supportPhone =
     !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
 
-  const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}`;
+  const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I need some information.")}`;
 
   const instaLink =
     !isMainSite && agency?.instagram
@@ -216,7 +216,7 @@ const Footer = () => {
   const footerLinks = {
     Academy: [
       { name: "Courses", href: "/courses" },
-      { name: "Ebooks", href: "/ebooks" },
+
     ],
     Company: [
       { name: "About Us", href: "/about" },
@@ -281,10 +281,10 @@ const Footer = () => {
             <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden group">
               <div className="absolute inset-0 bg-linear-to-r from-[#5edff4]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <h4 className="text-white font-bold text-xl mb-2 relative z-10">
-                Join our Community
+                Need Help?
               </h4>
               <p className="text-slate-400 mb-6 text-sm relative z-10">
-                Connect with mentors, get instant updates, and clear your doubts
+                Have any questions? Clear your doubts instantly by reaching out to our support team
                 directly on WhatsApp.
               </p>
               <a
@@ -293,7 +293,7 @@ const Footer = () => {
                 rel="noreferrer"
                 className="w-full bg-[#5edff4] text-slate-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-[#cff9fe] hover:scale-[1.02] transition-all shadow-lg shadow-[#5edff4]/20 cursor-pointer relative z-10"
               >
-                <MessageCircle className="size-5" /> Join WhatsApp Group
+                <MessageCircle className="size-5" /> Message on WhatsApp
               </a>
             </div>
           </motion.div>

@@ -133,7 +133,7 @@ const EBookManager = () => {
         originalPrice: formData.discountPrice.toString(),
         updatedAt: new Date().toISOString(),
         rating: 4.5,
-        language: "English",
+        language: "Hindi",
       };
 
       if (editingId) {

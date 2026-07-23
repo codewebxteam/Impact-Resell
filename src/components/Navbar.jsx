@@ -121,7 +121,7 @@ const Navbar = () => {
   const navLinks = [
     { name: "Home", path: "/", icon: Home },
     { name: "Courses", path: "/courses", icon: GraduationCap },
-    { name: "E-Books", path: "/ebooks", icon: BookOpen },
+
     { name: "About Us", path: "/about", icon: Users },
     { name: "Contact Us", path: "/contact", icon: Mail },
     // Show Dashboard link if logged in

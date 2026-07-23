@@ -175,6 +175,7 @@ const SalesIntelligence = () => {
       ebookUnits,
       assets,
       timeline,
+      filteredOrders: filtered,
     };
   }, [orders, timeRange, customDates]);
 
@@ -184,8 +185,8 @@ const SalesIntelligence = () => {
     assetPage * assetItemsPerPage
   );
 
-  // Timeline reversed for Table (Newest First)
-  const timelineTableData = [...computed.timeline].reverse();
+  // Orders for Table (Newest First)
+  const timelineTableData = [...computed.filteredOrders].sort((a, b) => b.date - a.date);
   const currentTimeline = timelineTableData.slice(
     (timelinePage - 1) * timelineItemsPerPage,
     timelinePage * timelineItemsPerPage
@@ -255,13 +256,7 @@ const SalesIntelligence = () => {
           icon={<GraduationCap />}
           color="indigo"
         />
-        <StatCard
-          label="E-Book Revenue"
-          val={`₹${computed.ebookRev.toLocaleString()}`}
-          sub={`${computed.ebookUnits} Units Sold`}
-          icon={<BookOpen />}
-          color="orange"
-        />
+        {/* E-Book Revenue card removed */}
 
         {/* Top Performing Assets */}
         <div className="bg-white p-7 rounded-[32px] border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
@@ -293,34 +288,7 @@ const SalesIntelligence = () => {
           )}
         </div>
 
-        <div className="bg-white p-7 rounded-[32px] border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
-              <FileText size={18} />
-            </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Top Selling E-Book
-            </p>
-          </div>
-          {computed.assets.find((a) => a.type === "E-Book") ? (
-            <div>
-              <h4 className="text-sm font-black text-slate-900 line-clamp-1">
-                {computed.assets.find((a) => a.type === "E-Book").name}
-              </h4>
-              <p className="text-[10px] font-bold text-blue-500 mt-1">
-                ₹
-                {computed.assets
-                  .find((a) => a.type === "E-Book")
-                  .revenue.toLocaleString()}{" "}
-                Revenue
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs text-slate-300 font-bold">
-              No data available
-            </p>
-          )}
-        </div>
+        {/* Top Selling E-Book card removed */}
       </div>
 
       {/* --- CHART SECTION --- */}
@@ -334,12 +302,6 @@ const SalesIntelligence = () => {
               <div className="size-2 bg-indigo-500 rounded-full" />{" "}
               <span className="text-[10px] font-bold text-slate-400 uppercase">
                 Courses
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="size-2 bg-orange-500 rounded-full" />{" "}
-              <span className="text-[10px] font-bold text-slate-400 uppercase">
-                E-Books
               </span>
             </div>
           </div>
@@ -481,29 +443,28 @@ const SalesIntelligence = () => {
               <thead>
                 <tr className="bg-slate-50/50 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                   <th className="px-8 py-5">Date</th>
-                  <th className="px-8 py-5 text-center">Mix (C / E)</th>
-                  <th className="px-8 py-5 text-right">Day Gross</th>
+                  <th className="px-8 py-5 text-center">Course / Bundle</th>
+                  <th className="px-8 py-5 text-right">Selling Price</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {currentTimeline.length > 0 ? (
-                  currentTimeline.map((log, i) => (
+                  currentTimeline.map((order, i) => (
                     <tr key={i} className="hover:bg-slate-50/50 transition-all">
                       <td className="px-8 py-5 text-xs font-black text-slate-800">
-                        {log.name}
+                        {order.date.toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "2-digit",
+                        })}
                       </td>
                       <td className="px-8 py-5 text-center">
-                        <div className="flex justify-center gap-2">
-                          <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-                            ₹{log.courses}
-                          </span>
-                          <span className="text-[9px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
-                            ₹{log.ebooks}
-                          </span>
-                        </div>
+                        <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                          {order.courseTitle || "Untitled Course"}
+                        </span>
                       </td>
                       <td className="px-8 py-5 text-right text-xs font-black text-emerald-600">
-                        ₹{log.total.toLocaleString()}
+                        ₹{Number(order.sellingPrice || 0).toLocaleString()}
                       </td>
                     </tr>
                   ))

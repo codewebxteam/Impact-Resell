@@ -15,7 +15,7 @@ import {
   Loader2,
   Building2,
 } from "lucide-react";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, getDocs, where, Timestamp } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import StudentProfile from "../partner/StudentProfile";
 import * as XLSX from "xlsx";
@@ -37,53 +37,147 @@ const StudentData = () => {
 
   // --- 1. FETCH REAL DATA (ADMIN GLOBAL - REALTIME) ---
   useEffect(() => {
-    setLoading(true);
+    let unsubscribeOrders = () => {};
+    let unsubscribeUsers = () => {};
 
-    // Admin panel ke liye global orders scan karna best hai student details ke liye
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch agencies to map partnerId to agencyName for old records
+        const agenciesSnap = await getDocs(collection(db, "agencies"));
+        const agencyMap = {};
+        agenciesSnap.forEach(doc => {
+          agencyMap[doc.id] = doc.data().name || doc.data().partnerName || "Partner";
+        });
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allOrders = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+        const ordersQ = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+        const usersQ = query(collection(db, "users"), where("role", "==", "student"));
 
-      const studentMap = {};
+        let currentOrders = [];
+        let currentUsers = [];
 
-      allOrders.forEach((order) => {
-        const email = order.studentEmail;
-        if (!email) return;
+        const updateStudents = () => {
+          const studentMap = {};
 
-        if (!studentMap[email]) {
-          studentMap[email] = {
-            id: `STU-${email}`,
-            displayName: order.studentName || email.split("@")[0],
-            email: email,
-            partnerId: order.partnerId || "direct",
-            partnerName:
-              order.agencyName || order.partnerName || "Independent Partner",
-            createdAt: order.createdAt, // Firebase Timestamp
-            enrolledCourses: [],
-            totalSpent: 0,
-          };
-        }
+          // 1. Process all registered users first (Baseline)
+          currentUsers.forEach(user => {
+            const email = user.email;
+            if (!email) return;
 
-        // Mapping courses from orders
-        const courseName =
-          order.courseTitle || order.productName || "Unknown Asset";
-        if (!studentMap[email].enrolledCourses.includes(courseName)) {
-          studentMap[email].enrolledCourses.push(courseName);
-        }
+            const pId = user.partnerId || "direct";
+            const resolvedPartnerName = agencyMap[pId] || (pId === "direct" ? "Direct" : "Independent Partner");
+            
+            // Handle createdAt whether it's a Timestamp or ISO String
+            let userCreatedAt = user.createdAt;
+            if (typeof userCreatedAt === "string") {
+              userCreatedAt = Timestamp.fromDate(new Date(userCreatedAt));
+            } else if (!userCreatedAt) {
+              userCreatedAt = Timestamp.now();
+            }
 
-        studentMap[email].totalSpent += Number(order.sellingPrice || 0);
-      });
+            // If we already recorded this email with a real partner, don't overwrite with "direct"
+            if (studentMap[email] && studentMap[email].partnerId !== "direct" && pId === "direct") {
+              return;
+            }
 
-      const studentList = Object.values(studentMap);
-      setStudents(studentList);
-      setLoading(false);
-    });
+            studentMap[email] = {
+              id: `STU-${email}`,
+              displayName: user.name || email.split("@")[0],
+              name: user.name || email.split("@")[0], // For StudentProfile
+              email: email,
+              phone: user.phone || "N/A", // For StudentProfile
+              partnerId: pId,
+              partnerName: resolvedPartnerName,
+              source: pId === "direct" ? "Direct" : "Partner", // For StudentProfile
+              createdAt: userCreatedAt, 
+              joinDate: userCreatedAt, // For StudentProfile
+              enrolledCourses: [],
+              courses: [], // For StudentProfile
+              transactions: [], // For StudentProfile
+              totalSpent: 0,
+            };
+          });
 
-    return () => unsubscribe();
+          // 2. Process Orders (Override/Add courses and spend)
+          currentOrders.forEach((order) => {
+            const email = order.studentEmail;
+            if (!email) return;
+
+            const orderPartnerId = order.partnerId || "direct";
+            const orderPartnerName = order.agencyName || order.partnerName || agencyMap[orderPartnerId] || (orderPartnerId === "direct" ? "Direct" : "Independent Partner");
+
+            if (!studentMap[email]) {
+              studentMap[email] = {
+                id: `STU-${email}`,
+                displayName: order.studentName || email.split("@")[0],
+                name: order.studentName || email.split("@")[0], // For StudentProfile
+                email: email,
+                phone: "N/A", // For StudentProfile
+                partnerId: orderPartnerId,
+                partnerName: orderPartnerName,
+                source: orderPartnerId === "direct" ? "Direct" : "Partner", // For StudentProfile
+                createdAt: order.createdAt || Timestamp.now(), 
+                joinDate: order.createdAt || Timestamp.now(), // For StudentProfile
+                enrolledCourses: [],
+                courses: [], // For StudentProfile
+                transactions: [], // For StudentProfile
+                totalSpent: 0,
+              };
+            } else {
+              // If user doc had "direct" but order has a real partnerId, override with order's data
+              if (studentMap[email].partnerId === "direct" && orderPartnerId !== "direct") {
+                studentMap[email].partnerId = orderPartnerId;
+                studentMap[email].partnerName = orderPartnerName;
+              }
+            }
+
+            // Mapping courses from orders
+            const courseName =
+              order.courseTitle || order.productName || "Unknown Asset";
+            if (!studentMap[email].enrolledCourses.includes(courseName)) {
+              studentMap[email].enrolledCourses.push(courseName);
+              // Also add to courses for StudentProfile
+              studentMap[email].courses.push({ name: courseName, type: "Course" });
+            }
+            
+            // Add transaction for StudentProfile
+            studentMap[email].transactions.push({
+              id: order.id,
+              asset: courseName,
+              date: order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString(),
+              amount: Number(order.sellingPrice || 0)
+            });
+
+            studentMap[email].totalSpent += Number(order.sellingPrice || 0);
+          });
+
+          const studentList = Object.values(studentMap);
+          setStudents(studentList);
+          setLoading(false);
+        };
+
+        unsubscribeOrders = onSnapshot(ordersQ, (snapshot) => {
+          currentOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          updateStudents();
+        });
+
+        unsubscribeUsers = onSnapshot(usersQ, (snapshot) => {
+          currentUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          updateStudents();
+        });
+
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      unsubscribeOrders();
+      unsubscribeUsers();
+    };
   }, []);
 
   // --- EXCEL EXPORT ---

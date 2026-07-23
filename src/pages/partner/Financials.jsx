@@ -212,13 +212,6 @@ const Financials = () => {
           color="indigo"
         />
         <StatCard
-          label="Cost of Goods"
-          val={`₹${metrics.cost.toLocaleString()}`}
-          sub="Paid to Admin"
-          icon={<Wallet />}
-          color="slate"
-        />
-        <StatCard
           label="Net Profit"
           val={`₹${metrics.profit.toLocaleString()}`}
           sub="Your Earnings"
@@ -265,7 +258,6 @@ const Financials = () => {
                 <th className="px-8 py-6">Date & Order ID</th>
                 <th className="px-8 py-6">Student & Course</th>
                 <th className="px-8 py-6 text-right">Selling Price</th>
-                <th className="px-8 py-6 text-right">Base Cost</th>
                 <th className="px-8 py-6 text-right">Net Profit</th>
               </tr>
             </thead>
@@ -273,7 +265,7 @@ const Financials = () => {
               {loading ? (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan="4"
                     className="p-10 text-center text-slate-400 text-xs font-bold uppercase animate-pulse"
                   >
                     Loading Records...
@@ -315,11 +307,6 @@ const Financials = () => {
                     <td className="px-8 py-5 text-right">
                       <span className="text-xs font-black text-slate-900 bg-slate-100 px-2 py-1 rounded">
                         ₹{Number(order.sellingPrice).toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <span className="text-xs font-bold text-slate-400">
-                        - ₹{Number(order.adminPrice).toLocaleString()}
                       </span>
                     </td>
                     <td className="px-8 py-5 text-right">

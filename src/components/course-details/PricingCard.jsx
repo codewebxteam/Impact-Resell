@@ -125,23 +125,11 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
           ) : null}
 
           {/* Price section — only on partner subdomain */}
-          {!isEnrolled && !isMainSite && (
+          {!isEnrolled && !isMainSite && !course.isComingSoon && (
             <div className="flex items-center gap-3 mb-6 flex-wrap">
               <span className="text-4xl font-black text-slate-900">
                 {displayPrice}
               </span>
-              {displayOriginalPrice &&
-                displayOriginalPrice !== displayPrice &&
-                displayOriginalPrice !== "Free" && (
-                  <>
-                    <span className="text-lg text-slate-400 line-through">
-                      {displayOriginalPrice}
-                    </span>
-                    <span className="text-sm font-bold text-green-600 bg-green-50 px-3 py-1.5 rounded-lg">
-                      {calculateDiscount()}
-                    </span>
-                  </>
-                )}
             </div>
           )}
 
@@ -152,6 +140,13 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
               style={{ boxShadow: `0 10px 15px -3px rgba(16, 185, 129, 0.3)` }}
             >
               Go to Dashboard
+            </button>
+          ) : course.isComingSoon ? (
+            <button
+              disabled
+              className="w-full py-4 text-amber-500 font-bold text-lg rounded-xl transition-all cursor-not-allowed bg-amber-50 border border-amber-200 mb-4 shadow-none"
+            >
+              Coming Soon
             </button>
           ) : (
             /* Buy Now button — only on partner subdomain, hidden on main domain */

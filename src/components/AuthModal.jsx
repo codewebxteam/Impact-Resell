@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { useAgency } from "../context/AgencyContext";
 import {
   X,
   Mail,
@@ -20,6 +21,7 @@ import { db } from "../firebase/config";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   const { login, signup, resetPassword } = useAuth();
+  const { isPartner, agency } = useAgency();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState(defaultMode); // 'login' | 'signup' | 'partner' | 'forgotPassword'
@@ -195,6 +197,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         }
       } else {
         const userRole = mode === "partner" ? "partner" : "student";
+        const partnerIdForSignup = mode === "partner" ? null : (isPartner ? agency.id : "direct");
 
         // Firebase Signup
         await signup(
@@ -202,6 +205,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           formData.password,
           formData.name,
           userRole,
+          partnerIdForSignup
         );
 
         // If Partner, update the allowedResellers status to "registered"

@@ -61,13 +61,7 @@ const Hero = () => {
               Explore Courses <ArrowRight className="size-4 md:size-5" />
             </button>
 
-            {/* [UPDATED] Button 2: Explore Ebooks */}
-            <button
-              onClick={() => navigate("/ebooks")}
-              className="px-6 py-3 md:px-8 md:py-4 rounded-full bg-slate-900 text-white font-semibold text-sm md:text-lg hover:bg-slate-800 transition-all shadow-lg hover:-translate-y-0.5 active:scale-95 cursor-pointer"
-            >
-              Explore Ebooks
-            </button>
+
           </div>
 
           <div className="flex items-center gap-4 text-xs md:text-sm font-medium text-slate-500 mt-2 md:mt-4">

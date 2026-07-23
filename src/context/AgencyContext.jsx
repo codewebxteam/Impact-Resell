@@ -23,7 +23,10 @@ const DEFAULT_AGENCY = {
   accentColor: "#5edff4",
   email: "support@alifestable.com",
   whatsapp: "",
+  address: "",
   customPrices: {},
+  promoType: "none",
+  bundlePrice: "",
 };
 
 export const AgencyProvider = ({ children }) => {
@@ -93,8 +96,11 @@ export const AgencyProvider = ({ children }) => {
             name: data.name || "Academy",
             email: data.email,
             whatsapp: data.whatsapp,
+            address: data.address || "",
             upi: data.upi,
             customPrices: data.customPrices || {},
+            promoType: data.promoType || "none",
+            bundlePrice: data.bundlePrice || "",
             themeColor: data.themeColor || "#0f172a",
             accentColor: data.accentColor || "#5edff4",
             subdomain: subdomain,

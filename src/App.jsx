@@ -12,6 +12,50 @@ import { EBookProvider } from "./context/EBookContext";
 import { CourseProvider } from "./context/CourseContext";
 import { db } from "./firebase/config";
 
+// --- Dev Helpers ---
+import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+
+const FixDemoStudent = () => {
+  useEffect(() => {
+    const fixDemo = async () => {
+      try {
+        // 1. Find a real partner
+        const pQ = query(collection(db, "users"), where("role", "==", "partner"));
+        const pSnap = await getDocs(pQ);
+        if (pSnap.empty) {
+          console.log("FIX_DEMO: No partners found in DB to link to.");
+          return;
+        }
+        const partnerId = pSnap.docs[0].id; // first partner found
+
+        // 2. Find ALL demo student documents
+        const q = query(collection(db, "users"), where("email", "==", "demostudent1@gmail.com"));
+        const snap = await getDocs(q);
+        
+        let updatedCount = 0;
+        for (const studentDoc of snap.docs) {
+          const currentPartnerId = studentDoc.data().partnerId;
+          if (currentPartnerId === "direct" || !currentPartnerId) {
+            await updateDoc(doc(db, "users", studentDoc.id), {
+              partnerId: partnerId
+            });
+            updatedCount++;
+          }
+        }
+        
+        if (updatedCount > 0) {
+          console.log(`✅ FIX_DEMO: Successfully updated ${updatedCount} documents for demostudent1@gmail.com to partner ${partnerId}`);
+          setTimeout(() => window.location.reload(), 1000);
+        }
+      } catch (e) {
+        console.error("FIX_DEMO ERROR:", e);
+      }
+    };
+    fixDemo();
+  }, []);
+  return null;
+};
+
 // --- Components ---
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -187,7 +231,7 @@ const AppContent = () => {
             </>
           }
         />
-        <Route
+        {/* <Route
           path="/ebooks"
           element={
             <>
@@ -206,7 +250,7 @@ const AppContent = () => {
               <Footer />
             </>
           }
-        />
+        /> */}
         <Route
           path="/about"
           element={
@@ -256,7 +300,6 @@ const AppContent = () => {
           <Route path="sales" element={<SalesIntelligence />} />
           <Route path="settings" element={<AgencySetup />} />
           <Route path="profile" element={<Profile />} />
-          {/* REMOVED: Nested absolute /verify route that was causing the error */}
         </Route>
 
         {/* ADMIN DASHBOARD ROUTES */}
@@ -274,7 +317,7 @@ const AppContent = () => {
           <Route path="sales" element={<SalesManager />} />
           <Route path="payments" element={<PaymentManager />} />
           <Route path="courses" element={<CourseManager />} />
-          <Route path="ebooks" element={<EBookManager />} />
+          {/* <Route path="ebooks" element={<EBookManager />} /> */}
           <Route path="partner-access" element={<ResellManager/>}/>
         </Route>
 
@@ -289,7 +332,7 @@ const AppContent = () => {
         >
           <Route index element={<StudentDashboard />} />
           <Route path="my-courses" element={<MyCourses />} />
-          <Route path="ebooks" element={<EBookLibrary />} />
+          {/* <Route path="ebooks" element={<EBookLibrary />} /> */}
           <Route path="explore" element={<ExploreCourses />} />
           <Route path="certificates" element={<Certificates />} />
           <Route path="profile" element={<Profile />} />
@@ -305,6 +348,8 @@ const App = () => {
   return (
     <Router>
       <AgencyProvider>
+        <FixDemoStudent />
+        <ScrollToTop />
         <EBookProvider>
           <CourseProvider>
             <AppContent />

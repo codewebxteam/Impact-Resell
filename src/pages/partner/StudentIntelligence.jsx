@@ -29,6 +29,7 @@ const StudentIntelligence = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [rawOrders, setRawOrders] = useState([]);
+  const [rawUsers, setRawUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -43,20 +44,50 @@ const StudentIntelligence = () => {
       if (!partnerId) return;
       setLoading(true);
       try {
-        const q = query(
+        // 1. Fetch orders for this partner
+        const ordersQ = query(
           collection(db, "orders"),
           where("partnerId", "==", partnerId),
           orderBy("createdAt", "desc")
         );
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
+        const ordersSnap = await getDocs(ordersQ);
+        const ordersData = ordersSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate
             ? doc.data().createdAt.toDate()
             : new Date(),
         }));
-        setRawOrders(data);
+
+        // 2. Fetch users who have this partnerId (no compound index needed)
+        const usersQ = query(
+          collection(db, "users"),
+          where("partnerId", "==", partnerId)
+        );
+        const usersSnap = await getDocs(usersQ);
+        const usersData = usersSnap.docs
+          .map((doc) => {
+            const data = doc.data();
+            // Filter only students client-side (avoids composite index)
+            if (data.role !== "student") return null;
+            let userCreatedAt = data.createdAt;
+            if (typeof userCreatedAt === "string") {
+              userCreatedAt = new Date(userCreatedAt);
+            } else if (userCreatedAt?.toDate) {
+              userCreatedAt = userCreatedAt.toDate();
+            } else {
+              userCreatedAt = new Date();
+            }
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: userCreatedAt,
+            };
+          })
+          .filter(Boolean); // Remove nulls (non-student users)
+
+        setRawOrders(ordersData);
+        setRawUsers(usersData);
       } catch (error) {
         console.error("Error fetching student data:", error);
       } finally {
@@ -70,6 +101,24 @@ const StudentIntelligence = () => {
   // --- PROCESSED STUDENT DATA WITH ROBUST FILTERS ---
   const students = useMemo(() => {
     const studentMap = {};
+
+    rawUsers.forEach((user) => {
+      const email = user.email;
+      if (!email) return;
+
+      studentMap[email] = {
+        id: `STU-${email}`,
+        name: user.name || "Unknown Student",
+        email: email,
+        phone: user.phone || "Not Provided",
+        joinDate: user.createdAt,
+        source: "Partner",
+        partnerName: "You",
+        courses: [],
+        transactions: [],
+        totalSpent: 0,
+      };
+    });
 
     rawOrders.forEach((order) => {
       const email = order.studentEmail;
@@ -159,7 +208,7 @@ const StudentIntelligence = () => {
     }
 
     return studentList.sort((a, b) => b.joinDate - a.joinDate);
-  }, [rawOrders, timeRange, customDates, searchQuery]);
+  }, [rawOrders, rawUsers, timeRange, customDates, searchQuery]);
 
   // --- PAGINATION SLICE ---
   const currentStudents = students.slice(
@@ -249,12 +298,6 @@ const StudentIntelligence = () => {
           val={metrics.courseLearners}
           icon={<GraduationCap />}
           color="blue"
-        />
-        <StatCard
-          label="E-Book Readers"
-          val={metrics.ebookReaders}
-          icon={<BookOpen />}
-          color="orange"
         />
       </div>
 

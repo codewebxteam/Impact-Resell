@@ -47,6 +47,7 @@ const PartnerDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [courses, setCourses] = useState([]);
   const [ebooks, setEbooks] = useState([]);
+  const [registeredStudentEmails, setRegisteredStudentEmails] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [graphData, setGraphData] = useState([]);
@@ -103,6 +104,21 @@ const PartnerDashboard = () => {
         }));
         setOrders(ordersList);
         processGraphData(ordersList);
+
+        // 4. Fetch Registered Students under this Partner
+        const usersQ = query(
+          collection(db, "users"),
+          where("partnerId", "==", partnerId)
+        );
+        const usersSnap = await getDocs(usersQ);
+        const studentEmails = new Set();
+        usersSnap.docs.forEach((doc) => {
+          const data = doc.data();
+          if (data.role === "student" && data.email) {
+            studentEmails.add(data.email);
+          }
+        });
+        setRegisteredStudentEmails(studentEmails);
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -144,7 +160,10 @@ const PartnerDashboard = () => {
 
   // --- CALCULATE METRICS (Fixed Count Logic) ---
   const metrics = useMemo(() => {
-    let totalStudents = new Set(orders.map((o) => o.studentEmail)).size;
+    // Combine student emails from both orders and registered users
+    const allStudentEmails = new Set(orders.map((o) => o.studentEmail).filter(Boolean));
+    registeredStudentEmails.forEach(email => allStudentEmails.add(email));
+    let totalStudents = allStudentEmails.size;
     let totalRevenue = 0;
     let totalCost = 0;
 
@@ -170,7 +189,7 @@ const PartnerDashboard = () => {
       ebooksSold: ebookCount,
       coursesSold: courseCount,
     };
-  }, [orders]);
+  }, [orders, registeredStudentEmails]);
 
   // --- [FIXED] HANDLE ENROLLMENT WITH FULL OBJECT LOGIC ---
   const handleEnrollSubmit = async () => {
@@ -183,10 +202,24 @@ const PartnerDashboard = () => {
       return;
     }
 
-    const productList = enrollData.productType === "Course" ? courses : ebooks;
-    const selectedProduct = productList.find(
-      (p) => p.id === enrollData.selectedProductId
-    );
+    let selectedProduct;
+    if (enrollData.productType === "Course" && enrollData.selectedProductId === "bundle") {
+      selectedProduct = {
+        id: "bundle",
+        title: "All Courses Bundle Access",
+        price: 0,
+        image: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800&q=80",
+        instructor: "Partner Access",
+        duration: "Lifetime",
+        category: "Bundle",
+        lectures: [],
+      };
+    } else {
+      const productList = enrollData.productType === "Course" ? courses : ebooks;
+      selectedProduct = productList.find(
+        (p) => p.id === enrollData.selectedProductId
+      );
+    }
 
     if (!selectedProduct) {
       alert("⚠️ Product not found in database.");
@@ -309,14 +342,15 @@ const PartnerDashboard = () => {
       // =========================================================
       const orderPayload = {
         partnerId: partnerId,
+        partnerName: currentUser?.displayName || "Partner",
         studentEmail: safeEmail,
         studentName: studentData.displayName || safeEmail.split("@")[0],
         courseId: String(selectedProduct.id),
         courseTitle: selectedProduct.title,
-        productType: enrollData.productType, // "Course" or "E-Book"
-        adminPrice: adminPrice,
+        productType: enrollData.productType, 
+        adminPrice: 0, // Admin cut is 0
         sellingPrice: sellingPrice,
-        profit: sellingPrice - adminPrice,
+        profit: sellingPrice, // 100% Profit
         status: "Success",
         createdAt: serverTimestamp(),
         type: "Enrollment",
@@ -399,11 +433,6 @@ const PartnerDashboard = () => {
             <h3 className="text-3xl font-black text-slate-900 leading-none">
               {metrics.coursesSold}
             </h3>
-            {/* Extremely Small Text for E-Books */}
-            <p className="text-[9px] font-bold text-slate-400 mt-1.5 flex items-center gap-1">
-              <span className="size-1 rounded-full bg-orange-400"></span>+{" "}
-              {metrics.ebooksSold} E-Books
-            </p>
           </div>
         </div>
 
@@ -518,31 +547,14 @@ const PartnerDashboard = () => {
                   key={order.id}
                   className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-[24px] border border-slate-100 hover:bg-slate-50 transition-colors"
                 >
-                  <div
-                    className={`size-10 rounded-2xl flex items-center justify-center font-black shadow-sm border border-slate-100 ${
-                      order.productType === "E-Book"
-                        ? "bg-orange-50 text-orange-600"
-                        : "bg-white text-slate-900"
-                    }`}
-                  >
-                    {order.productType === "E-Book" ? (
-                      <FileText size={16} />
-                    ) : order.studentName ? (
-                      order.studentName[0]
-                    ) : (
-                      "U"
-                    )}
+                  <div className="size-10 rounded-2xl flex items-center justify-center font-black shadow-sm border border-slate-100 bg-white text-slate-900">
+                    {order.studentName ? order.studentName[0] : "U"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-black text-slate-900 truncate">
                       {order.studentName}
                     </p>
                     <p className="text-[10px] font-bold text-slate-400 truncate flex items-center gap-1">
-                      {order.productType === "E-Book" && (
-                        <span className="text-[8px] bg-orange-100 text-orange-600 px-1 rounded">
-                          E-BOOK
-                        </span>
-                      )}
                       {order.courseTitle}
                     </p>
                   </div>
@@ -629,40 +641,6 @@ const PartnerDashboard = () => {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                       Product Requested
                     </p>
-                    <div className="flex bg-slate-100 p-1 rounded-xl">
-                      <button
-                        onClick={() =>
-                          setEnrollData({
-                            ...enrollData,
-                            productType: "Course",
-                            selectedProductId: "",
-                          })
-                        }
-                        className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
-                          enrollData.productType === "Course"
-                            ? "bg-white shadow-sm text-slate-900"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        Course
-                      </button>
-                      <button
-                        onClick={() =>
-                          setEnrollData({
-                            ...enrollData,
-                            productType: "E-Book",
-                            selectedProductId: "",
-                          })
-                        }
-                        className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
-                          enrollData.productType === "E-Book"
-                            ? "bg-white shadow-sm text-slate-900"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        E-Book
-                      </button>
-                    </div>
                   </div>
 
                   <div className="relative">
@@ -676,13 +654,13 @@ const PartnerDashboard = () => {
                         })
                       }
                     >
-                      <option value="">Select {enrollData.productType}</option>
-                      {(enrollData.productType === "Course"
-                        ? courses
-                        : ebooks
-                      ).map((item) => (
+                      <option value="">Select Course</option>
+                      <option value="bundle" className="font-bold text-indigo-600">
+                        🎁 Buy 1 Get All / Bundle Access
+                      </option>
+                      {courses.map((item) => (
                         <option key={item.id} value={item.id}>
-                          {item.title} (Admin Rate: ₹{item.price})
+                          {item.title}
                         </option>
                       ))}
                     </select>
@@ -691,22 +669,11 @@ const PartnerDashboard = () => {
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                     />
                   </div>
-
-                  {enrollData.selectedProductId && (
-                    <div className="flex justify-between items-center px-4 py-3 bg-red-50 rounded-xl border border-red-100">
-                      <span className="text-[10px] font-bold text-red-400 uppercase">
-                        Amount to Pay Admin:
-                      </span>
-                      <span className="text-lg font-black text-red-600">
-                        ₹{getSelectedProductDetails()?.price}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-4">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-                    Your Profit Calculation
+                    Payment Collection
                   </p>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">
@@ -730,19 +697,6 @@ const PartnerDashboard = () => {
                       </span>
                     </div>
                   </div>
-
-                  {enrollData.selectedProductId && enrollData.sellingPrice && (
-                    <div className="flex justify-between items-center p-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">
-                        Net Profit:
-                      </span>
-                      <span className="text-sm font-black text-emerald-600">
-                        ₹
-                        {Number(enrollData.sellingPrice) -
-                          Number(getSelectedProductDetails()?.price)}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <button
@@ -751,12 +705,8 @@ const PartnerDashboard = () => {
                   className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-600 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isProcessing
-                    ? "Processing Payment..."
-                    : `Pay Admin ₹${
-                        enrollData.selectedProductId
-                          ? getSelectedProductDetails()?.price
-                          : "0"
-                      } & Grant Access`}
+                    ? "Granting Access..."
+                    : "Grant Access"}
                 </button>
               </div>
             </motion.div>

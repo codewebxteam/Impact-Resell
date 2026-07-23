@@ -51,7 +51,7 @@ const AdminLayout = () => {
       path: "/Admin/courses",
       icon: <GraduationCap size={20} />,
     },
-    { label: "E-Books", path: "/Admin/ebooks", icon: <BookOpen size={20} /> },
+
     // --- Naya Resell Rights Tab ---
     {
       label: "Partners Access",

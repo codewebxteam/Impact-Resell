@@ -52,7 +52,7 @@ const ContactUs = () => {
     !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 80840 37252";
   const contactAddress = isMainSite
     ? "Near Metro Station, Nirman Vihar, East Delhi 110092"
-    : "Digital Campus (Online)";
+    : (agency?.address || "Digital Campus (Online)");
 
   // [UPDATED] Handle Submit to Send WhatsApp Message
   const handleSubmit = (e) => {

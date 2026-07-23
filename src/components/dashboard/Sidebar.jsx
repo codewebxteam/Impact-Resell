@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
     { icon: PlayCircle, label: "My Learning", path: "/dashboard/my-courses" },
-    { icon: BookOpen, label: "E-Book Library", path: "/dashboard/ebooks" },
+    // { icon: BookOpen, label: "E-Book Library", path: "/dashboard/ebooks" },
     { icon: Award, label: "Certificates", path: "/dashboard/certificates" },
     {
       icon: ShoppingCart,

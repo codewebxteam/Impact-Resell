@@ -17,6 +17,7 @@ import {
   collection,
   Timestamp,
   getDoc,
+  getDocs,
 } from "firebase/firestore"; // [FIX] Added getDoc
 import { db } from "../firebase/config";
 import {
@@ -34,13 +35,64 @@ export const CourseProvider = ({ children }) => {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const updateTimeoutRef = useRef(null);
 
+  const resolveBundleCourses = async (coursesData) => {
+    const hasBundle = coursesData.some(c => c.courseId === "bundle");
+    if (!hasBundle) return coursesData;
+
+    try {
+      const coursesSnap = await getDocs(collection(db, "courseVideos"));
+      const allCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      const dynamicCourses = allCourses.map(c => {
+        const existing = coursesData.find(ec => ec.courseId === c.id);
+        if (existing) return existing;
+
+        let safeLectures = [];
+        if (c.lectures && Array.isArray(c.lectures)) {
+          safeLectures = c.lectures;
+        } else if (c.videoId) {
+          safeLectures = [{ id: Date.now(), videoId: c.videoId, title: c.title, url: c.url || "" }];
+        }
+
+        return {
+          courseId: c.id,
+          title: String(c.title || "Untitled Course"),
+          image: String(c.image || c.thumbnail || ""),
+          instructor: String(c.instructor || "Unknown"),
+          progress: 0,
+          status: "in-progress",
+          enrolledAt: new Date().toISOString(),
+          lastAccessed: new Date().toISOString(),
+          videoProgress: 0,
+          totalDuration: String(c.duration || "Self Paced"),
+          watchedDuration: 0,
+          price: String(c.price || "Free"),
+          category: String(c.category || "General"),
+          lectures: safeLectures,
+          rating: Number(c.rating || 0),
+          level: String(c.level || "Beginner")
+        };
+      });
+
+      return [
+        ...dynamicCourses,
+        coursesData.find(c => c.courseId === "bundle")
+      ];
+    } catch (err) {
+      console.error("Failed to dynamically load bundle courses", err);
+      return coursesData;
+    }
+  };
+
   useEffect(() => {
     if (currentUser) {
       const docRef = doc(db, "enrolledCourses", currentUser.uid);
 
-      const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      const unsubscribe = onSnapshot(docRef, async (docSnap) => {
         if (docSnap.exists()) {
-          setEnrolledCourses(docSnap.data().courses || []);
+          const coursesData = docSnap.data().courses || [];
+          const resolvedData = await resolveBundleCourses(coursesData);
+          setEnrolledCourses(resolvedData);
         } else {
           setEnrolledCourses([]);
         }
@@ -58,7 +110,9 @@ export const CourseProvider = ({ children }) => {
       const docRef = doc(db, "enrolledCourses", currentUser.uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        setEnrolledCourses(docSnap.data().courses || []);
+        const coursesData = docSnap.data().courses || [];
+        const resolvedData = await resolveBundleCourses(coursesData);
+        setEnrolledCourses(resolvedData);
       }
     } catch (error) {
       console.error("Error loading courses:", error);

@@ -64,8 +64,11 @@ const AgencySetup = () => {
     subdomain: "",
     whatsappNumber: "",
     email: "",
+    address: "",
     upiId: "",
     customPrices: {},
+    promoType: "none",
+    bundlePrice: "",
   });
 
   const [oldSubdomain, setOldSubdomain] = useState(null);
@@ -101,8 +104,11 @@ const AgencySetup = () => {
             subdomain: data.subdomain || "",
             whatsappNumber: data.whatsapp || "",
             email: data.email || currentUser.email || "",
+            address: data.address || "",
             upiId: data.upi || "",
             customPrices: data.customPrices || {},
+            promoType: data.promoType || "none",
+            bundlePrice: data.bundlePrice || "",
           });
           setOldSubdomain(data.subdomain);
           setIsEditMode(true);
@@ -178,8 +184,11 @@ const AgencySetup = () => {
         subdomain: formData.subdomain,
         whatsapp: formData.whatsappNumber,
         email: formData.email,
+        address: formData.address,
         upi: formData.upiId,
         customPrices: formData.customPrices,
+        promoType: formData.promoType,
+        bundlePrice: formData.bundlePrice,
         updatedAt: new Date(),
         ownerId: currentUser.uid,
         status: "Active",
@@ -460,6 +469,62 @@ const AgencySetup = () => {
                     </div>
 
                     <div className="space-y-8">
+                      {/* Promotional Offers */}
+                      <section className="mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Rocket size={18} className="text-indigo-600" />
+                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                            Promotional Offer
+                          </h3>
+                        </div>
+                        <p className="text-xs font-bold text-slate-500 mb-4 uppercase">
+                          Boost your sales by offering a special promotion to your students.
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                          <div 
+                            onClick={() => setFormData({...formData, promoType: "none"})}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.promoType === "none" ? "border-indigo-600 bg-indigo-50/50" : "border-slate-200 hover:border-slate-300 bg-white"}`}
+                          >
+                            <h4 className="text-sm font-black text-slate-900 mb-1">None</h4>
+                            <p className="text-[10px] font-bold text-slate-400">Standard individual selling.</p>
+                          </div>
+                          
+                          <div 
+                            onClick={() => setFormData({...formData, promoType: "bundle"})}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.promoType === "bundle" ? "border-indigo-600 bg-indigo-50/50" : "border-slate-200 hover:border-slate-300 bg-white"}`}
+                          >
+                            <h4 className="text-sm font-black text-slate-900 mb-1">All Courses Bundle</h4>
+                            <p className="text-[10px] font-bold text-slate-400">Sell all courses together at a flat price.</p>
+                          </div>
+                          
+                          <div 
+                            onClick={() => setFormData({...formData, promoType: "bogo"})}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.promoType === "bogo" ? "border-indigo-600 bg-indigo-50/50" : "border-slate-200 hover:border-slate-300 bg-white"}`}
+                          >
+                            <h4 className="text-sm font-black text-slate-900 mb-1">Buy 1 Get All Free</h4>
+                            <p className="text-[10px] font-bold text-slate-400">Buy any 1 course and get rest for free.</p>
+                          </div>
+                        </div>
+
+                        {formData.promoType === "bundle" && (
+                          <div className="flex flex-col max-w-xs animate-in fade-in slide-in-from-top-2">
+                            <label className="text-xs font-bold text-slate-600 mb-2 uppercase">Bundle Price (₹)</label>
+                            <div className="relative">
+                              <input 
+                                type="number" 
+                                value={formData.bundlePrice} 
+                                onChange={(e) => setFormData({...formData, bundlePrice: e.target.value})} 
+                                className="w-full pl-8 pr-4 py-3 bg-white border-2 border-indigo-200 rounded-xl outline-none focus:border-indigo-500 font-black text-slate-900 transition-colors" 
+                                placeholder="e.g. 499" 
+                              />
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                            </div>
+                            <p className="text-[10px] font-bold text-indigo-500/70 mt-2">This price will be prominently displayed on your courses page.</p>
+                          </div>
+                        )}
+                      </section>
+
                       {/* Courses */}
                       <section>
                         <div className="flex items-center gap-2 mb-4">
@@ -676,6 +741,21 @@ const AgencySetup = () => {
                           value={formData.email}
                           onChange={(e) =>
                             setFormData({ ...formData, email: e.target.value })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                          Physical Office Address (Optional)
+                        </label>
+                        <textarea
+                          placeholder="Ex. 123 Tech Park, Sector 4, Bangalore"
+                          rows={2}
+                          className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-100 focus:bg-white p-4 rounded-2xl font-bold text-slate-900 outline-none transition-all resize-none"
+                          value={formData.address}
+                          onChange={(e) =>
+                            setFormData({ ...formData, address: e.target.value })
                           }
                         />
                       </div>

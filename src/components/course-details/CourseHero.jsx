@@ -47,7 +47,7 @@ const CourseHero = ({ course }) => {
 
             <div className="flex items-center gap-2 text-slate-300">
               <Globe className="size-4" />
-              <span>English</span>
+              <span>Hindi</span>
             </div>
 
             <div className="flex items-center gap-2 text-slate-300">

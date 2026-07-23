@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // 1. [UPDATED] Signup Function with Role Management
-  const signup = async (email, password, name, role = "student") => {
+  const signup = async (email, password, name, role = "student", partnerId = "direct") => {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }) => {
       name: name,
       email: email,
       role: role, // 'student' or 'partner'
+      partnerId: partnerId, // Added partnerId to track who referred them
       createdAt: new Date().toISOString(),
     });
 

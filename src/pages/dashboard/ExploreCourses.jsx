@@ -123,7 +123,12 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
       }`}
     >
       {/* Image */}
-      <div className="relative h-48 overflow-hidden">
+      <div className={`relative h-48 overflow-hidden ${course.isComingSoon ? "grayscale-[20%] opacity-80" : ""}`}>
+        {course.isComingSoon && (
+          <div className="absolute top-3 left-3 bg-amber-500 text-white px-3 py-1 rounded-lg text-[10px] uppercase font-black shadow-sm tracking-wider z-20">
+            Coming Soon
+          </div>
+        )}
         <img
           src={
             course.image ||
@@ -168,7 +173,6 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
                 Purchased
               </span>
             ) : (
-              <>
                 <span
                   className={`block text-lg font-bold ${
                     isFree ? "text-green-600" : "text-slate-900"
@@ -176,25 +180,24 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
                 >
                   {isFree ? "Free" : `₹${finalPrice}`}
                 </span>
-                {!isFree && course.originalPrice && (
-                  <span className="text-xs text-slate-400 line-through">
-                    ₹{course.originalPrice}
-                  </span>
-                )}
-              </>
             )}
           </div>
 
           <Link
-            to={`/courses/${course.id}`}
+            to={course.isComingSoon ? "#" : `/courses/${course.id}`}
+            onClick={(e) => course.isComingSoon && e.preventDefault()}
             className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg flex items-center gap-2 ${
               isUserEnrolled
                 ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:shadow-emerald-100"
+                : course.isComingSoon
+                ? "bg-amber-50 text-amber-500 border border-amber-200 shadow-none cursor-not-allowed"
                 : "bg-slate-900 text-white hover:bg-[#5edff4] hover:text-slate-900 hover:shadow-[#5edff4]/20"
             }`}
           >
             {isUserEnrolled ? (
               <>View Course</>
+            ) : course.isComingSoon ? (
+              <>Coming Soon</>
             ) : (
               <>
                 <ShoppingCart className="size-4" />{" "}
