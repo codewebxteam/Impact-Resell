@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -12,12 +12,59 @@ import {
   CheckCircle2,
   Download,
   Globe,
+  Loader2,
 } from "lucide-react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../firebase/config";
 
 const StudentProfile = ({ student, onClose }) => {
-  const [activeTab, setActiveTab] = useState("academic"); // academic | history | personal
+  const [activeTab, setActiveTab] = useState("academic");
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [liveUserData, setLiveUserData] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  // Fetch fresh user data from Firestore 'users' collection by email
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!student?.email) {
+        console.log("❌ [StudentProfile] No email provided");
+        setLoadingUser(false);
+        return;
+      }
+      console.log("🔍 [StudentProfile] Fetching user data for:", student.email);
+      try {
+        const usersQ = query(
+          collection(db, "users"),
+          where("email", "==", student.email)
+        );
+        const snap = await getDocs(usersQ);
+        console.log("📦 [StudentProfile] Users found:", snap.size);
+        if (!snap.empty) {
+          const userData = snap.docs[0].data();
+          console.log("✅ [StudentProfile] User data from Firestore:", JSON.stringify({
+            name: userData.name,
+            phone: userData.phone,
+            location: userData.location,
+            email: userData.email,
+          }));
+          setLiveUserData(userData);
+        } else {
+          console.log("⚠️ [StudentProfile] No user document found for:", student.email);
+        }
+      } catch (err) {
+        console.error("❌ [StudentProfile] Error fetching user data:", err);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+    fetchUserData();
+  }, [student?.email]);
 
   if (!student) return null;
+
+  // Merge: live Firestore data takes priority over parent-passed props
+  const phone = liveUserData?.phone || student.phone || "N/A";
+  const studentName = liveUserData?.name || student.name || "Unknown Student";
 
   return (
     <motion.div
@@ -31,12 +78,12 @@ const StudentProfile = ({ student, onClose }) => {
         <div className="relative z-10 flex justify-between items-start">
           <div className="flex items-center gap-6">
             <div className="size-24 rounded-3xl bg-white/10 backdrop-blur-md flex items-center justify-center text-4xl font-black shadow-inner border border-white/20 uppercase">
-              {student.name ? student.name[0] : "U"}
+              {studentName ? studentName[0] : "U"}
             </div>
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h2 className="text-3xl font-black uppercase tracking-tight">
-                  {student.name}
+                  {studentName}
                 </h2>
                 <span
                   className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
@@ -55,7 +102,12 @@ const StudentProfile = ({ student, onClose }) => {
                   <Mail size={14} /> {student.email}
                 </span>
                 <span className="flex items-center gap-2 text-xs font-bold">
-                  <Phone size={14} /> {student.phone || "N/A"}
+                  <Phone size={14} />{" "}
+                  {loadingUser ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    phone
+                  )}
                 </span>
                 {student.partnerName && (
                   <span className="flex items-center gap-2 text-xs font-bold text-orange-300">
@@ -197,7 +249,10 @@ const StudentProfile = ({ student, onClose }) => {
                         ₹{txn.amount}
                       </td>
                       <td className="px-8 py-5 text-right">
-                        <button className="p-2 bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-200">
+                        <button
+                          onClick={() => setSelectedInvoice(txn)}
+                          className="p-2 bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-200"
+                        >
                           <Download size={14} />
                         </button>
                       </td>
@@ -227,7 +282,7 @@ const StudentProfile = ({ student, onClose }) => {
           >
             <InfoCard
               label="Full Name"
-              val={student.name}
+              val={studentName}
               icon={<User size={16} />}
             />
             <InfoCard
@@ -236,22 +291,19 @@ const StudentProfile = ({ student, onClose }) => {
               icon={<Mail size={16} />}
             />
             <InfoCard
-              label="Phone Number"
-              val={student.phone || "N/A"}
+              label="WhatsApp Contact"
+              val={loadingUser ? "Loading..." : phone}
               icon={<Phone size={16} />}
             />
             <InfoCard
-              label="City / Location"
-              val={student.location || "Not Provided"}
-              icon={<MapPin size={16} />}
-            />
-            <InfoCard
               label="Enrollment Date"
-              val={
-                student.joinDate
-                  ? new Date(student.joinDate).toLocaleDateString()
-                  : "N/A"
-              }
+              val={(() => {
+                try {
+                  if (!student.joinDate) return "N/A";
+                  const d = student.joinDate?.toDate ? student.joinDate.toDate() : new Date(student.joinDate);
+                  return isNaN(d) ? "N/A" : d.toLocaleDateString("en-GB");
+                } catch { return "N/A"; }
+              })()}
               icon={<Calendar size={16} />}
             />
             <InfoCard
@@ -267,6 +319,47 @@ const StudentProfile = ({ student, onClose }) => {
           </motion.div>
         )}
       </div>
+
+      {/* --- INVOICE MODAL --- */}
+      <AnimatePresence>
+        {selectedInvoice && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md relative"
+            >
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl"
+              >
+                <X size={16} />
+              </button>
+              <h3 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">Invoice Details</h3>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Student Name</span>
+                  <span className="text-sm font-bold text-slate-900">{studentName}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Course Name</span>
+                  <span className="text-sm font-bold text-slate-900 text-right max-w-[200px]">{selectedInvoice.asset}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Amount Paid</span>
+                  <span className="text-sm font-black text-indigo-600">₹{selectedInvoice.amount}</span>
+                </div>
+                <div className="flex justify-between items-center pb-2">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Date</span>
+                  <span className="text-sm font-bold text-slate-900">{selectedInvoice.date}</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

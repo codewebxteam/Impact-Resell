@@ -253,6 +253,13 @@ const StudentData = () => {
       );
     }
 
+    // C. Sort by latest enrolled
+    data.sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (new Date(a.createdAt).getTime() || 0);
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (new Date(b.createdAt).getTime() || 0);
+      return dateB - dateA;
+    });
+
     return data;
   }, [students, timeFilter, searchQuery, customDates]);
 
@@ -468,9 +475,12 @@ const StudentData = () => {
                       </td>
                       <td className="px-8 py-6">
                         <p className="text-xs font-bold text-slate-500">
-                          {s.createdAt?.toDate
-                            ? s.createdAt.toDate().toLocaleDateString("en-GB")
-                            : "N/A"}
+                          {(() => {
+                            try {
+                              const d = s.createdAt?.toDate ? s.createdAt.toDate() : new Date(s.createdAt);
+                              return isNaN(d) ? "N/A" : d.toLocaleDateString("en-GB");
+                            } catch { return "N/A"; }
+                          })()}
                         </p>
                       </td>
                       <td className="px-8 py-6 text-right">

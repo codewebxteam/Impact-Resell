@@ -204,6 +204,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           formData.email,
           formData.password,
           formData.name,
+          formData.phone,
           userRole,
           partnerIdForSignup
         );

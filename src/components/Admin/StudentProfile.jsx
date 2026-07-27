@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -12,13 +12,14 @@ import {
   CheckCircle2,
   Download,
   Globe,
+  Loader2,
 } from "lucide-react";
 import {
   collection,
   query,
   where,
   onSnapshot,
-  orderBy,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "../../firebase/config";
 
@@ -26,22 +27,49 @@ const StudentProfile = ({ student, onClose }) => {
   const [activeTab, setActiveTab] = useState("academic");
   const [studentTransactions, setStudentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [liveUserData, setLiveUserData] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   // Fallback for names
-  const studentName = student.displayName || student.name || "Unknown Student";
+  const studentName = liveUserData?.name || student.displayName || student.name || "Unknown Student";
   const studentEmail = student.email;
+
+  // --- FETCH LIVE USER DATA FROM 'users' COLLECTION ---
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!studentEmail) {
+        setLoadingUser(false);
+        return;
+      }
+      try {
+        const usersQ = query(
+          collection(db, "users"),
+          where("email", "==", studentEmail)
+        );
+        const snap = await getDocs(usersQ);
+        if (!snap.empty) {
+          setLiveUserData(snap.docs[0].data());
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+    fetchUserData();
+  }, [studentEmail]);
+
+  // Merge live data
+  const phone = liveUserData?.phone || student.phone || "N/A";
 
   // --- FETCH REAL-TIME DATA FOR STUDENT ---
   useEffect(() => {
     if (!studentEmail) {
-      console.error("DEBUG: Student Email is missing!");
       setLoading(false);
       return;
     }
 
-    console.log("DEBUG: Fetching orders for student:", studentEmail);
-
-    // Query 'orders' collection by studentEmail
     const q = query(
       collection(db, "orders"),
       where("studentEmail", "==", studentEmail),
@@ -50,8 +78,6 @@ const StudentProfile = ({ student, onClose }) => {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        console.log(`DEBUG: Found ${snapshot.size} orders for this student.`);
-
         const txns = snapshot.docs.map((doc) => {
           const d = doc.data();
           return {
@@ -129,7 +155,12 @@ const StudentProfile = ({ student, onClose }) => {
                   <Mail size={14} /> {studentEmail}
                 </span>
                 <span className="flex items-center gap-2 text-xs font-bold">
-                  <Phone size={14} /> {student.phone || "N/A"}
+                  <Phone size={14} />{" "}
+                  {loadingUser ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    phone
+                  )}
                 </span>
                 {student.partnerName && (
                   <span className="flex items-center gap-2 text-xs font-bold text-orange-300">
@@ -261,7 +292,10 @@ const StudentProfile = ({ student, onClose }) => {
                         ₹{txn.amount.toLocaleString()}
                       </td>
                       <td className="px-8 py-5 text-right">
-                        <button className="p-2 bg-slate-100 rounded-lg text-slate-400">
+                        <button
+                          onClick={() => setSelectedInvoice(txn)}
+                          className="p-2 bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-200"
+                        >
                           <Download size={14} />
                         </button>
                       </td>
@@ -300,8 +334,19 @@ const StudentProfile = ({ student, onClose }) => {
             />
             <InfoCard
               label="WhatsApp Contact"
-              val={student.phone || "Not Linked"}
+              val={loadingUser ? "Loading..." : phone}
               icon={<Phone size={16} />}
+            />
+            <InfoCard
+              label="Enrollment Date"
+              val={(() => {
+                try {
+                  if (!student.joinDate) return "N/A";
+                  const d = student.joinDate?.toDate ? student.joinDate.toDate() : new Date(student.joinDate);
+                  return isNaN(d) ? "N/A" : d.toLocaleDateString("en-GB");
+                } catch { return "N/A"; }
+              })()}
+              icon={<Calendar size={16} />}
             />
             <InfoCard
               label="Acquisition"
@@ -316,6 +361,47 @@ const StudentProfile = ({ student, onClose }) => {
           </motion.div>
         )}
       </div>
+
+      {/* --- INVOICE MODAL --- */}
+      <AnimatePresence>
+        {selectedInvoice && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md relative"
+            >
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl"
+              >
+                <X size={16} />
+              </button>
+              <h3 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">Invoice Details</h3>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Student Name</span>
+                  <span className="text-sm font-bold text-slate-900">{studentName}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Course Name</span>
+                  <span className="text-sm font-bold text-slate-900 text-right max-w-[200px]">{selectedInvoice.asset}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Amount Paid</span>
+                  <span className="text-sm font-black text-indigo-600">₹{selectedInvoice.amount}</span>
+                </div>
+                <div className="flex justify-between items-center pb-2">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Date</span>
+                  <span className="text-sm font-bold text-slate-900">{selectedInvoice.date}</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

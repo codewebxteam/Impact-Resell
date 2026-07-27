@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // 1. [UPDATED] Signup Function with Role Management
-  const signup = async (email, password, name, role = "student", partnerId = "direct") => {
+  const signup = async (email, password, name, phone = "", role = "student", partnerId = "direct") => {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
@@ -38,8 +38,9 @@ export const AuthProvider = ({ children }) => {
     // [NEW] Save User Profile with Role in Firestore
     await setDoc(doc(db, "users", uid), {
       uid,
-      name: name,
+      name: name || "Unknown",
       email: email,
+      phone: phone || "Not Provided",
       role: role, // 'student' or 'partner'
       partnerId: partnerId, // Added partnerId to track who referred them
       createdAt: new Date().toISOString(),

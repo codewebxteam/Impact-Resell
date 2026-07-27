@@ -65,9 +65,35 @@ const StudentIntelligence = () => {
           where("partnerId", "==", partnerId)
         );
         const usersSnap = await getDocs(usersQ);
-        const usersData = usersSnap.docs
-          .map((doc) => {
-            const data = doc.data();
+        
+        const allUsersMap = new Map();
+        usersSnap.docs.forEach((doc) => {
+          if (doc.data().email) {
+            allUsersMap.set(doc.data().email, { id: doc.id, ...doc.data() });
+          }
+        });
+
+        // 3. Fetch missing users by email from orders (chunked by 10)
+        const orderEmails = [...new Set(ordersData.map(o => o.studentEmail).filter(Boolean))];
+        const missingEmails = orderEmails.filter(email => !allUsersMap.has(email));
+        
+        const chunks = [];
+        for (let i = 0; i < missingEmails.length; i += 10) {
+          chunks.push(missingEmails.slice(i, i + 10));
+        }
+
+        await Promise.all(chunks.map(async (chunk) => {
+          const chunkQ = query(collection(db, "users"), where("email", "in", chunk));
+          const chunkSnap = await getDocs(chunkQ);
+          chunkSnap.docs.forEach((doc) => {
+             if (doc.data().email) {
+               allUsersMap.set(doc.data().email, { id: doc.id, ...doc.data() });
+             }
+          });
+        }));
+
+        const usersData = Array.from(allUsersMap.values())
+          .map((data) => {
             // Filter only students client-side (avoids composite index)
             if (data.role !== "student") return null;
             let userCreatedAt = data.createdAt;
@@ -79,7 +105,7 @@ const StudentIntelligence = () => {
               userCreatedAt = new Date();
             }
             return {
-              id: doc.id,
+              id: data.id,
               ...data,
               createdAt: userCreatedAt,
             };
@@ -111,6 +137,7 @@ const StudentIntelligence = () => {
         name: user.name || "Unknown Student",
         email: email,
         phone: user.phone || "Not Provided",
+        location: user.location || "Not Provided",
         joinDate: user.createdAt,
         source: "Partner",
         partnerName: "You",
@@ -130,6 +157,7 @@ const StudentIntelligence = () => {
           name: order.studentName || "Unknown Student",
           email: email,
           phone: order.studentPhone || "Not Provided",
+          location: "Not Provided",
           joinDate: order.createdAt,
           source: "Partner",
           partnerName: "You",
@@ -137,6 +165,10 @@ const StudentIntelligence = () => {
           transactions: [],
           totalSpent: 0,
         };
+      } else {
+        if (studentMap[email].phone === "Not Provided" && order.studentPhone) {
+          studentMap[email].phone = order.studentPhone;
+        }
       }
 
       // Update Join Date to the earliest one
