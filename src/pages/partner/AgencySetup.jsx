@@ -69,6 +69,7 @@ const AgencySetup = () => {
     customPrices: {},
     promoType: "none",
     bundlePrice: "",
+    demoVideoLink: "",
   });
 
   const [oldSubdomain, setOldSubdomain] = useState(null);
@@ -109,6 +110,7 @@ const AgencySetup = () => {
             customPrices: data.customPrices || {},
             promoType: data.promoType || "none",
             bundlePrice: data.bundlePrice || "",
+            demoVideoLink: data.demoVideoLink || "",
           });
           setOldSubdomain(data.subdomain);
           setIsEditMode(true);
@@ -189,6 +191,7 @@ const AgencySetup = () => {
         customPrices: formData.customPrices,
         promoType: formData.promoType,
         bundlePrice: formData.bundlePrice,
+        demoVideoLink: formData.demoVideoLink,
         updatedAt: new Date(),
         ownerId: currentUser.uid,
         status: "Active",
@@ -429,6 +432,25 @@ const AgencySetup = () => {
                             </>
                           )}
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                          Demo Video (YouTube Link)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ex. https://youtube.com/watch?v=..."
+                          className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white p-4 rounded-2xl font-bold text-slate-900 outline-none transition-all"
+                          value={formData.demoVideoLink}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              demoVideoLink: e.target.value,
+                            })
+                          }
+                        />
+                        <p className="text-[10px] text-slate-400 font-bold ml-1">This video will be displayed prominently on your academy's homepage.</p>
                       </div>
                     </div>
                   </motion.div>

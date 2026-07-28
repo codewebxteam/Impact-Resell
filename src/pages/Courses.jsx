@@ -8,6 +8,7 @@ import { useAgency } from "../context/AgencyContext"; // [ADDED] Import Agency C
 import AuthModal from "../components/AuthModal";
 import FAQSection from "../components/FAQSection";
 import CourseVideoPlayer from "../components/CourseVideoPlayer";
+import DemoVideoSection from "../components/DemoVideoSection";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 
@@ -234,6 +235,9 @@ const Courses = () => {
             </div>
           </div>
         )}
+
+        {/* --- Demo Video Section --- */}
+        <DemoVideoSection />
 
         {/* --- Courses Grid --- */}
         <div className="max-w-7xl mx-auto px-6">

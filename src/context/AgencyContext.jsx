@@ -27,6 +27,7 @@ const DEFAULT_AGENCY = {
   customPrices: {},
   promoType: "none",
   bundlePrice: "",
+  demoVideoLink: "",
 };
 
 export const AgencyProvider = ({ children }) => {
@@ -104,6 +105,7 @@ export const AgencyProvider = ({ children }) => {
             themeColor: data.themeColor || "#0f172a",
             accentColor: data.accentColor || "#5edff4",
             subdomain: subdomain,
+            demoVideoLink: data.demoVideoLink || "",
           });
           setIsMainSite(false);
         } else {
