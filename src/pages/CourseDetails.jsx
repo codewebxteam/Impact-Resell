@@ -53,7 +53,43 @@ const CourseDetails = () => {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          const data = docSnap.data();
+          let data = docSnap.data();
+
+          // --- PARTNER DEMO OVERRIDE LOGIC ---
+          let overridesToApply = null;
+
+          if (!isMainSite && agency?.courseDemoOverrides?.[docSnap.id]) {
+            // Live on subdomain
+            overridesToApply = agency.courseDemoOverrides[docSnap.id];
+          } else if (isMainSite && currentUser) {
+             // Preview for Partner on Main Site
+             const userRef = doc(db, "users", currentUser.uid);
+             const userSnap = await getDoc(userRef);
+             
+             if (userSnap.exists()) {
+                if (userSnap.data().role === "partner") {
+                   const agencyRef = doc(db, "agencies", currentUser.uid);
+                   const agencySnap = await getDoc(agencyRef);
+                   
+                   if (agencySnap.exists()) {
+                      if (agencySnap.data().courseDemoOverrides?.[docSnap.id]) {
+                         overridesToApply = agencySnap.data().courseDemoOverrides[docSnap.id];
+                      }
+                   }
+                }
+             }
+          }
+
+          if (overridesToApply) {
+            if (overridesToApply.mainVideoId !== undefined && overridesToApply.mainVideoId !== "") {
+              data.mainVideoId = overridesToApply.mainVideoId;
+            }
+            if (overridesToApply.demoVideos !== undefined && overridesToApply.demoVideos.length > 0) {
+              // Combine Admin Demos and Partner Demos so all added videos show
+              data.demoVideos = [...(data.demoVideos || []), ...overridesToApply.demoVideos];
+            }
+          }
+
           setCourse({
             id: docSnap.id,
             courseId: docSnap.id,
@@ -80,7 +116,7 @@ const CourseDetails = () => {
       }
     };
     fetchCourseDetails();
-  }, [id]);
+  }, [id, isMainSite, agency, currentUser]);
 
   const handleEnroll = () => {
     if (!course?.paymentLink) return alert("Payment link not configured.");
@@ -95,6 +131,11 @@ const CourseDetails = () => {
   const openPlayer = (playlist, index = 0) => {
     setActiveVideoPlaylist(playlist);
     setStartIndex(index);
+  };
+
+  const handleClosePlayer = () => {
+    setActiveVideoPlaylist(null);
+    window.location.reload();
   };
 
   // UI loading check with Subdomain Logic
@@ -242,7 +283,7 @@ const CourseDetails = () => {
                       </div>
                     </div>
                   ))}
-                  {!userHasAccess && !isMainSite && (
+                  {!userHasAccess && (
                     <div
                       onClick={handleEnroll}
                       className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[24px] p-6 flex flex-col items-center justify-center text-center border border-slate-700 cursor-pointer hover:scale-[1.02] transition-transform group"
@@ -283,7 +324,7 @@ const CourseDetails = () => {
           course={course}
           playlist={activeVideoPlaylist}
           initialIndex={startIndex}
-          onClose={() => setActiveVideoPlaylist(null)}
+          onClose={handleClosePlayer}
         />
       )}
 

@@ -31,7 +31,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebase/config";
 
-const CourseManager = () => {
+const CourseManager = ({ partnerId }) => {
   const [courses, setCourses] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -71,10 +71,16 @@ const CourseManager = () => {
     setLoading(true);
     try {
       const querySnapshot = await getDocs(collection(db, "courseVideos"));
-      const courseList = querySnapshot.docs.map((doc) => ({
+      let courseList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
+      if (partnerId) {
+        courseList = courseList.filter(c => c.partnerId === partnerId);
+      } else {
+        courseList = courseList.filter(c => !c.partnerId || c.partnerId === "admin");
+      }
       courseList.sort((a, b) => {
         const priorityA = parseInt(a.priority) || 0;
         const priorityB = parseInt(b.priority) || 0;
@@ -249,6 +255,11 @@ const CourseManager = () => {
         lecturesCount: `${formData.lectures.length} Lectures`,
         duration: "Self Paced",
       };
+
+      if (partnerId) {
+        courseData.partnerId = partnerId;
+        courseData.instructor = "Partner";
+      }
 
       if (editingId) {
         await updateDoc(doc(db, "courseVideos", editingId), courseData);

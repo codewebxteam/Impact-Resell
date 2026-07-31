@@ -87,6 +87,8 @@ import AgencySetup from "./pages/partner/AgencySetup";
 import CouponIntelligence from "./pages/partner/CouponIntelligence";
 import SalesIntelligence from "./pages/partner/SalesIntelligence";
 import StudentIntelligence from "./pages/partner/StudentIntelligence";
+import PartnerCourseManager from "./components/dashboard/partner/PartnerCourseManager";
+import PartnerMyCourses from "./components/dashboard/partner/PartnerMyCourses";
 
 // --- Admin Pages ---
 import AdminLayout from "./pages/Admin/AdminLayout";
@@ -298,6 +300,8 @@ const AppContent = () => {
           <Route path="students" element={<StudentIntelligence />} />
           <Route path="coupons" element={<CouponIntelligence />} />
           <Route path="sales" element={<SalesIntelligence />} />
+          <Route path="courses" element={<PartnerCourseManager />} />
+          <Route path="my-courses" element={<PartnerMyCourses />} />
           <Route path="settings" element={<AgencySetup />} />
           <Route path="profile" element={<Profile />} />
         </Route>

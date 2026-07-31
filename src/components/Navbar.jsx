@@ -171,7 +171,7 @@ const Navbar = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-sm sm:text-lg font-bold tracking-tight text-slate-900 leading-none">
-                {agency?.name || "Impact School Of AI"}
+                {agency?.name || "AI Courses"}
               </span>
               <span
                 className="text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase block"

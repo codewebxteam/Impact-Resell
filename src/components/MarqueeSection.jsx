@@ -9,7 +9,7 @@ const MarqueeSection = () => {
   // [LOGIC] Dynamic Name Logic
   // Agar Partner (Subdomain) hai to Agency Name, nahi to Default Academy Name
   const academyName =
-    !isMainSite && agency ? agency.name.toUpperCase() : "Impact School Of AI";
+    !isMainSite && agency ? agency.name.toUpperCase() : "AI COURSES";
 
   // Design wale items (Updated with Dynamic Name)
   const items = [

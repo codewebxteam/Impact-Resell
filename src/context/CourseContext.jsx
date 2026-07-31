@@ -31,7 +31,7 @@ export const useCourse = () => useContext(CourseContext);
 
 export const CourseProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  const { isPartner, agency } = useAgency();
+  const { isPartner, agency, isMainSite } = useAgency();
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const updateTimeoutRef = useRef(null);
 
@@ -41,7 +41,13 @@ export const CourseProvider = ({ children }) => {
 
     try {
       const coursesSnap = await getDocs(collection(db, "courseVideos"));
-      const allCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let allCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      if (isMainSite) {
+        allCourses = allCourses.filter(c => !c.partnerId || c.partnerId === "admin");
+      } else {
+        allCourses = allCourses.filter(c => !c.partnerId || c.partnerId === "admin" || c.partnerId === agency?.id);
+      }
       
       const dynamicCourses = allCourses.map(c => {
         const existing = coursesData.find(ec => ec.courseId === c.id);

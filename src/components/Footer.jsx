@@ -38,7 +38,7 @@ const Footer = () => {
 
   // [LOGIC] Dynamic Data Variables
   const academyName =
-    !isMainSite && agency ? agency.name : "Impact School Of AI";
+    !isMainSite && agency ? agency.name : "AI Courses";
 
   const supportEmail =
     !isMainSite && agency?.email ? agency.email : "support@alifestable.com";

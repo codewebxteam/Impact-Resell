@@ -49,7 +49,7 @@ const StudentDashboard = () => {
 
   // [LOGIC] Dynamic Academy Name
   const academyName =
-    !isMainSite && agency ? agency.name : "Impact School Of AI";
+    !isMainSite && agency ? agency.name : "AI Courses";
 
   // --- 1. STREAK TRACKING LOGIC (With Max Streak) ---
   useEffect(() => {

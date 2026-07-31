@@ -81,7 +81,7 @@ const VerifyCertificate = () => {
           <p className="text-slate-400 text-lg">
             Authenticate certificates issued by{" "}
             <span className="text-[#5edff4] font-semibold">
-              Impact School of AI
+              AI Courses
             </span>
           </p>
         </div>
@@ -256,7 +256,7 @@ const VerifyCertificate = () => {
                           className="w-6 h-6 rounded-full"
                         />
                         <span className="text-[#5edff4] font-bold text-sm">
-                          {result.issuedBy || "Impact School of AI"}
+                          {result.issuedBy || "AI Courses"}
                         </span>
                       </div>
                     </div>

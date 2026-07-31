@@ -17,6 +17,8 @@ import {
   Check,
   ChevronRight,
   Sparkles,
+  BookOpen,
+  Video,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -81,6 +83,16 @@ const PartnerLayout = () => {
       label: "Academy Settings",
       path: "/partner/settings",
       icon: <Settings size={20} />,
+    },
+    {
+      label: "Course Demos",
+      path: "/partner/courses",
+      icon: <Video size={20} />,
+    },
+    {
+      label: "My Custom Courses",
+      path: "/partner/my-courses",
+      icon: <BookOpen size={20} />,
     },
   ];
 

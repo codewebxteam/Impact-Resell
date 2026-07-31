@@ -29,10 +29,18 @@ const Courses = () => {
     const fetchCourses = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "courseVideos"));
-        const courseList = querySnapshot.docs.map((doc) => ({
+        let courseList = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        
+        // Filter based on Main Site vs Subdomain
+        if (isMainSite) {
+           courseList = courseList.filter(c => !c.partnerId || c.partnerId === "admin");
+        } else {
+           courseList = courseList.filter(c => !c.partnerId || c.partnerId === "admin" || c.partnerId === agency?.id);
+        }
+
         courseList.sort((a, b) => {
           const pA = parseInt(a.priority) || 9999;
           const pB = parseInt(b.priority) || 9999;
@@ -48,7 +56,7 @@ const Courses = () => {
     };
 
     fetchCourses();
-  }, []);
+  }, [isMainSite, agency?.id]);
 
   const handlePlayVideo = (courseId) => {
     const enrolledCourse = getEnrolledCourse(courseId);

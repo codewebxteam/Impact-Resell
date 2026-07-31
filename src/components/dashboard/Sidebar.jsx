@@ -26,7 +26,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   // [LOGIC] Dynamic Colors & Name
   const accentColor = agency?.accentColor || "#5edff4";
-  const appName = !isMainSite && agency ? agency.name : "Impact School Of AI";
+  const appName = !isMainSite && agency ? agency.name : "AI Courses";
 
   const handleLogout = async () => {
     await logout();

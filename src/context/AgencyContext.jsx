@@ -18,7 +18,7 @@ const AgencyContext = createContext();
 export const useAgency = () => useContext(AgencyContext);
 
 const DEFAULT_AGENCY = {
-  name: "Impact School Of AI",
+  name: "AI Courses",
   themeColor: "#0f172a",
   accentColor: "#5edff4",
   email: "support@alifestable.com",
@@ -106,6 +106,7 @@ export const AgencyProvider = ({ children }) => {
             accentColor: data.accentColor || "#5edff4",
             subdomain: subdomain,
             demoVideoLink: data.demoVideoLink || "",
+            courseDemoOverrides: data.courseDemoOverrides || {},
           });
           setIsMainSite(false);
         } else {
@@ -142,7 +143,7 @@ export const AgencyProvider = ({ children }) => {
         agency?.accentColor || "#5edff4",
       );
       document.title = isMainSite
-        ? "Impact School Of AI"
+        ? "AI Courses"
         : `${agency?.name} | Learning Portal`;
     }
   }, [agency, isMainSite, loading]);

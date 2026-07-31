@@ -178,6 +178,7 @@ const ProductCard = ({ product, index }) => {
 const DigitalProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isMainSite, agency } = useAgency();
 
   const getValidImageUrl = (url) => {
     if (!url) return "https://placehold.co/600x400?text=No+Cover";
@@ -198,14 +199,27 @@ const DigitalProducts = () => {
   useEffect(() => {
     const fetchTopProducts = async () => {
       try {
-        const q = query(collection(db, "courseVideos"), limit(3));
-        const querySnapshot = await getDocs(q);
-        const data = querySnapshot.docs.map((doc) => ({
+        const querySnapshot = await getDocs(collection(db, "courseVideos"));
+        let data = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           image: getValidImageUrl(doc.data().image),
         }));
-        setProducts(data);
+
+        if (isMainSite) {
+          data = data.filter(c => !c.partnerId || c.partnerId === "admin");
+        } else {
+          data = data.filter(c => !c.partnerId || c.partnerId === "admin" || c.partnerId === agency?.id);
+        }
+
+        data.sort((a, b) => {
+          const pA = parseInt(a.priority) || 9999;
+          const pB = parseInt(b.priority) || 9999;
+          if (pA !== pB) return pA - pB;
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+
+        setProducts(data.slice(0, 3));
       } catch (error) {
         console.error("Error fetching courses:", error);
       } finally {

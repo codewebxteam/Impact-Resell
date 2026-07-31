@@ -13,15 +13,25 @@ const ExploreCourses = () => {
   const [liveCourses, setLiveCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const { isMainSite, agency } = useAgency();
+
   // --- Fetch Courses from Firebase ---
   useEffect(() => {
     const fetchLiveCourses = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "courseVideos"));
-        const courses = querySnapshot.docs.map((doc) => ({
+        let courses = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        
+        // Filter based on Main Site vs Subdomain
+        if (isMainSite) {
+           courses = courses.filter(c => !c.partnerId || c.partnerId === "admin");
+        } else {
+           courses = courses.filter(c => !c.partnerId || c.partnerId === "admin" || c.partnerId === agency?.id);
+        }
+
         setLiveCourses(courses);
       } catch (error) {
         console.error("Error fetching courses:", error);
@@ -31,7 +41,7 @@ const ExploreCourses = () => {
     };
 
     fetchLiveCourses();
-  }, []);
+  }, [isMainSite, agency?.id]);
 
   // [UPDATED] Filter: Now shows Enrolled courses too (Only filters by search)
   const availableCourses = liveCourses.filter((course) => {

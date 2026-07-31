@@ -431,19 +431,34 @@ const CardsSwap = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  const { isMainSite, agency } = useAgency();
+
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const q = query(collection(db, "courseVideos"), limit(5));
-        const snap = await getDocs(q);
-        const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setCourses(data);
+        const snap = await getDocs(collection(db, "courseVideos"));
+        let data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+        if (isMainSite) {
+          data = data.filter(c => !c.partnerId || c.partnerId === "admin");
+        } else {
+          data = data.filter(c => !c.partnerId || c.partnerId === "admin" || c.partnerId === agency?.id);
+        }
+
+        data.sort((a, b) => {
+          const pA = parseInt(a.priority) || 9999;
+          const pB = parseInt(b.priority) || 9999;
+          if (pA !== pB) return pA - pB;
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+
+        setCourses(data.slice(0, 5));
       } catch (e) {
         console.error("Error fetching courses:", e);
       }
     };
     fetchCourses();
-  }, []);
+  }, [isMainSite, agency?.id]);
 
   const cardWidth = isMobile ? "320px" : "380px";
   const cardHeight = isMobile ? "480px" : "480px";
