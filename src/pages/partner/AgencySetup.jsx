@@ -87,9 +87,13 @@ const AgencySetup = () => {
           getDocs(collection(db, "ebooks")),
         ]);
 
-        setCourses(
-          cSnap.docs.map((d) => ({ id: d.id, type: "course", ...d.data() }))
-        );
+        let courseList = cSnap.docs.map((d) => ({ id: d.id, type: "course", ...d.data() }));
+        if (currentUser?.uid) {
+          courseList = courseList.filter(
+            (c) => !c.partnerId || c.partnerId === "admin" || c.partnerId === currentUser.uid
+          );
+        }
+        setCourses(courseList);
         setEbooks(
           eSnap.docs.map((d) => ({ id: d.id, type: "ebook", ...d.data() }))
         );

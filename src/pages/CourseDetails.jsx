@@ -51,9 +51,19 @@ const CourseDetails = () => {
       try {
         const docRef = doc(db, "courseVideos", id);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
           let data = docSnap.data();
+
+          // --- ACCESS CONTROL CHECK ---
+          const coursePartnerId = data.partnerId;
+          const isOwner = currentUser?.uid && coursePartnerId === currentUser.uid;
+          const allowed = !coursePartnerId || coursePartnerId === "admin" || isOwner || (!isMainSite && coursePartnerId === agency?.id);
+
+          if (!allowed) {
+            setError("Course not found");
+            setLoading(false);
+            return;
+          }
 
           // --- PARTNER DEMO OVERRIDE LOGIC ---
           let overridesToApply = null;

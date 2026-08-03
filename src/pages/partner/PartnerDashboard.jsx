@@ -69,13 +69,17 @@ const PartnerDashboard = () => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Courses
       const coursesSnap = await getDocs(collection(db, "courseVideos"));
-      const coursesList = coursesSnap.docs.map((doc) => ({
+      let coursesList = coursesSnap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         type: "Course",
       }));
+      if (partnerId) {
+        coursesList = coursesList.filter(
+          (c) => !c.partnerId || c.partnerId === "admin" || c.partnerId === partnerId
+        );
+      }
       setCourses(coursesList);
 
       // 2. Fetch E-Books

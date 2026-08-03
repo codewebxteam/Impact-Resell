@@ -227,7 +227,7 @@ const DigitalProducts = () => {
       }
     };
     fetchTopProducts();
-  }, []);
+  }, [isMainSite, agency?.id]);
 
   if (loading || products.length === 0) return null;
 
