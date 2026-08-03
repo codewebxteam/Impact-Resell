@@ -67,7 +67,7 @@ const PartnerCourseManager = () => {
 
       // 2. Fetch Courses
       const querySnapshot = await getDocs(collection(db, "courseVideos"));
-      const courseList = querySnapshot.docs.map((doc) => {
+      let courseList = querySnapshot.docs.map((doc) => {
         const data = doc.data();
         // Check if there is an override for this course
         const override = overrides[doc.id];
@@ -78,6 +78,12 @@ const PartnerCourseManager = () => {
           overrideData: override || null,
         };
       });
+
+      if (partnerId) {
+        courseList = courseList.filter(
+          (c) => !c.partnerId || c.partnerId === "admin" || c.partnerId === partnerId
+        );
+      }
       
       courseList.sort((a, b) => {
         const priorityA = parseInt(a.priority) || 0;
