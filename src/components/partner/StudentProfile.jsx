@@ -50,9 +50,10 @@ const StudentProfile = ({ student, onClose, onRevoke }) => {
             email: userData.email,
           }));
           setLiveUserData({ ...userData, id: userId });
-          if (userData.courses) {
-            setCourses(userData.courses);
-          }
+          // NOTE: Do NOT overwrite courses from users.courses here.
+          // The parent component (StudentIntelligence) builds courses from 
+          // the 'orders' collection which is the single source of truth.
+          // users.courses is unreliable because enrollment doesn't write there.
         } else {
           console.log("⚠️ [StudentProfile] No user document found for:", student.email);
         }
