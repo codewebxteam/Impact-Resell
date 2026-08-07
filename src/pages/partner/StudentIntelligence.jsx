@@ -178,6 +178,7 @@ const StudentIntelligence = () => {
 
       // Add Course/Product
       studentMap[email].courses.push({
+        id: order.courseId,
         name: order.courseTitle || order.productTitle || "Unknown Asset",
         type: order.productType || "Course",
       });

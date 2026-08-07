@@ -73,67 +73,110 @@ const StudentProfile = ({ student, onClose, onRevoke }) => {
 
   const handleRevoke = async (courseId) => {
     if (!window.confirm("Are you sure you want to revoke access to this course?")) return;
-    const userId = liveUserData?.id || student.id;
-    if (!userId) {
-      alert("Cannot find user ID to revoke access.");
+    
+    const targetEmail = liveUserData?.email || student.email;
+    if (!targetEmail) {
+      alert("Cannot find student email to revoke access.");
       return;
     }
-    const newCourses = courses.filter((c) => c.id !== courseId);
-    setCourses(newCourses);
 
-    try {
-      await updateDoc(doc(db, "users", userId), { courses: newCourses });
-    } catch (e) {
-      console.warn("Failed to update users collection:", e);
-    }
+    console.log("🔴 REVOKE START — courseId:", courseId, "email:", targetEmail);
 
-    const targetEmail = liveUserData?.email || student.email;
-
-    if (targetEmail) {
+    // STEP 0: Always resolve the REAL Firestore user document ID from email
+    let realUserId = liveUserData?.id;
+    if (!realUserId || realUserId.startsWith("STU-")) {
       try {
-        const ordersQ = query(
-          collection(db, "orders"),
-          where("studentEmail", "==", targetEmail),
-          where("courseId", "==", String(courseId))
-        );
-        const orderSnap = await getDocs(ordersQ);
-        const deletePromises = orderSnap.docs.map(orderDoc => deleteDoc(doc(db, "orders", orderDoc.id)));
-        await Promise.all(deletePromises);
+        const userQ = query(collection(db, "users"), where("email", "==", targetEmail));
+        const userSnap = await getDocs(userQ);
+        if (!userSnap.empty) {
+          realUserId = userSnap.docs[0].id;
+          console.log("✅ Resolved real user ID:", realUserId);
+        }
       } catch (e) {
-        console.warn("Failed to delete orders:", e);
+        console.warn("Failed to resolve user ID:", e);
       }
     }
 
-    if (userId) {
+    // STEP 1: Delete from 'users' collection (courses array)
+    if (realUserId) {
+      try {
+        const userRef = doc(db, "users", realUserId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          if (userData.courses && Array.isArray(userData.courses)) {
+            const filtered = userData.courses.filter(c => {
+              const cId = c.id || c.courseId;
+              return cId !== courseId && cId !== String(courseId);
+            });
+            await updateDoc(userRef, { courses: filtered });
+            console.log("✅ Deleted from users.courses");
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to update users collection:", e);
+      }
+    }
+
+    // STEP 2: Delete from 'orders' collection (Sales History, Profit, etc.)
+    try {
+      const ordersQ = query(
+        collection(db, "orders"),
+        where("studentEmail", "==", targetEmail),
+        where("courseId", "==", String(courseId))
+      );
+      const orderSnap = await getDocs(ordersQ);
+      const deletePromises = orderSnap.docs.map(orderDoc => deleteDoc(doc(db, "orders", orderDoc.id)));
+      await Promise.all(deletePromises);
+      console.log(`✅ Deleted ${orderSnap.size} orders`);
+    } catch (e) {
+      console.warn("Failed to delete orders:", e);
+    }
+
+    // STEP 3: Delete from 'enrollments' collection (Recent Enrollments)
+    if (realUserId) {
       try {
         const enrollQ = query(
           collection(db, "enrollments"),
-          where("studentId", "==", userId),
+          where("studentId", "==", realUserId),
           where("courseId", "==", String(courseId))
         );
         const enrollSnap = await getDocs(enrollQ);
         const enrollPromises = enrollSnap.docs.map(eDoc => deleteDoc(doc(db, "enrollments", eDoc.id)));
         await Promise.all(enrollPromises);
+        console.log(`✅ Deleted ${enrollSnap.size} enrollments`);
       } catch (e) {
         console.warn("Failed to delete enrollments:", e);
       }
     }
 
-    if (userId) {
+    // STEP 4: Delete from 'enrolledCourses' collection (Student Dashboard)
+    if (realUserId) {
       try {
-        const ecRef = doc(db, "enrolledCourses", userId);
+        const ecRef = doc(db, "enrolledCourses", realUserId);
         const ecSnap = await getDoc(ecRef);
         if (ecSnap.exists()) {
           const ecData = ecSnap.data();
-          if (ecData.courses) {
-            const newEcCourses = ecData.courses.filter(c => c.courseId !== String(courseId));
+          if (ecData.courses && Array.isArray(ecData.courses)) {
+            const newEcCourses = ecData.courses.filter(c => {
+              const cId = c.courseId || c.id;
+              return cId !== courseId && cId !== String(courseId);
+            });
             await updateDoc(ecRef, { courses: newEcCourses });
+            console.log("✅ Deleted from enrolledCourses");
           }
         }
       } catch (e) {
         console.warn("Failed to update enrolledCourses:", e);
       }
     }
+
+    // Update local UI state
+    const newCourses = courses.filter((c) => {
+      const cId = c.id || c.courseId;
+      return cId !== courseId && cId !== String(courseId);
+    });
+    setCourses(newCourses);
 
     alert("Access revoked and associated sales data removed.");
     if (onRevoke) {
