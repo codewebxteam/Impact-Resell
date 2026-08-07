@@ -92,7 +92,7 @@ const AgencySetup = () => {
         let courseList = cSnap.docs.map((d) => ({ id: d.id, type: "course", ...d.data() }));
         if (currentUser?.uid) {
           courseList = courseList.filter(
-            (c) => !c.partnerId || c.partnerId === "admin" || c.partnerId === currentUser.uid
+            (c) => !c.partnerId || c.partnerId === "admin"
           );
         }
         setCourses(courseList);
