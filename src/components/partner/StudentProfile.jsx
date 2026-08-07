@@ -14,7 +14,7 @@ import {
   Globe,
   Loader2,
 } from "lucide-react";
-import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
 
 const StudentProfile = ({ student, onClose, onRevoke }) => {
@@ -95,6 +95,33 @@ const StudentProfile = ({ student, onClose, onRevoke }) => {
         const deletePromises = orderSnap.docs.map(orderDoc => deleteDoc(doc(db, "orders", orderDoc.id)));
         await Promise.all(deletePromises);
         console.log(`Deleted ${orderSnap.size} associated orders`);
+      }
+
+      // Delete from 'enrollments' collection (Partner Dashboard Recent Enrollments)
+      if (userId) {
+        const enrollQ = query(
+          collection(db, "enrollments"),
+          where("studentId", "==", userId),
+          where("courseId", "==", String(courseId))
+        );
+        const enrollSnap = await getDocs(enrollQ);
+        const enrollPromises = enrollSnap.docs.map(eDoc => deleteDoc(doc(db, "enrollments", eDoc.id)));
+        await Promise.all(enrollPromises);
+        console.log(`Deleted ${enrollSnap.size} enrollments`);
+      }
+
+      // Delete from 'enrolledCourses' collection (Student Dashboard Access)
+      if (userId) {
+        const ecRef = doc(db, "enrolledCourses", userId);
+        const ecSnap = await getDoc(ecRef);
+        if (ecSnap.exists()) {
+          const ecData = ecSnap.data();
+          if (ecData.courses) {
+            const newEcCourses = ecData.courses.filter(c => c.courseId !== String(courseId));
+            await updateDoc(ecRef, { courses: newEcCourses });
+            console.log("Deleted from enrolledCourses");
+          }
+        }
       }
 
       alert("Access revoked and associated sales data removed.");
