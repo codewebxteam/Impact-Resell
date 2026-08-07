@@ -14,7 +14,7 @@ import {
   Globe,
   Loader2,
 } from "lucide-react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../firebase/config";
 
 const StudentProfile = ({ student, onClose }) => {
@@ -22,6 +22,7 @@ const StudentProfile = ({ student, onClose }) => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [liveUserData, setLiveUserData] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [courses, setCourses] = useState(student?.courses || []);
 
   // Fetch fresh user data from Firestore 'users' collection by email
   useEffect(() => {
@@ -41,13 +42,17 @@ const StudentProfile = ({ student, onClose }) => {
         console.log("📦 [StudentProfile] Users found:", snap.size);
         if (!snap.empty) {
           const userData = snap.docs[0].data();
+          const userId = snap.docs[0].id;
           console.log("✅ [StudentProfile] User data from Firestore:", JSON.stringify({
             name: userData.name,
             phone: userData.phone,
             location: userData.location,
             email: userData.email,
           }));
-          setLiveUserData(userData);
+          setLiveUserData({ ...userData, id: userId });
+          if (userData.courses) {
+            setCourses(userData.courses);
+          }
         } else {
           console.log("⚠️ [StudentProfile] No user document found for:", student.email);
         }
@@ -65,6 +70,24 @@ const StudentProfile = ({ student, onClose }) => {
   // Merge: live Firestore data takes priority over parent-passed props
   const phone = liveUserData?.phone || student.phone || "N/A";
   const studentName = liveUserData?.name || student.name || "Unknown Student";
+
+  const handleRevoke = async (courseId) => {
+    if (!window.confirm("Are you sure you want to revoke access to this course?")) return;
+    const userId = liveUserData?.id || student.id;
+    if (!userId) {
+      alert("Cannot find user ID to revoke access.");
+      return;
+    }
+    try {
+      const newCourses = courses.filter((c) => c.id !== courseId);
+      await updateDoc(doc(db, "users", userId), { courses: newCourses });
+      setCourses(newCourses);
+      alert("Access revoked successfully.");
+    } catch (error) {
+      console.error("Error revoking access:", error);
+      alert("Failed to revoke access.");
+    }
+  };
 
   return (
     <motion.div
@@ -176,7 +199,7 @@ const StudentProfile = ({ student, onClose }) => {
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <StatBox
                 label="Courses Enrolled"
-                val={student.courses?.length || 0}
+                val={courses.length || 0}
                 icon={<BookOpen size={18} />}
                 color="blue"
               />
@@ -187,23 +210,31 @@ const StudentProfile = ({ student, onClose }) => {
               <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2">
                 Enrolled Courses List
               </h4>
-              {student.courses?.length > 0 ? (
-                student.courses.map((course, i) => (
+              {courses.length > 0 ? (
+                courses.map((course, i) => (
                   <div
                     key={i}
-                    className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex items-center gap-6"
+                    className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex items-center justify-between gap-6"
                   >
-                    <div className="size-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
-                      <GraduationCap size={24} />
+                    <div className="flex items-center gap-6">
+                      <div className="size-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <GraduationCap size={24} />
+                      </div>
+                      <div>
+                        <h5 className="text-sm font-black text-slate-900">
+                          {course.name}
+                        </h5>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">
+                          {course.type || "Course"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h5 className="text-sm font-black text-slate-900">
-                        {course.name}
-                      </h5>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">
-                        {course.type || "Course"}
-                      </p>
-                    </div>
+                    <button
+                      onClick={() => handleRevoke(course.id)}
+                      className="px-4 py-2 bg-red-50 text-red-500 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all border border-red-100"
+                    >
+                      Revoke
+                    </button>
                   </div>
                 ))
               ) : (

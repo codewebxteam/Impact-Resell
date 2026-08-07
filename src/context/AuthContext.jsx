@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 import { auth, db } from "../firebase/config"; // [UPDATED] Import db for Firestore
 import { doc, setDoc, getDoc, serverTimestamp} from "firebase/firestore"; // [NEW] Firestore methods
+import { MAIN_DOMAIN } from "../utils/domainHelper";
 
 const AuthContext = createContext();
 
@@ -140,7 +141,11 @@ export const AuthProvider = ({ children }) => {
 
   // 4. Reset Password Function — user ke email pe Firebase reset link bhejta hai
   const resetPassword = (email) => {
-    return sendPasswordResetEmail(auth, email);
+    const actionCodeSettings = {
+      // Always route back to the main domain to bypass Firebase's unauthorized domain error for subdomains
+      url: `https://${MAIN_DOMAIN}`, 
+    };
+    return sendPasswordResetEmail(auth, email, actionCodeSettings);
   };
 
   // 4. [UPDATED] Monitor Auth State & Fetch Firestore Data

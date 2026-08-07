@@ -819,20 +819,7 @@ const AgencySetup = () => {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                          UPI ID (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="yourname@upi"
-                          className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-100 focus:bg-white p-4 rounded-2xl font-bold text-slate-900 outline-none transition-all"
-                          value={formData.upiId}
-                          onChange={(e) =>
-                            setFormData({ ...formData, upiId: e.target.value })
-                          }
-                        />
-                      </div>
+
                     </div>
                   </motion.div>
                 )}
