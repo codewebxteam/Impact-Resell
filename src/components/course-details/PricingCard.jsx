@@ -39,6 +39,17 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
 
   // --- WhatsApp Redirect Logic ---
   const handlePartnerBuy = () => {
+    // Check if the partner has configured a custom payment link
+    const customPaymentLink = agency?.customPaymentLinks?.[course.id];
+    // If it's a custom course uploaded by the partner, they might have set the payment link there
+    const partnerCoursePaymentLink = course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
+    const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink;
+
+    if (finalPaymentLink) {
+      window.open(finalPaymentLink, "_blank");
+      return;
+    }
+
     if (!agency?.whatsapp) {
       alert("Contact support for enrollment.");
       return;

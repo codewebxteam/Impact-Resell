@@ -12,6 +12,7 @@ import {
   getDocs,
   query,
   where,
+  deleteDoc,
 } from "firebase/firestore";
 import {
   Rocket,
@@ -67,6 +68,7 @@ const AgencySetup = () => {
     address: "",
     upiId: "",
     customPrices: {},
+    customPaymentLinks: {},
     promoType: "none",
     bundlePrice: "",
     demoVideoLink: "",
@@ -112,6 +114,7 @@ const AgencySetup = () => {
             address: data.address || "",
             upiId: data.upi || "",
             customPrices: data.customPrices || {},
+            customPaymentLinks: data.customPaymentLinks || {},
             promoType: data.promoType || "none",
             bundlePrice: data.bundlePrice || "",
             demoVideoLink: data.demoVideoLink || "",
@@ -178,6 +181,16 @@ const AgencySetup = () => {
     }));
   };
 
+  const handlePaymentLinkChange = (itemId, val) => {
+    setFormData((prev) => ({
+      ...prev,
+      customPaymentLinks: {
+        ...prev.customPaymentLinks,
+        [itemId]: val,
+      },
+    }));
+  };
+
   // --- SUBMIT (FIXED REDIRECTION) ---
   const handleFinalSubmit = async () => {
     if (!currentUser?.uid) return;
@@ -193,6 +206,7 @@ const AgencySetup = () => {
         address: formData.address,
         upi: formData.upiId,
         customPrices: formData.customPrices,
+        customPaymentLinks: formData.customPaymentLinks,
         promoType: formData.promoType,
         bundlePrice: formData.bundlePrice,
         demoVideoLink: formData.demoVideoLink,
@@ -210,6 +224,11 @@ const AgencySetup = () => {
           ownerId: currentUser.uid,
           agencyName: formData.instituteName,
         });
+
+        // Delete old subdomain if it existed to prevent duplicate academies
+        if (oldSubdomain) {
+          await deleteDoc(doc(db, "subdomains", oldSubdomain));
+        }
       }
 
       // 3. Refresh Context
@@ -617,6 +636,20 @@ const AgencySetup = () => {
                                       +₹{profit}
                                     </span>
                                   </div>
+                                </div>
+                                <div className="w-full mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-200">
+                                  <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">
+                                    Custom Payment Link (e.g., Razorpay, Superprofile)
+                                  </label>
+                                  <input
+                                    type="url"
+                                    placeholder="Leave empty for WhatsApp redirection"
+                                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-300 transition-all"
+                                    value={formData.customPaymentLinks?.[course.id] || ""}
+                                    onChange={(e) =>
+                                      handlePaymentLinkChange(course.id, e.target.value)
+                                    }
+                                  />
                                 </div>
                               </div>
                             );
