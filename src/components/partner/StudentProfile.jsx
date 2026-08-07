@@ -78,14 +78,19 @@ const StudentProfile = ({ student, onClose, onRevoke }) => {
       alert("Cannot find user ID to revoke access.");
       return;
     }
-    try {
-      const newCourses = courses.filter((c) => c.id !== courseId);
-      await updateDoc(doc(db, "users", userId), { courses: newCourses });
-      setCourses(newCourses);
+    const newCourses = courses.filter((c) => c.id !== courseId);
+    setCourses(newCourses);
 
-      // Delete corresponding orders so it stops showing in Sales & Purchase History
-      const targetEmail = liveUserData?.email || student.email;
-      if (targetEmail) {
+    try {
+      await updateDoc(doc(db, "users", userId), { courses: newCourses });
+    } catch (e) {
+      console.warn("Failed to update users collection:", e);
+    }
+
+    const targetEmail = liveUserData?.email || student.email;
+
+    if (targetEmail) {
+      try {
         const ordersQ = query(
           collection(db, "orders"),
           where("studentEmail", "==", targetEmail),
@@ -94,11 +99,13 @@ const StudentProfile = ({ student, onClose, onRevoke }) => {
         const orderSnap = await getDocs(ordersQ);
         const deletePromises = orderSnap.docs.map(orderDoc => deleteDoc(doc(db, "orders", orderDoc.id)));
         await Promise.all(deletePromises);
-        console.log(`Deleted ${orderSnap.size} associated orders`);
+      } catch (e) {
+        console.warn("Failed to delete orders:", e);
       }
+    }
 
-      // Delete from 'enrollments' collection (Partner Dashboard Recent Enrollments)
-      if (userId) {
+    if (userId) {
+      try {
         const enrollQ = query(
           collection(db, "enrollments"),
           where("studentId", "==", userId),
@@ -107,11 +114,13 @@ const StudentProfile = ({ student, onClose, onRevoke }) => {
         const enrollSnap = await getDocs(enrollQ);
         const enrollPromises = enrollSnap.docs.map(eDoc => deleteDoc(doc(db, "enrollments", eDoc.id)));
         await Promise.all(enrollPromises);
-        console.log(`Deleted ${enrollSnap.size} enrollments`);
+      } catch (e) {
+        console.warn("Failed to delete enrollments:", e);
       }
+    }
 
-      // Delete from 'enrolledCourses' collection (Student Dashboard Access)
-      if (userId) {
+    if (userId) {
+      try {
         const ecRef = doc(db, "enrolledCourses", userId);
         const ecSnap = await getDoc(ecRef);
         if (ecSnap.exists()) {
@@ -119,18 +128,16 @@ const StudentProfile = ({ student, onClose, onRevoke }) => {
           if (ecData.courses) {
             const newEcCourses = ecData.courses.filter(c => c.courseId !== String(courseId));
             await updateDoc(ecRef, { courses: newEcCourses });
-            console.log("Deleted from enrolledCourses");
           }
         }
+      } catch (e) {
+        console.warn("Failed to update enrolledCourses:", e);
       }
+    }
 
-      alert("Access revoked and associated sales data removed.");
-      if (onRevoke) {
-        onRevoke();
-      }
-    } catch (error) {
-      console.error("Error revoking access:", error);
-      alert("Failed to revoke access.");
+    alert("Access revoked and associated sales data removed.");
+    if (onRevoke) {
+      onRevoke();
     }
   };
 
