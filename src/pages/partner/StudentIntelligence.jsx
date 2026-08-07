@@ -476,6 +476,9 @@ const StudentIntelligence = () => {
             <StudentProfile
               student={selectedStudent}
               onClose={() => setSelectedStudent(null)}
+              onRevoke={() => {
+                window.location.reload();
+              }}
             />
           </div>
         )}

@@ -14,10 +14,10 @@ import {
   Globe,
   Loader2,
 } from "lucide-react";
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
 
-const StudentProfile = ({ student, onClose }) => {
+const StudentProfile = ({ student, onClose, onRevoke }) => {
   const [activeTab, setActiveTab] = useState("academic");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [liveUserData, setLiveUserData] = useState(null);
@@ -82,7 +82,25 @@ const StudentProfile = ({ student, onClose }) => {
       const newCourses = courses.filter((c) => c.id !== courseId);
       await updateDoc(doc(db, "users", userId), { courses: newCourses });
       setCourses(newCourses);
-      alert("Access revoked successfully.");
+
+      // Delete corresponding orders so it stops showing in Sales & Purchase History
+      const targetEmail = liveUserData?.email || student.email;
+      if (targetEmail) {
+        const ordersQ = query(
+          collection(db, "orders"),
+          where("studentEmail", "==", targetEmail),
+          where("courseId", "==", String(courseId))
+        );
+        const orderSnap = await getDocs(ordersQ);
+        const deletePromises = orderSnap.docs.map(orderDoc => deleteDoc(doc(db, "orders", orderDoc.id)));
+        await Promise.all(deletePromises);
+        console.log(`Deleted ${orderSnap.size} associated orders`);
+      }
+
+      alert("Access revoked and associated sales data removed.");
+      if (onRevoke) {
+        onRevoke();
+      }
     } catch (error) {
       console.error("Error revoking access:", error);
       alert("Failed to revoke access.");
