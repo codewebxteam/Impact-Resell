@@ -72,6 +72,9 @@ import VerifyCertificate from "./pages/VerifyCertificate";
 
 // --- Dashboard (Student) ---
 import DashboardLayout from "./components/dashboard/DashboardLayout";
+
+// --- Dev Viewer (For Themes) ---
+import DevThemeViewer from "./themes/DevThemeViewer";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
 import MyCourses from "./pages/dashboard/MyCourses";
 import EBookLibrary from "./pages/dashboard/EBookLibrary";
@@ -341,6 +344,9 @@ const AppContent = () => {
           <Route path="certificates" element={<Certificates />} />
           <Route path="profile" element={<Profile />} />
         </Route>
+
+        {/* DEV ROUTE FOR THEMES (Only for Development) */}
+        <Route path="/dev/:theme/:page" element={<DevThemeViewer />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
