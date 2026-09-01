@@ -138,7 +138,15 @@ const PartnerProfile = ({ partner, onClose }) => {
                 {partner.domain && (
                   <div className="flex items-center gap-2 text-xs font-bold">
                     <Globe size={14} className="text-indigo-400" />
-                    <span className="text-slate-300">{partner.domain}</span>
+                    <span className="text-slate-300">{partner.domain}.i-cpp.com</span>
+                  </div>
+                )}
+                {partner.customDomain && (
+                  <div className="flex items-center gap-2 text-xs font-bold">
+                    <Globe size={14} className="text-emerald-400" />
+                    <span className="text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
+                      {partner.customDomain}
+                    </span>
                   </div>
                 )}
               </div>

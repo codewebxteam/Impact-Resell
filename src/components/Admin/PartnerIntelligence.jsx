@@ -88,6 +88,7 @@ const PartnerIntelligence = () => {
                 email: data.email || "N/A",
                 phone: data.whatsapp || "N/A",
                 domain: data.subdomain || "N/A",
+                customDomain: data.customDomain || "",
                 status: data.status || "Active",
                 joinDate: data.updatedAt?.toDate
                   ? data.updatedAt.toDate()
@@ -451,9 +452,16 @@ const PartnerIntelligence = () => {
                                 <p className="text-xs font-black text-slate-900">
                                   {p.agency}
                                 </p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase">
-                                  {p.id.slice(0, 10)}...
-                                </p>
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  <p className="text-[10px] font-bold text-slate-400">
+                                    {p.domain}.i-cpp.com
+                                  </p>
+                                  {p.customDomain && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                      <Globe size={10} /> {p.customDomain}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </td>
