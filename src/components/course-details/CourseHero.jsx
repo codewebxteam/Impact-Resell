@@ -30,20 +30,7 @@ const CourseHero = ({ course }) => {
 
           {/* Meta Data */}
           <div className="flex flex-wrap gap-6 text-sm font-medium pt-2">
-            <div className="flex items-center gap-1.5 text-yellow-400">
-              <span className="bg-yellow-400/10 px-1.5 py-0.5 rounded text-xs font-bold">
-                {course.rating}
-              </span>
-              <div className="flex">
-                {[...Array(4)].map((_, i) => (
-                  <Star key={i} className="size-4 fill-yellow-400" />
-                ))}
-                <Star className="size-4 fill-yellow-400 text-slate-600" />
-              </div>
-              <span className="text-slate-400 underline decoration-slate-600 underline-offset-4 ml-1">
-                ({course.reviews} reviews)
-              </span>
-            </div>
+
 
             <div className="flex items-center gap-2 text-slate-300">
               <Globe className="size-4" />

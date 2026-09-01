@@ -4,12 +4,14 @@ import { useParams, Navigate } from 'react-router-dom';
 // Theme 1
 import Theme1Home from './theme1/Home';
 import Theme1Courses from './theme1/Courses';
+import Theme1CourseDetails from './theme1/CourseDetails';
 import Theme1AboutUs from './theme1/AboutUs';
 import Theme1ContactUs from './theme1/ContactUs';
 
 // Theme 2
 import Theme2Home from './theme2/Home';
 import Theme2Courses from './theme2/Courses';
+import Theme2CourseDetails from './theme2/CourseDetails';
 import Theme2AboutUs from './theme2/AboutUs';
 import Theme2ContactUs from './theme2/ContactUs';
 
@@ -31,16 +33,21 @@ import Theme5Courses from './theme5/Courses';
 import Theme5AboutUs from './theme5/AboutUs';
 import Theme5ContactUs from './theme5/ContactUs';
 
+import ThemeHeader from './components/ThemeHeader';
+import ThemeFooter from './components/ThemeFooter';
+
 const themeMap = {
   theme1: {
     home: Theme1Home,
     courses: Theme1Courses,
+    coursedetails: Theme1CourseDetails,
     about: Theme1AboutUs,
     contact: Theme1ContactUs,
   },
   theme2: {
     home: Theme2Home,
     courses: Theme2Courses,
+    coursedetails: Theme2CourseDetails,
     about: Theme2AboutUs,
     contact: Theme2ContactUs,
   },
@@ -78,14 +85,20 @@ const DevThemeViewer = () => {
   }
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen flex flex-col">
       {/* A small persistent badge so you know you're in dev mode */}
       <div className="fixed bottom-4 right-4 bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-full shadow-xl z-[9999] opacity-50 hover:opacity-100 transition-opacity">
         DEV MODE: {theme} / {page}
       </div>
       
+      <ThemeHeader currentTheme={theme} />
+      
       {/* Render the actual theme page */}
-      <PageComponent />
+      <main className="flex-grow">
+        <PageComponent />
+      </main>
+      
+      <ThemeFooter currentTheme={theme} />
     </div>
   );
 };

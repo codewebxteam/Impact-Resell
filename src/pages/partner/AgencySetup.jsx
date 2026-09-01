@@ -63,6 +63,7 @@ const AgencySetup = () => {
   const [formData, setFormData] = useState({
     instituteName: "",
     subdomain: "",
+    customDomain: "",
     whatsappNumber: "",
     email: "",
     address: "",
@@ -109,6 +110,7 @@ const AgencySetup = () => {
           setFormData({
             instituteName: data.name || "",
             subdomain: data.subdomain || "",
+            customDomain: data.customDomain || "",
             whatsappNumber: data.whatsapp || "",
             email: data.email || currentUser.email || "",
             address: data.address || "",
@@ -198,9 +200,19 @@ const AgencySetup = () => {
     try {
       const agencyRef = doc(db, "agencies", currentUser.uid);
 
+      const cleanedCustomDomain = formData.customDomain
+        ? formData.customDomain
+            .toLowerCase()
+            .trim()
+            .replace(/^https?:\/\//, "")
+            .replace(/\/.*$/, "")
+            .replace(/^www\./, "")
+        : "";
+
       const payload = {
         name: formData.instituteName,
         subdomain: formData.subdomain,
+        customDomain: cleanedCustomDomain,
         whatsapp: formData.whatsappNumber,
         email: formData.email,
         address: formData.address,
@@ -229,6 +241,15 @@ const AgencySetup = () => {
         if (oldSubdomain) {
           await deleteDoc(doc(db, "subdomains", oldSubdomain));
         }
+      }
+
+      // 3. Save Custom Domain mapping if provided
+      if (cleanedCustomDomain) {
+        await setDoc(doc(db, "subdomains", cleanedCustomDomain), {
+          ownerId: currentUser.uid,
+          agencyName: formData.instituteName,
+          isCustomDomain: true,
+        });
       }
 
       // 3. Refresh Context
@@ -455,6 +476,29 @@ const AgencySetup = () => {
                             </>
                           )}
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                            Custom Domain (Optional)
+                          </label>
+                          <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase">
+                            Pro Feature
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Ex. gyanjyoti.com"
+                          className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white p-4 rounded-2xl font-bold text-slate-900 outline-none transition-all lowercase"
+                          value={formData.customDomain}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              customDomain: e.target.value,
+                            })
+                          }
+                        />
                       </div>
 
                       <div className="space-y-2">

@@ -21,7 +21,7 @@ import { db } from "../firebase/config";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   const { login, signup, resetPassword } = useAuth();
-  const { isPartner, agency } = useAgency();
+  const { isPartner, isMainSite, agency } = useAgency();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState(defaultMode); // 'login' | 'signup' | 'partner' | 'forgotPassword'
@@ -66,7 +66,8 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   // Reset state when modal opens/closes or mode changes
   useEffect(() => {
     if (isOpen) {
-      setMode(defaultMode);
+      const initialMode = isMainSite && defaultMode === "signup" ? "login" : defaultMode;
+      setMode(initialMode);
       setErrors({});
       setPartnerVerified(false);
       setResetEmailSent(false);
@@ -79,7 +80,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
       });
       setStrength({ score: 0, label: "", color: "" });
     }
-  }, [isOpen, defaultMode]);
+  }, [isOpen, defaultMode, isMainSite]);
 
   useEffect(() => {
     setErrors({});
@@ -546,7 +547,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
           {/* FOOTER SWITCHES */}
           <div className="mt-8 text-center space-y-3">
-            {mode === "login" && (
+            {mode === "login" && !isMainSite && (
               <>
                 <p className="text-slate-500 text-sm">
                   Don't have an account?{" "}

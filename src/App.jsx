@@ -346,7 +346,7 @@ const AppContent = () => {
         </Route>
 
         {/* DEV ROUTE FOR THEMES (Only for Development) */}
-        <Route path="/dev/:theme/:page" element={<DevThemeViewer />} />
+        <Route path="/dev/:theme/:page/:id?" element={<DevThemeViewer />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

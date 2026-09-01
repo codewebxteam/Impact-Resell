@@ -22,11 +22,11 @@ import {
   Link,
   useSearchParams,
 } from "react-router-dom";
-import AuthModal from "./AuthModal";
-import { useAuth } from "../context/AuthContext";
-import { useAgency } from "../context/AgencyContext";
+import AuthModal from "../../components/AuthModal";
+import { useAuth } from "../../context/AuthContext";
+import { useAgency } from "../../context/AgencyContext";
 
-const Navbar = () => {
+const ThemeHeader = ({ currentTheme }) => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -119,11 +119,10 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { name: "Home", path: "/", icon: Home },
-    { name: "Courses", path: "/courses", icon: GraduationCap },
-
-    { name: "About Us", path: "/about", icon: Users },
-    { name: "Contact Us", path: "/contact", icon: Mail },
+    { name: "Home", path: currentTheme ? `/dev/${currentTheme}/home` : "/", icon: Home },
+    { name: "Courses", path: currentTheme ? `/dev/${currentTheme}/courses` : "/courses", icon: GraduationCap },
+    { name: "About Us", path: currentTheme ? `/dev/${currentTheme}/about` : "/about", icon: Users },
+    { name: "Contact Us", path: currentTheme ? `/dev/${currentTheme}/contact` : "/contact", icon: Mail },
     // Show Dashboard link if logged in
     ...(currentUser
       ? [{ name: "Dashboard", path: dashboardPath, icon: LayoutDashboard }]
@@ -321,18 +320,16 @@ const Navbar = () => {
                   <span className="hidden xs:inline">Login</span>
                 </button>
 
-                {!isMainSite && (
-                  <button
-                    onClick={() => openAuth("signup")}
-                    className="relative overflow-hidden px-3 py-1.5 sm:px-5 sm:py-2 rounded-full text-white text-[10px] sm:text-sm font-bold shadow-xl group transition-transform active:scale-95 shrink-0 cursor-pointer"
-                    style={{ backgroundColor: brandColor }}
-                  >
-                    <span className="relative z-10 group-hover:opacity-80 transition-opacity duration-300">
-                      Get Started
-                    </span>
-                    <div className="absolute inset-0 bg-black/10 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-                  </button>
-                )}
+                <button
+                  onClick={() => openAuth("signup")}
+                  className="relative overflow-hidden px-3 py-1.5 sm:px-5 sm:py-2 rounded-full text-white text-[10px] sm:text-sm font-bold shadow-xl group transition-transform active:scale-95 shrink-0 cursor-pointer"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  <span className="relative z-10 group-hover:opacity-80 transition-opacity duration-300">
+                    Get Started
+                  </span>
+                  <div className="absolute inset-0 bg-black/10 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
+                </button>
               </>
             )}
           </div>
@@ -410,4 +407,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default ThemeHeader;

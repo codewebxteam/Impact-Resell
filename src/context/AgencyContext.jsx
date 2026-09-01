@@ -11,6 +11,10 @@ import {
   getDoc,
   getDocFromCache,
   getDocFromServer,
+  collection,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 
 const AgencyContext = createContext();
@@ -49,19 +53,30 @@ export const AgencyProvider = ({ children }) => {
     }, 8000); // Increased to 8 seconds for better reliability
 
     try {
-      const hostname = window.location.hostname;
-      let subdomain = null;
+      const hostname = window.location.hostname.toLowerCase();
+      let lookupKey = null;
 
       const parts = hostname.split(".");
-      if (hostname.includes("localhost")) {
-        if (parts.length > 1 && parts[0] !== "www")
-          subdomain = parts[0].toLowerCase();
+      if (hostname.includes("localhost") || hostname.includes("127.0.0.1")) {
+        if (parts.length > 1 && parts[0] !== "www") {
+          lookupKey = parts[0];
+        }
+      } else if (
+        hostname === "i-cpp.com" ||
+        hostname === "www.i-cpp.com" ||
+        hostname === "impact-resell.vercel.app"
+      ) {
+        lookupKey = null;
+      } else if (parts.length >= 3 && hostname.endsWith("i-cpp.com")) {
+        if (parts[0] !== "www") {
+          lookupKey = parts[0];
+        }
       } else {
-        if (parts.length >= 3 && parts[0] !== "www")
-          subdomain = parts[0].toLowerCase();
+        // Custom domain (e.g. gyanjyoti.com or www.gyanjyoti.com)
+        lookupKey = hostname.replace(/^www\./, "");
       }
 
-      if (!subdomain) {
+      if (!lookupKey) {
         setAgency(DEFAULT_AGENCY);
         setIsMainSite(true);
         setLoading(false);
@@ -69,29 +84,49 @@ export const AgencyProvider = ({ children }) => {
         return;
       }
 
-      const subDocRef = doc(db, "subdomains", subdomain);
-
-      // --- OFFLINE-FIRST LOGIC ---
-      // Trying to get from cache first to avoid "Client is Offline" errors
-      let subSnap;
+      // Step A: Try direct lookup in "subdomains" collection (e.g. "gyan" or "gyanjyoti.com")
+      const subDocRef = doc(db, "subdomains", lookupKey);
+      let subSnap = null;
       try {
         subSnap = await getDocFromCache(subDocRef);
       } catch (e) {
-        subSnap = await getDocFromServer(subDocRef);
+        try {
+          subSnap = await getDocFromServer(subDocRef);
+        } catch (err) {}
       }
 
-      if (subSnap.exists()) {
-        const { ownerId } = subSnap.data();
-        const agencyDocRef = doc(db, "agencies", ownerId);
+      let ownerId = null;
 
-        let agencySnap;
+      if (subSnap && subSnap.exists()) {
+        ownerId = subSnap.data().ownerId;
+      } else {
+        // Step B: Search "agencies" collection where customDomain == lookupKey
+        try {
+          const q = query(
+            collection(db, "agencies"),
+            where("customDomain", "==", lookupKey)
+          );
+          const querySnap = await getDocs(q);
+          if (!querySnap.empty) {
+            ownerId = querySnap.docs[0].id;
+          }
+        } catch (err) {
+          console.error("❌ Custom domain query error:", err);
+        }
+      }
+
+      if (ownerId) {
+        const agencyDocRef = doc(db, "agencies", ownerId);
+        let agencySnap = null;
         try {
           agencySnap = await getDocFromCache(agencyDocRef);
         } catch (e) {
-          agencySnap = await getDocFromServer(agencyDocRef);
+          try {
+            agencySnap = await getDocFromServer(agencyDocRef);
+          } catch (err) {}
         }
 
-        if (agencySnap.exists()) {
+        if (agencySnap && agencySnap.exists()) {
           const data = agencySnap.data();
           setAgency({
             id: ownerId,
@@ -106,7 +141,8 @@ export const AgencyProvider = ({ children }) => {
             bundlePrice: data.bundlePrice || "",
             themeColor: data.themeColor || "#0f172a",
             accentColor: data.accentColor || "#5edff4",
-            subdomain: subdomain,
+            subdomain: data.subdomain || lookupKey,
+            customDomain: data.customDomain || "",
             demoVideoLink: data.demoVideoLink || "",
             courseDemoOverrides: data.courseDemoOverrides || {},
           });
@@ -121,7 +157,6 @@ export const AgencyProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("❌ Agency Context Error:", error);
-      // Fallback to default if offline and not in cache
       setAgency(DEFAULT_AGENCY);
       setIsMainSite(true);
     } finally {
