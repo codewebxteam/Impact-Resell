@@ -118,9 +118,11 @@ const PartnerLayout = () => {
 
   // Copy Logic
   const handleCopyDomain = () => {
-    if (!partnerAgency?.subdomain) return;
-    const domain = `${partnerAgency?.subdomain}.i-cpp.com`;
-    navigator.clipboard.writeText(domain);
+    const activeDomain =
+      partnerAgency?.customDomain ||
+      (partnerAgency?.subdomain ? `${partnerAgency.subdomain}.i-cpp.com` : "");
+    if (!activeDomain) return;
+    navigator.clipboard.writeText(activeDomain);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -215,7 +217,7 @@ const PartnerLayout = () => {
                   {partnerAgency?.name || "My Academy"}
                 </p>
                 <p className="text-[9px] font-bold text-slate-500 truncate">
-                  {partnerAgency?.subdomain}.i-cpp.com
+                  {partnerAgency?.customDomain || `${partnerAgency?.subdomain}.i-cpp.com`}
                 </p>
               </>
             ) : (
@@ -370,11 +372,11 @@ const PartnerLayout = () => {
               {/* [ADDED] Mobile Bottom Section (Logout) */}
               <div className="mt-6 pt-6 border-t border-slate-100 shrink-0 space-y-4">
                 {/* Domain Info (Optional for Mobile) */}
-                {partnerAgency?.subdomain && (
+                {(partnerAgency?.customDomain || partnerAgency?.subdomain) && (
                   <div className="px-2 py-1 flex items-center gap-2 text-[10px] text-slate-400 font-medium bg-slate-50 rounded-lg justify-center mb-2">
                     <Globe size={12} />
                     <span className="truncate max-w-[200px]">
-                      {partnerAgency.subdomain}.i-cpp.com
+                      {partnerAgency.customDomain || `${partnerAgency.subdomain}.i-cpp.com`}
                     </span>
                   </div>
                 )}
