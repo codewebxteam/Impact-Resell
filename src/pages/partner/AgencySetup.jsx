@@ -646,9 +646,6 @@ const AgencySetup = () => {
                                   <p className="text-xs font-black text-slate-900 line-clamp-1">
                                     {course.title}
                                   </p>
-                                  <p className="text-[10px] font-bold text-slate-400 mt-0.5">
-                                    Admin Cost: ₹{adminPrice}
-                                  </p>
                                 </div>
                                 <div className="flex items-center justify-center gap-4 w-full sm:w-auto">
                                   <div className="flex flex-col items-end">
@@ -729,9 +726,6 @@ const AgencySetup = () => {
                                 <div className="flex-1 w-full text-center sm:text-left">
                                   <p className="text-xs font-black text-slate-900 line-clamp-1">
                                     {ebook.title}
-                                  </p>
-                                  <p className="text-[10px] font-bold text-slate-400 mt-0.5">
-                                    Admin Cost: ₹{adminPrice}
                                   </p>
                                 </div>
                                 <div className="flex items-center justify-center gap-4 w-full sm:w-auto">
