@@ -4,10 +4,113 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Courses</title>
+    <title>Impact Resell - AI Courses</title>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background-color: #020617; margin: 0; padding: 0;">
+    <div id="root">
+      <style>
+        .initial-skel-bg {
+          background-color: #020617;
+          min-height: 100vh;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          color: #fff;
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          overflow-x: hidden;
+        }
+        .initial-skel-pulse {
+          animation: skelPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          background-color: #1e293b;
+        }
+        @keyframes skelPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+        .initial-skel-container {
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 0 24px;
+        }
+        .initial-skel-header {
+          height: 80px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .initial-skel-hero {
+          padding: 64px 0 48px;
+          max-width: 768px;
+        }
+        .initial-skel-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 32px;
+          padding-bottom: 96px;
+        }
+        .initial-skel-card {
+          background: #0f172a;
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 24px;
+          padding: 20px;
+        }
+      </style>
+      <div class="initial-skel-bg">
+        <div class="initial-skel-container">
+          <div class="initial-skel-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="initial-skel-pulse" style="width: 40px; height: 40px; border-radius: 12px;"></div>
+              <div class="initial-skel-pulse" style="width: 128px; height: 24px; border-radius: 8px;"></div>
+            </div>
+            <div class="initial-skel-pulse" style="width: 112px; height: 40px; border-radius: 12px;"></div>
+          </div>
+          <div class="initial-skel-hero">
+            <div class="initial-skel-pulse" style="width: 176px; height: 32px; border-radius: 9999px; margin-bottom: 24px;"></div>
+            <div class="initial-skel-pulse" style="width: 100%; height: 48px; border-radius: 16px; margin-bottom: 12px;"></div>
+            <div class="initial-skel-pulse" style="width: 75%; height: 48px; border-radius: 16px; margin-bottom: 24px;"></div>
+            <div class="initial-skel-pulse" style="width: 90%; height: 20px; border-radius: 6px; margin-bottom: 8px;"></div>
+            <div class="initial-skel-pulse" style="width: 60%; height: 20px; border-radius: 6px; margin-bottom: 32px;"></div>
+            <div style="display: flex; gap: 16px;">
+              <div class="initial-skel-pulse" style="width: 144px; height: 48px; border-radius: 12px;"></div>
+              <div class="initial-skel-pulse" style="width: 128px; height: 48px; border-radius: 12px;"></div>
+            </div>
+          </div>
+          <div class="initial-skel-grid">
+            <div class="initial-skel-card">
+              <div class="initial-skel-pulse" style="width: 100%; height: 192px; border-radius: 16px; margin-bottom: 16px;"></div>
+              <div class="initial-skel-pulse" style="width: 80px; height: 16px; border-radius: 4px; margin-bottom: 12px;"></div>
+              <div class="initial-skel-pulse" style="width: 100%; height: 24px; border-radius: 6px; margin-bottom: 8px;"></div>
+              <div class="initial-skel-pulse" style="width: 60%; height: 24px; border-radius: 6px; margin-bottom: 20px;"></div>
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;">
+                <div class="initial-skel-pulse" style="width: 64px; height: 24px; border-radius: 6px;"></div>
+                <div class="initial-skel-pulse" style="width: 96px; height: 40px; border-radius: 12px;"></div>
+              </div>
+            </div>
+            <div class="initial-skel-card">
+              <div class="initial-skel-pulse" style="width: 100%; height: 192px; border-radius: 16px; margin-bottom: 16px;"></div>
+              <div class="initial-skel-pulse" style="width: 80px; height: 16px; border-radius: 4px; margin-bottom: 12px;"></div>
+              <div class="initial-skel-pulse" style="width: 100%; height: 24px; border-radius: 6px; margin-bottom: 8px;"></div>
+              <div class="initial-skel-pulse" style="width: 60%; height: 24px; border-radius: 6px; margin-bottom: 20px;"></div>
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;">
+                <div class="initial-skel-pulse" style="width: 64px; height: 24px; border-radius: 6px;"></div>
+                <div class="initial-skel-pulse" style="width: 96px; height: 40px; border-radius: 12px;"></div>
+              </div>
+            </div>
+            <div class="initial-skel-card">
+              <div class="initial-skel-pulse" style="width: 100%; height: 192px; border-radius: 16px; margin-bottom: 16px;"></div>
+              <div class="initial-skel-pulse" style="width: 80px; height: 16px; border-radius: 4px; margin-bottom: 12px;"></div>
+              <div class="initial-skel-pulse" style="width: 100%; height: 24px; border-radius: 6px; margin-bottom: 8px;"></div>
+              <div class="initial-skel-pulse" style="width: 60%; height: 24px; border-radius: 6px; margin-bottom: 20px;"></div>
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;">
+                <div class="initial-skel-pulse" style="width: 64px; height: 24px; border-radius: 6px;"></div>
+                <div class="initial-skel-pulse" style="width: 96px; height: 40px; border-radius: 12px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

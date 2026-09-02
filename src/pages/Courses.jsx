@@ -250,8 +250,19 @@ const Courses = () => {
         {/* --- Courses Grid --- */}
         <div className="max-w-7xl mx-auto px-6">
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="size-10 text-[#5edff4] animate-spin" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xl space-y-4 animate-pulse">
+                  <div className="h-48 w-full bg-slate-200 rounded-2xl" />
+                  <div className="h-4 w-20 bg-slate-200 rounded" />
+                  <div className="h-6 w-3/4 bg-slate-200 rounded" />
+                  <div className="h-4 w-1/2 bg-slate-200 rounded" />
+                  <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                    <div className="h-6 w-16 bg-slate-200 rounded" />
+                    <div className="h-10 w-24 bg-slate-200 rounded-xl" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <AnimatePresence mode="wait">

@@ -123,12 +123,6 @@ const ProductCard = ({ product, index }) => {
                   ? "Free"
                   : `₹${finalPrice}`}
               </span>
-              {/* Show original only if different and not free */}
-              {product.originalPrice && finalPrice !== "Free" && (
-                <span className="text-slate-500 text-[10px] md:text-xs line-through">
-                  ₹{product.originalPrice}
-                </span>
-              )}
             </div>
           )}
 

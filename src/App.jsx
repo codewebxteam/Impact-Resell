@@ -59,6 +59,7 @@ const FixDemoStudent = () => {
 // --- Components ---
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import FullPageSkeleton from "./components/FullPageSkeleton";
 
 // --- Public Pages ---
 import Home from "./pages/Home";
@@ -166,16 +167,7 @@ const AppContent = () => {
   const { loading: agencyLoading, isMainSite, agency } = useAgency();
 
   if (agencyLoading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-950">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5edff4]"></div>
-          <p className="text-slate-400 font-bold animate-pulse">
-            {!isMainSite ? "Loading Academy..." : "Initializing Academy..."}
-          </p>
-        </div>
-      </div>
-    );
+    return <FullPageSkeleton />;
   }
 
   return (

@@ -20,6 +20,7 @@ import Curriculum from "../components/course-details/Curriculum";
 import PricingCard from "../components/course-details/PricingCard";
 import AuthModal from "../components/AuthModal";
 import CourseVideoPlayer from "../components/CourseVideoPlayer";
+import FullPageSkeleton from "../components/FullPageSkeleton";
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -148,20 +149,7 @@ const CourseDetails = () => {
     window.location.reload();
   };
 
-  // UI loading check with Subdomain Logic
-  if (loading || agencyLoading)
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-950">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5edff4]"></div>
-          <p className="text-slate-400 font-bold animate-pulse">
-            {!isMainSite && agency
-              ? `Loading ${agency.name}...`
-              : "Initializing Academy..."}
-          </p>
-        </div>
-      </div>
-    );
+  if (loading || agencyLoading) return <FullPageSkeleton />;
 
   if (!course)
     return (
