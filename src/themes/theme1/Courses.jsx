@@ -331,9 +331,6 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
 
   const imageUrl = course.image || (course.videoId ? `https://img.youtube.com/vi/${course.videoId}/maxresdefault.jpg` : "https://placehold.co/600x400?text=No+Image");
   const finalPrice = displayPrice !== undefined && displayPrice !== null ? displayPrice : course.price;
-  const priceDisplay = finalPrice === "Free" || finalPrice === 0 || finalPrice === "0" ? "Free" : `₹${finalPrice}`;
-  const rating = course.rating || 4.5;
-  const reviews = course.reviews || 0;
   const instructor = course.instructor || "Mentor";
   const duration = course.duration || "Flexible";
   const category = course.category || "General";

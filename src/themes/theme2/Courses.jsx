@@ -338,10 +338,6 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
   const courseUrl = isDev ? `/dev/${themeName}/coursedetails/${course.id}` : `/courses/${course.id}`;
 
   const imageUrl = course.image || (course.videoId ? `https://img.youtube.com/vi/${course.videoId}/maxresdefault.jpg` : "https://placehold.co/600x400?text=No+Image");
-  const finalPrice = displayPrice !== undefined && displayPrice !== null ? displayPrice : course.price;
-  const priceDisplay = finalPrice === "Free" || finalPrice === 0 || finalPrice === "0" ? "Free" : `₹${finalPrice}`;
-  const rating = course.rating || 4.5;
-  const reviews = course.reviews || 0;
   const instructor = course.instructor || "Mentor";
   const duration = course.duration || "Flexible";
   const category = course.category || "General";
@@ -375,12 +371,6 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
           
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/60 opacity-80" />
-          
-          {/* Top Badges */}
-          <div className="absolute top-4 right-4 flex items-center gap-1 bg-white/90 backdrop-blur-md px-2.5 py-1.5 rounded-xl shadow-sm border border-white/50">
-            <Star className="size-3.5 text-yellow-500 fill-yellow-500" />
-            <span className="text-xs font-black text-slate-800">{rating}</span>
-          </div>
 
           <div className="absolute bottom-4 left-4">
             <span className="text-[10px] font-black text-[var(--brand-color)] bg-white px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-sm border border-white/50">

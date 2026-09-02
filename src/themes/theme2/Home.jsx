@@ -390,11 +390,6 @@ const HomeCourseCard = ({ data }) => {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/70 opacity-80" />
           
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-2.5 py-1.5 rounded-xl shadow-sm border border-white/50 flex items-center gap-1">
-            <Star className="size-3.5 text-yellow-500 fill-yellow-500" />
-            <span className="text-xs font-black text-slate-800">{data?.rating || "4.8"}</span>
-          </div>
-
           <div className="absolute bottom-4 left-4">
             <span className="text-[10px] font-black text-[var(--brand-color)] bg-white px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-sm border border-white/50">
               {category}

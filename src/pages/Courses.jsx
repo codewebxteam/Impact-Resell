@@ -337,8 +337,6 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
   const originalPrice = course.originalPrice
     ? `₹${course.originalPrice}`
     : null;
-  const rating = course.rating || 4.5;
-  const reviews = course.reviews || 0;
   const instructor = course.instructor || "Mentor";
   const duration = course.duration || "Flexible";
   const category = course.category || "General";
@@ -386,11 +384,6 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
           <span className="text-xs font-bold text-[#0891b2] bg-[#f0fdff] px-2 py-1 rounded-md uppercase tracking-wider">
             {category}
           </span>
-          <div className="flex items-center gap-1">
-            <Star className="size-3.5 text-yellow-400 fill-yellow-400" />
-            <span className="text-xs font-bold text-slate-700">{rating}</span>
-            <span className="text-xs text-slate-400">({reviews})</span>
-          </div>
         </div>
 
         <Link to={`/courses/${course.id}`} className="block">

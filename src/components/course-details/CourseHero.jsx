@@ -1,5 +1,5 @@
 import React from "react";
-import { Star, Globe, AlertCircle } from "lucide-react";
+import { Globe, AlertCircle } from "lucide-react";
 
 const CourseHero = ({ course }) => {
   return (

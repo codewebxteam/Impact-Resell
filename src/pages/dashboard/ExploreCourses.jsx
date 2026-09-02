@@ -150,14 +150,9 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
         />
 
         {/* [ADDED] Enrolled Badge on Top */}
-        {isUserEnrolled ? (
+        {isUserEnrolled && (
           <div className="absolute top-3 left-3 bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-lg z-10">
             <CheckCircle className="size-3" /> Enrolled
-          </div>
-        ) : (
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
-            <Star className="size-3 fill-yellow-400 text-yellow-400" />{" "}
-            {course.rating || 4.5}
           </div>
         )}
       </div>
