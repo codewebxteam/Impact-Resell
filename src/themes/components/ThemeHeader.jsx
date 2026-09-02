@@ -141,8 +141,8 @@ const ThemeHeader = ({ currentTheme }) => {
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b
         ${
           scrolled
-            ? "bg-white/90 backdrop-blur-xl border-slate-200/50 py-2 shadow-lg shadow-slate-200/20"
-            : "bg-transparent py-2 sm:py-3 border-transparent"
+            ? "bg-white/95 backdrop-blur-xl border-slate-200/50 py-2 shadow-lg shadow-slate-200/20"
+            : "bg-white/95 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none border-slate-200/50 sm:border-transparent py-2 sm:py-3 shadow-sm sm:shadow-none"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
