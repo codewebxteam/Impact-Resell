@@ -223,7 +223,32 @@ const DigitalProducts = () => {
     fetchTopProducts();
   }, [isMainSite, agency?.id]);
 
-  if (loading || products.length === 0) return null;
+  if (loading) {
+    return (
+      <section className="relative w-full bg-slate-950 py-16 md:py-20 px-4 overflow-hidden font-sans">
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3 animate-pulse">
+            <div className="h-4 w-32 bg-slate-800 rounded-full mx-auto" />
+            <div className="h-8 w-64 bg-slate-800 rounded-xl mx-auto" />
+            <div className="h-4 w-48 bg-slate-800/60 rounded mx-auto" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-96 rounded-4xl bg-slate-900 border border-slate-800 p-6 space-y-4 animate-pulse">
+                <div className="h-40 w-full bg-slate-800 rounded-2xl" />
+                <div className="h-4 w-20 bg-slate-800 rounded" />
+                <div className="h-6 w-3/4 bg-slate-800 rounded" />
+                <div className="h-4 w-full bg-slate-800/60 rounded" />
+                <div className="h-10 w-full bg-slate-800 rounded-xl mt-6" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) return null;
 
   return (
     <section className="relative w-full bg-slate-950 py-16 md:py-20 px-4 overflow-hidden font-sans">

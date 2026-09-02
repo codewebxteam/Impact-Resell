@@ -554,10 +554,18 @@ const CardsSwap = () => {
                 </SwapEngine>
               ) : (
                 <div
-                  className="animate-pulse bg-slate-100 rounded-4xl border border-slate-200 flex items-center justify-center text-slate-400"
+                  className="animate-pulse bg-white rounded-4xl border border-slate-200 p-6 flex flex-col justify-between shadow-xl"
                   style={{ width: cardWidth, height: cardHeight }}
                 >
-                  Loading Courses...
+                  <div className="space-y-3">
+                    <div className="size-10 bg-slate-200 rounded-2xl animate-pulse" />
+                    <div className="h-6 w-3/4 bg-slate-200 rounded-lg animate-pulse" />
+                    <div className="h-4 w-1/2 bg-slate-200/80 rounded animate-pulse" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-8 w-24 bg-slate-200 rounded-lg animate-pulse" />
+                    <div className="h-10 w-full bg-slate-200 rounded-xl animate-pulse" />
+                  </div>
                 </div>
               )}
             </div>
