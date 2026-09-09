@@ -251,7 +251,7 @@ const VerifyCertificate = () => {
                       <span className="text-slate-500 text-xs">Issued By</span>
                       <div className="flex items-center gap-2">
                         <img
-                          src="https://ui-avatars.com/api/?name=Impact+School&background=0D9488&color=fff"
+                          src="https://ui-avatars.com/api/?name=AI+Courses&background=0D9488&color=fff"
                           alt="Logo"
                           className="w-6 h-6 rounded-full"
                         />

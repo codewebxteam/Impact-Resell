@@ -139,13 +139,19 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
-  // 4. Reset Password Function — user ke email pe Firebase reset link bhejta hai
-  const resetPassword = (email) => {
-    const actionCodeSettings = {
-      // Always route back to the main domain to bypass Firebase's unauthorized domain error for subdomains
-      url: `https://${MAIN_DOMAIN}`, 
-    };
-    return sendPasswordResetEmail(auth, email, actionCodeSettings);
+  // 4. Reset Password Function — user ke email pe Firebase reset link bhejta hai (works on main site & subdomains)
+  const resetPassword = async (email) => {
+    try {
+      const currentOrigin = typeof window !== "undefined" ? window.location.origin : `https://${MAIN_DOMAIN}`;
+      const actionCodeSettings = {
+        url: currentOrigin,
+      };
+      return await sendPasswordResetEmail(auth, email, actionCodeSettings);
+    } catch (error) {
+      console.warn("Reset password with actionCodeSettings failed, attempting standard fallback:", error);
+      // Fallback: standard sendPasswordResetEmail without actionCodeSettings (always succeeds on subdomains and custom domains)
+      return await sendPasswordResetEmail(auth, email);
+    }
   };
 
   // 4. [UPDATED] Monitor Auth State & Fetch Firestore Data
