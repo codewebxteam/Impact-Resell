@@ -8,9 +8,9 @@ import {
   Heart,
   X,
   MessageCircle,
-  ShieldCheck, // Icon for Partner Link
+  ShieldCheck,
 } from "lucide-react";
-import { useAgency } from "../context/AgencyContext";
+import { useAgency } from "../../../context/AgencyContext";
 
 const SocialIcon = ({ Icon, href }) => (
   <motion.a
@@ -31,115 +31,40 @@ const SocialIcon = ({ Icon, href }) => (
   </motion.a>
 );
 
-const Footer = () => {
+const Theme1Footer = ({ currentTheme = "theme1" }) => {
   const [activePolicy, setActivePolicy] = useState(null);
-
-  // [LOGIC] Agency Context Hook
   const { agency, isMainSite } = useAgency();
 
-  // [LOGIC] Dynamic Data Variables
-  const academyName =
-    !isMainSite && agency ? agency.name : "AI Courses";
-
-  const supportEmail =
-    !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
-
-  const supportPhone =
-    !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
-
+  const academyName = !isMainSite && agency ? agency.name : "AI Courses";
+  const supportEmail = !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
+  const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
   const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I need some information.")}`;
-
-  const instaLink =
-    !isMainSite && agency?.instagram
-      ? agency.instagram
-      : "https://www.instagram.com/";
-
-  // [LOGIC] Dynamic Year
+  const instaLink = !isMainSite && agency?.instagram ? agency.instagram : "https://www.instagram.com/";
   const currentYear = new Date().getFullYear();
 
-  // [CONTENT] Policy Content
   const POLICY_CONTENT = {
     privacy: {
       title: "Privacy Policy",
       content: (
         <div className="space-y-5 text-slate-300 text-sm md:text-base leading-relaxed">
           <section>
-            <h4 className="text-white font-bold mb-1.5">
-              Information Collection
-            </h4>
-            <p>
-              We collect personal information such as name, email, phone number,
-              and payment details for the purpose of course enrollment and
-              support.
-            </p>
+            <h4 className="text-white font-bold mb-1.5">Information Collection</h4>
+            <p>We collect personal information such as name, email, phone number, and payment details for the purpose of course enrollment and support.</p>
           </section>
-
           <section>
-            <h4 className="text-white font-bold mb-1.5">
-              How We Use Information
-            </h4>
+            <h4 className="text-white font-bold mb-1.5">How We Use Information</h4>
             <ul className="list-disc pl-5 space-y-1">
               <li>To provide and manage access to courses.</li>
               <li>To communicate course updates and announcements.</li>
               <li>To process payments securely via Razorpay.</li>
             </ul>
           </section>
-
-          <section>
-            <h4 className="text-white font-bold mb-1.5">Information Sharing</h4>
-            <p className="mb-2">
-              We do not sell or share your personal information with third
-              parties, except:
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>To comply with legal requirements.</li>
-              <li>
-                To process payments via Razorpay or other authorized payment
-                processors.
-              </li>
-            </ul>
-          </section>
-
-          <section>
-            <h4 className="text-white font-bold mb-1.5">Cookies & Analytics</h4>
-            <p>
-              We may use cookies and analytics tools to improve website
-              experience and track course progress.
-            </p>
-          </section>
-
-          <section>
-            <h4 className="text-white font-bold mb-1.5">Data Security</h4>
-            <p>
-              We implement reasonable security measures to protect your personal
-              information from unauthorized access.
-            </p>
-          </section>
-
           <section>
             <h4 className="text-white font-bold mb-1.5">Your Rights</h4>
             <p>
-              You may request access, correction, or deletion of your personal
-              data by contacting us at{" "}
-              <a
-                href={`mailto:${supportEmail}`}
-                className="text-cyan-400 hover:underline"
-              >
-                {supportEmail}
-              </a>{" "}
-              or WhatsApp us at{" "}
-              <a href={whatsappLink} className="text-cyan-400 hover:underline">
-                {supportPhone}
-              </a>
-              .
-            </p>
-          </section>
-
-          <section>
-            <h4 className="text-white font-bold mb-1.5">Policy Updates</h4>
-            <p>
-              We may update this privacy policy from time to time. Updates will
-              be posted on this page.
+              You may request access, correction, or deletion of your data by contacting us at{" "}
+              <a href={`mailto:${supportEmail}`} className="text-cyan-400 hover:underline">{supportEmail}</a> or WhatsApp us at{" "}
+              <a href={whatsappLink} className="text-cyan-400 hover:underline">{supportPhone}</a>.
             </p>
           </section>
         </div>
@@ -150,64 +75,8 @@ const Footer = () => {
       content: (
         <div className="space-y-5 text-slate-300 text-sm md:text-base leading-relaxed">
           <section>
-            <h4 className="text-white font-bold mb-1.5">
-              Digital Product Disclaimer
-            </h4>
-            <p>
-              All courses sold on {academyName} are digital products with
-              instant access after purchase. By completing a purchase, you
-              acknowledge that the product is digital and cannot be returned
-              once delivered.
-            </p>
-          </section>
-
-          <section>
-            <h4 className="text-white font-bold mb-1.5">
-              No Refunds on Completed Access
-            </h4>
-            <p>
-              Due to the nature of online courses, we do not offer refunds once
-              the course content is accessed. This is standard practice for
-              digital products.
-            </p>
-          </section>
-
-          <section>
-            <h4 className="text-white font-bold mb-1.5">Exceptions / Support</h4>
-            <p>
-              We value our learners. If you experience technical issues
-              preventing access to course content, please contact us at{" "}
-              <a
-                href={`mailto:${supportEmail}`}
-                className="text-cyan-400 hover:underline"
-              >
-                {supportEmail}
-              </a>{" "}
-              or WhatsApp us at{" "}
-              <a href={whatsappLink} className="text-cyan-400 hover:underline">
-                {supportPhone}
-              </a>
-              . We will make all reasonable efforts to resolve access issues
-              promptly.
-            </p>
-          </section>
-
-          <section>
-            <h4 className="text-white font-bold mb-1.5">
-              Cancellation Before Payment Completion
-            </h4>
-            <p>
-              If a payment fails or is canceled before full access is granted,
-              no charges will be processed.
-            </p>
-          </section>
-
-          <section>
-            <h4 className="text-white font-bold mb-1.5">Disputes</h4>
-            <p>
-              All refund or payment disputes will be handled in accordance with
-              Razorpay’s terms and applicable laws.
-            </p>
+            <h4 className="text-white font-bold mb-1.5">Digital Product Disclaimer</h4>
+            <p>All courses sold on {academyName} are digital products with instant access after purchase. Once delivered, course fees are non-refundable.</p>
           </section>
         </div>
       ),
@@ -216,14 +85,12 @@ const Footer = () => {
 
   const footerLinks = {
     Academy: [
-      { name: "Courses", href: "/courses" },
+      { name: "Courses", href: currentTheme ? `/dev/${currentTheme}/courses` : "/courses" },
     ],
     Company: [
-      { name: "About Us", href: "/about" },
-      { name: "Contact Us", href: "/contact" },
-      ...(isMainSite
-        ? [{ name: "Register as a Partner", href: "#", isPartner: true }]
-        : []),
+      { name: "About Us", href: currentTheme ? `/dev/${currentTheme}/about` : "/about" },
+      { name: "Contact Us", href: currentTheme ? `/dev/${currentTheme}/contact` : "/contact" },
+      ...(isMainSite ? [{ name: "Register as a Partner", href: "#", isPartner: true }] : []),
     ],
     Resources: [
       { name: "Verify Certificate", href: "/verify" },
@@ -237,12 +104,10 @@ const Footer = () => {
 
   return (
     <footer className="relative bg-[#061129] text-white pt-10 sm:pt-14 pb-20 lg:pb-10 overflow-hidden font-sans border-t border-slate-800/80">
-      {/* Background Ambient Glows */}
       <div className="absolute top-0 left-0 size-160 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none -translate-x-1/2 -translate-y-1/2" />
       <div className="absolute bottom-0 right-0 size-120 bg-cyan-500/10 rounded-full blur-[90px] pointer-events-none translate-x-1/3 translate-y-1/3" />
 
       <div className="max-w-7xl mx-auto px-5 sm:px-8 relative z-10">
-        {/* Top Section */}
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 mb-10 pb-8 border-b border-slate-800/60">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -262,14 +127,13 @@ const Footer = () => {
             </div>
             <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-3 leading-tight tracking-tight">
               Start your journey <br className="hidden sm:block" /> toward{" "}
-              <span className="text-cyan-400">career-ready skills</span>.
+              <span className="text-cyan-400">mastering AI Video Creation</span>.
             </h3>
             <p className="text-slate-400 text-xs sm:text-sm max-w-md font-medium leading-relaxed">
-              Start learning future-focused skills with our growing community.
+              Learn AI avatar vlogging, 2D/3D animation, and viral video creation with our community.
             </p>
           </motion.div>
 
-          {/* Community Card */}
           <motion.div
             initial={{ opacity: 0, x: 15 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -297,7 +161,6 @@ const Footer = () => {
           </motion.div>
         </div>
 
-        {/* Links Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-10">
           {Object.entries(footerLinks).map(([title, links], categoryIndex) => (
             <motion.div
@@ -316,9 +179,7 @@ const Footer = () => {
                       onClick={(e) => {
                         if (link.isPartner) {
                           e.preventDefault();
-                          window.dispatchEvent(
-                            new CustomEvent("openPartnerModal"),
-                          );
+                          window.dispatchEvent(new CustomEvent("openPartnerModal"));
                         }
                         if (link.type) {
                           e.preventDefault();
@@ -344,24 +205,16 @@ const Footer = () => {
           ))}
         </div>
 
-        {/* Bottom Section */}
         <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-slate-800/60 gap-4 text-xs sm:text-sm">
           <div className="flex items-center gap-2 text-slate-400 font-medium">
-            <span>
-              © {currentYear} {academyName}. All rights reserved.
-            </span>
+            <span>© {currentYear} {academyName}. All rights reserved.</span>
           </div>
 
           <div className="flex items-center gap-1.5 text-slate-400 font-medium">
             <span>Made with</span>
             <Heart className="size-3.5 text-red-500 fill-red-500 animate-pulse" />
             <span>by</span>
-            <a
-              href="https://www.codewebx.in/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 transition-colors font-bold"
-            >
+            <a href="https://www.codewebx.in/" target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 transition-colors font-bold">
               CodeWebX
             </a>
           </div>
@@ -374,7 +227,6 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Watermark */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/4 w-full text-center pointer-events-none select-none overflow-hidden">
         <motion.h1
           initial={{ opacity: 0 }}
@@ -386,44 +238,20 @@ const Footer = () => {
         </motion.h1>
       </div>
 
-      {/* Policy Modal */}
       <AnimatePresence>
         {activePolicy && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setActivePolicy(null)}
-              className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
-            >
-              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-100 bg-slate-50/80 backdrop-blur-xl z-10">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900">
-                  {POLICY_CONTENT[activePolicy].title}
-                </h3>
-                <button
-                  onClick={() => setActivePolicy(null)}
-                  className="size-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-[#0070f3] hover:text-white transition-colors cursor-pointer"
-                >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActivePolicy(null)} className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs" />
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 15 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 15 }} className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-800 bg-slate-900/50 backdrop-blur-xl z-10">
+                <h3 className="text-lg sm:text-xl font-bold text-white">{POLICY_CONTENT[activePolicy].title}</h3>
+                <button onClick={() => setActivePolicy(null)} className="size-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-[#0070f3] hover:text-white transition-colors cursor-pointer">
                   <X className="size-4" />
                 </button>
               </div>
-              <div className="p-5 sm:p-7 overflow-y-auto custom-scrollbar">
-                {POLICY_CONTENT[activePolicy].content}
-              </div>
-              <div className="p-4 border-t border-slate-100 bg-slate-50/80 text-center">
-                <button
-                  onClick={() => setActivePolicy(null)}
-                  className="px-6 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs sm:text-sm hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  Close Policy
-                </button>
+              <div className="p-5 sm:p-7 overflow-y-auto custom-scrollbar">{POLICY_CONTENT[activePolicy].content}</div>
+              <div className="p-4 border-t border-slate-800 bg-slate-900/50 text-center">
+                <button onClick={() => setActivePolicy(null)} className="px-6 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs sm:text-sm hover:bg-slate-700 transition-colors cursor-pointer">Close Policy</button>
               </div>
             </motion.div>
           </div>
@@ -433,4 +261,4 @@ const Footer = () => {
   );
 };
 
-export default Footer;
+export default Theme1Footer;

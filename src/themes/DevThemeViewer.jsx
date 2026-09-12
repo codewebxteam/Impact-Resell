@@ -24,12 +24,14 @@ import Theme3ContactUs from './theme3/ContactUs';
 // Theme 4
 import Theme4Home from './theme4/Home';
 import Theme4Courses from './theme4/Courses';
+import Theme4CourseDetails from './theme4/CourseDetails';
 import Theme4AboutUs from './theme4/AboutUs';
 import Theme4ContactUs from './theme4/ContactUs';
 
 // Theme 5
 import Theme5Home from './theme5/Home';
 import Theme5Courses from './theme5/Courses';
+import Theme5CourseDetails from './theme5/CourseDetails';
 import Theme5AboutUs from './theme5/AboutUs';
 import Theme5ContactUs from './theme5/ContactUs';
 
@@ -54,18 +56,21 @@ const themeMap = {
   theme3: {
     home: Theme3Home,
     courses: Theme3Courses,
+    coursedetails: Theme1CourseDetails,
     about: Theme3AboutUs,
     contact: Theme3ContactUs,
   },
   theme4: {
     home: Theme4Home,
     courses: Theme4Courses,
+    coursedetails: Theme4CourseDetails,
     about: Theme4AboutUs,
     contact: Theme4ContactUs,
   },
   theme5: {
     home: Theme5Home,
     courses: Theme5Courses,
+    coursedetails: Theme5CourseDetails,
     about: Theme5AboutUs,
     contact: Theme5ContactUs,
   }

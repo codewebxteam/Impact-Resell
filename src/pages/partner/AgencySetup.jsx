@@ -72,6 +72,7 @@ const AgencySetup = () => {
     customPaymentLinks: {},
     promoType: "none",
     bundlePrice: "",
+    bundlePaymentLink: "",
     demoVideoLink: "",
   });
 
@@ -119,6 +120,7 @@ const AgencySetup = () => {
             customPaymentLinks: data.customPaymentLinks || {},
             promoType: data.promoType || "none",
             bundlePrice: data.bundlePrice || "",
+            bundlePaymentLink: data.bundlePaymentLink || data.customPaymentLinks?.["bundle"] || "",
             demoVideoLink: data.demoVideoLink || "",
           });
           setOldSubdomain(data.subdomain);
@@ -221,6 +223,7 @@ const AgencySetup = () => {
         customPaymentLinks: formData.customPaymentLinks,
         promoType: formData.promoType,
         bundlePrice: formData.bundlePrice,
+        bundlePaymentLink: formData.bundlePaymentLink,
         demoVideoLink: formData.demoVideoLink,
         updatedAt: new Date(),
         ownerId: currentUser.uid,
@@ -597,19 +600,33 @@ const AgencySetup = () => {
                         </div>
 
                         {formData.promoType === "bundle" && (
-                          <div className="flex flex-col max-w-xs animate-in fade-in slide-in-from-top-2">
-                            <label className="text-xs font-bold text-slate-600 mb-2 uppercase">Bundle Price (₹)</label>
-                            <div className="relative">
-                              <input 
-                                type="number" 
-                                value={formData.bundlePrice} 
-                                onChange={(e) => setFormData({...formData, bundlePrice: e.target.value})} 
-                                className="w-full pl-8 pr-4 py-3 bg-white border-2 border-indigo-200 rounded-xl outline-none focus:border-indigo-500 font-black text-slate-900 transition-colors" 
-                                placeholder="e.g. 499" 
-                              />
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                          <div className="space-y-4 max-w-md animate-in fade-in slide-in-from-top-2">
+                            <div className="flex flex-col max-w-xs">
+                              <label className="text-xs font-bold text-slate-600 mb-2 uppercase">Bundle Price (₹)</label>
+                              <div className="relative">
+                                <input 
+                                  type="number" 
+                                  value={formData.bundlePrice} 
+                                  onChange={(e) => setFormData({...formData, bundlePrice: e.target.value})} 
+                                  className="w-full pl-8 pr-4 py-3 bg-white border-2 border-indigo-200 rounded-xl outline-none focus:border-indigo-500 font-black text-slate-900 transition-colors" 
+                                  placeholder="e.g. 499" 
+                                />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                              </div>
+                              <p className="text-[10px] font-bold text-indigo-500/70 mt-2">This price will be prominently displayed on your courses page.</p>
                             </div>
-                            <p className="text-[10px] font-bold text-indigo-500/70 mt-2">This price will be prominently displayed on your courses page.</p>
+
+                            <div className="flex flex-col">
+                              <label className="text-xs font-bold text-slate-600 mb-2 uppercase">Bundle Payment Link (Optional)</label>
+                              <input 
+                                type="url" 
+                                value={formData.bundlePaymentLink || ""} 
+                                onChange={(e) => setFormData({...formData, bundlePaymentLink: e.target.value})} 
+                                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-400 transition-all" 
+                                placeholder="https://rzp.io/l/... (Leave empty for WhatsApp redirection)" 
+                              />
+                              <p className="text-[10px] font-bold text-slate-400 mt-1">If set, users clicking 'Unlock All' will open this payment link directly.</p>
+                            </div>
                           </div>
                         )}
                       </section>

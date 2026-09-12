@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Search, Star, BookOpen, Clock, Play, Loader2, Sparkles } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -102,17 +102,30 @@ const Courses = () => {
   };
 
   const handleBuyClick = async (course, rawPrice) => {
-    if (!currentUser) {
-      setIsAuthOpen(true);
-      return; 
-    }
-
     const priceDisplay =
       rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
         ? "Free"
         : `₹${rawPrice}`;
 
     if (!isMainSite && priceDisplay !== "Free") {
+      // 1. If partner set a custom payment link, open it directly
+      const customPaymentLink =
+        agency?.customPaymentLinks?.[course.id] ||
+        (course.id === "bundle" ? (agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink) : null);
+      const partnerCoursePaymentLink =
+        course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
+      const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
+
+      if (finalPaymentLink) {
+        window.open(finalPaymentLink, "_blank");
+        return;
+      }
+
+      if (!currentUser) {
+        setIsAuthOpen(true);
+        return; 
+      }
+
       if (!agency?.whatsapp) {
         return alert("Partner contact number not found. Please contact support.");
       }
@@ -141,6 +154,11 @@ const Courses = () => {
       const whatsappUrl = `https://wa.me/${agency.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, "_blank");
       return;
+    }
+
+    if (!currentUser) {
+      setIsAuthOpen(true);
+      return; 
     }
 
     try {
@@ -405,8 +423,8 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
               </span>
             </div>
             {!isMainSite && (
-              <span className={`text-2xl font-black ${priceDisplay === "Free" ? "text-cyan-600" : THEME.textMain}`}>
-                {priceDisplay}
+              <span className={`text-2xl font-black ${finalPrice == 0 || finalPrice === "Free" ? "text-cyan-600" : THEME.textMain}`}>
+                {finalPrice == 0 || finalPrice === "Free" ? "Free" : `₹${finalPrice}`}
               </span>
             )}
           </div>
@@ -431,7 +449,7 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
                   </button>
                 ) : (
                   <button onClick={onBuy} className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold ${THEME.buttonPrimary}`}>
-                    {priceDisplay === "Free" ? "Enroll Free" : "Buy Now"}
+                    {finalPrice == 0 || finalPrice === "Free" ? "Enroll Free" : "Buy Now"}
                   </button>
                 )
               )

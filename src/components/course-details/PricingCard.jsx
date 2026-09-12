@@ -164,7 +164,20 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
             !isMainSite && (
               <button
                 onClick={() => {
-                  // 1. Check Login First
+                  // If partner configured custom payment link, open it right away!
+                  const customPaymentLink =
+                    agency?.customPaymentLinks?.[course.id] ||
+                    (course.id === "bundle" ? (agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink) : null);
+                  const partnerCoursePaymentLink =
+                    course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
+                  const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink;
+
+                  if (finalPaymentLink) {
+                    window.open(finalPaymentLink, "_blank");
+                    return;
+                  }
+
+                  // 1. Check Login First if no direct payment link
                   if (!currentUser) {
                     setIsAuthOpen(true);
                     return;

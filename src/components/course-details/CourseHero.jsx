@@ -7,7 +7,7 @@ const CourseHero = ({ course }) => {
     // 1. Mobile ('mt-[70px]'): Keeps the White Bar layout you like on phones.
     // 2. Desktop ('lg:mt-0'): Removes the gap/margin so the Blue BG goes to the top.
     // 3. Desktop Padding ('lg:pt-48'): Pushes content down so it doesn't hide behind the Navbar.
-    <div className="bg-slate-900 text-white mt-12 sm:mt-16 lg:mt-18 pt-4 sm:pt-8 lg:pt-25 pb-12 lg:pb-16 px-6 relative overflow-hidden">
+    <div className="bg-slate-900 text-white mt-16 sm:mt-20 lg:mt-18 pt-8 sm:pt-12 lg:pt-24 pb-12 lg:pb-16 px-5 sm:px-6 relative overflow-hidden">
       {/* Background Glow Effect */}
       <div className="absolute top-0 right-0 p-22 bg-[#5edff4]/10 blur-[100px] rounded-full pointer-events-none" />
 

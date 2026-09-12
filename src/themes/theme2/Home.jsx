@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -63,12 +64,12 @@ const THEME = {
 // DATA: FAQS
 // ==========================================
 const faqs = [
-  { id: 1, question: "Who is this course for?", answer: "This course is designed for beginners, students, working professionals, and creators who want to build industry-ready skills from scratch." },
-  { id: 2, question: "Do I need any prior experience?", answer: "No prior experience is required. The course starts from the basics and gradually moves to advanced, practical concepts." },
-  { id: 3, question: "How will I access the course after enrollment?", answer: "You’ll get instant access to all course content after successful payment. Learn anytime, at your own pace." },
-  { id: 4, question: "Is this course online or offline?", answer: "This is a 100% online course, accessible from anywhere using a mobile, tablet, or computer." },
-  { id: 5, question: "Will I get a certificate after completing the course?", answer: "Yes, you’ll receive a certificate of completion after finishing the course." },
-  { id: 6, question: "Will I get support if I face issues?", answer: "Yes. You’ll have access to WhatsApp & Email support and guidance from our team." },
+  { id: 1, question: "Do I need a high-end PC or camera to create AI videos and avatars?", answer: "No! All AI video generation, avatar creation, and 2D/3D animations can be done using cloud-based AI tools on any mobile or computer." },
+  { id: 2, question: "What video styles will I learn in this academy?", answer: "You will master AI Avatar Vlogging, 2D/3D Animation, AI Influencer UGC Ads, Historical Documentaries, Anime, Stickman, Baby Podcast, and Business Promos." },
+  { id: 3, question: "Can I monetize these AI videos on YouTube, Instagram, or sell to clients?", answer: "Yes! We teach you exact strategies to build viral YouTube Shorts, Instagram Reels, grow AI channels, and land paying clients." },
+  { id: 4, question: "Are the AI video tools free to use?", answer: "We cover completely free AI tools as well as top-tier paid AI platforms with free credits and trial workflows." },
+  { id: 5, question: "Will I get step-by-step AI prompts and project templates?", answer: "Yes! You get ready-to-use AI text prompts, voiceover setups, animation workflows, and lifetime updates." },
+  { id: 6, question: "Will I get support if I face issues while generating videos?", answer: "Yes! You’ll have direct access to WhatsApp & Email support from our team to guide you step-by-step." },
 ];
 
 // ==========================================
@@ -84,116 +85,123 @@ const HeroSection = () => {
   const handleExploreCourses = () => navigate(coursesUrl);
 
   return (
-    <section className="relative pt-24 lg:pt-32 pb-16 overflow-hidden flex items-center bg-white">
-      {/* Top Right Blob */}
-      <div className="absolute top-0 right-0 w-[600px] lg:w-[800px] h-[600px] lg:h-[800px] bg-[var(--brand-color)]/15 rounded-bl-[100%] -z-10 translate-x-1/4 -translate-y-1/4" />
+    <section className="relative min-h-[760px] sm:min-h-[850px] md:min-h-screen w-full overflow-hidden flex items-center">
+      {/* LAPTOP / DESKTOP FULL SCREEN BACKGROUND (md and above) */}
+      <img
+        src="https://ik.imagekit.io/0s0fb4b2b/Theme/hero2theme.webp"
+        alt="Theme 2 Hero Desktop Background"
+        className="hidden md:block absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none z-0"
+      />
 
-      {/* Dotted Grids */}
-      <div className="absolute top-32 left-1/2 -translate-x-12 grid grid-cols-4 gap-3 opacity-30 -z-10">
-        {Array.from({ length: 24 }).map((_, i) => <div key={i} className="size-1.5 bg-slate-300 rounded-full" />)}
-      </div>
-      <div className="absolute bottom-24 right-12 grid grid-cols-3 gap-3 opacity-30 -z-10 hidden lg:grid">
-        {Array.from({ length: 15 }).map((_, i) => <div key={i} className="size-1.5 bg-slate-300 rounded-full" />)}
-      </div>
+      {/* PHONE / MOBILE FULL SCREEN BACKGROUND (below md) */}
+      <img
+        src="https://ik.imagekit.io/0s0fb4b2b/Theme/hero2themeP.webp"
+        alt="Theme 2 Hero Mobile Background"
+        className="block md:hidden absolute top-16 sm:top-20 inset-x-0 bottom-0 w-full h-[calc(100%-4rem)] object-cover object-bottom pointer-events-none select-none z-0"
+      />
 
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 relative z-10 w-full">
-        <div className="grid lg:grid-cols-2 gap-16 lg:gap-8 items-center">
-
-          {/* LEFT CONTENT */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+      {/* CONTENT CONTAINER */}
+      <div className="relative z-10 w-full max-w-[1500px] mx-auto px-5 sm:px-10 lg:px-16 pt-20 sm:pt-24 pb-[380px] sm:pb-[440px] md:py-24 lg:py-32 flex flex-col justify-start md:justify-center min-h-[880px] sm:min-h-[960px] md:min-h-screen">
+        <div className="w-full max-w-[650px] lg:max-w-[700px]">
+          
+          {/* TEXT CONTENT ANIMATION */}
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="max-w-2xl"
+            className="flex flex-col items-start"
           >
-            {/* Badge */}
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase mb-8 ${THEME.badgeBg}`}>
-              <Sparkles className="size-4" />
-              Skills That Pay You Back
+            {/* Small badge */}
+            <div className={`mb-4 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.18em] shadow-sm backdrop-blur-md ${THEME.badgeBg}`}>
+              <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-purple-500 shadow-[0_0_0_4px_rgba(168,85,247,0.12)] animate-pulse" />
+              AI Video & Avatar Mastery
+              <Sparkles size={13} />
             </div>
 
             {/* Heading */}
-            <h1 className={`text-5xl sm:text-6xl lg:text-[5.5rem] font-extrabold leading-[1.1] mb-6 tracking-tight ${THEME.textMain}`}>
-              Master Skills <br />
-              That Define <br />
-              <span className="text-[var(--brand-color)] relative inline-block mt-2">
-                The Future.
-                <svg className="absolute w-full h-4 -bottom-2 left-0 text-[var(--brand-color)]/40" viewBox="0 0 100 20" preserveAspectRatio="none">
-                  <path d="M0,10 Q50,20 100,10" stroke="currentColor" strokeWidth="6" strokeLinecap="round" fill="none" />
-                </svg>
+            <h1 className="text-[32px] sm:text-[56px] md:text-[64px] lg:text-[76px] font-black leading-[1.04] tracking-[-0.04em] text-slate-900">
+              Master AI Video
+              <br />
+              <span className={THEME.gradientText}>
+                Creation & Animation.
               </span>
             </h1>
 
             {/* Description */}
-            <p className={`mt-8 text-lg md:text-xl font-medium leading-relaxed max-w-lg ${THEME.textMuted}`}>
-              Join the elite academy for developers and creators. Real-world projects, expert mentorship, and a community that pushes you forward.
+            <p className={`mt-2.5 sm:mt-6 max-w-[560px] text-[13.5px] sm:text-[17px] font-medium leading-relaxed sm:leading-8 ${THEME.textMuted}`}>
+              Master AI avatar vlogging, 2D & 3D animation, AI influencer ads, historical documentaries, and viral content creation with hands-on projects.
             </p>
 
-            {/* Button & Hand-drawn Arrow */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mt-10">
-              <button onClick={handleExploreCourses} className={`group flex items-center gap-3 px-8 py-4 rounded-full font-bold text-lg ${THEME.buttonPrimary}`}>
+            {/* Action Buttons */}
+            <div className="mt-4.5 sm:mt-8 flex flex-wrap items-center gap-3 sm:gap-6">
+              <button 
+                onClick={handleExploreCourses} 
+                className={`group flex items-center gap-2.5 sm:gap-3 rounded-2xl px-5 sm:px-7 py-2.5 sm:py-4 text-[13px] sm:text-[15px] font-bold ${THEME.buttonPrimary}`}
+              >
                 Explore Courses
-                <div className="size-7 bg-white text-[var(--brand-color)] rounded-full flex items-center justify-center transition-transform group-hover:translate-x-1">
-                  <ArrowRight className="size-4" />
-                </div>
+                <span className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-purple-300 text-[#101828] transition-transform duration-300 group-hover:rotate-45">
+                  <ArrowRight size={15} />
+                </span>
               </button>
-              <div className="hidden sm:flex items-center gap-2 mt-4 sm:mt-0">
-                <svg width="60" height="40" viewBox="0 0 100 50" className="text-[var(--brand-color)] fill-none stroke-current" strokeWidth="2" strokeLinecap="round" style={{ transform: "rotate(-10deg)" }}>
-                  <path d="M10,40 Q40,10 90,30" />
-                  <path d="M80,20 L90,30 L75,35" />
+
+              {/* Hand-drawn Curvy Arrow + Start your journey today */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <svg
+                  width="65"
+                  height="40"
+                  viewBox="0 0 100 50"
+                  fill="none"
+                  className="text-purple-600 stroke-current -rotate-6"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M 10 40 Q 45 5 85 25" />
+                  <path d="M 70 18 L 85 25 L 75 35" />
                 </svg>
-                <span className="text-[var(--brand-color)] font-medium -rotate-12 mt-6">Start your<br />journey today!</span>
+                <span className="text-purple-600 font-extrabold text-xs sm:text-sm -rotate-6 leading-tight select-none">
+                  Start your<br />journey today!
+                </span>
               </div>
             </div>
-          </motion.div>
 
-          {/* RIGHT VISUAL (Orbiting System) */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-            className="relative w-full aspect-square max-w-[600px] mx-auto flex items-center justify-center"
-          >
-            {/* Concentric Circles */}
-            <div className="absolute inset-4 rounded-full border-[1.5px] border-slate-100" />
-            <div className="absolute inset-16 rounded-full border-[1.5px] border-slate-200 border-dashed" />
-            <div className="absolute inset-32 rounded-full border-[1.5px] border-slate-100" />
+            {/* Social Trust Metrics */}
+            <div className="mt-5 sm:mt-10 flex flex-wrap items-center gap-3 sm:gap-7">
+              <div className="flex items-center">
+                {[12, 32, 47, 68].map((img, index) => (
+                  <img
+                    key={index}
+                    src={`https://i.pravatar.cc/80?img=${img}`}
+                    alt="Student"
+                    className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full border-[2.5px] sm:border-[3px] border-white object-cover shadow-xs ${
+                      index !== 0 ? "-ml-2.5 sm:-ml-3" : ""
+                    }`}
+                  />
+                ))}
+              </div>
 
-            {/* Center Hexagon */}
-            <div className="absolute z-10 size-48 flex items-center justify-center drop-shadow-2xl">
-              <svg viewBox="0 0 100 100" className="absolute inset-0 size-full text-white fill-current">
-                <path d="M50 3.5 C52.5 3.5, 55 4.5, 57 6 L88 24.5 C91.5 26.5, 93.5 30.5, 93.5 34.5 L93.5 65.5 C93.5 69.5, 91.5 73.5, 88 75.5 L57 94 C53 96.5, 47 96.5, 43 94 L12 75.5 C8.5 73.5, 6.5 69.5, 6.5 65.5 L6.5 34.5 C6.5 30.5, 8.5 26.5, 12 24.5 L43 6 C45 4.5, 47.5 3.5, 50 3.5 Z" />
-              </svg>
-              <GraduationCap className="size-20 text-[var(--brand-color)] relative z-10" strokeWidth={1.5} />
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 size={15} className="text-purple-500" />
+                  <span className={`text-xs sm:text-sm font-extrabold ${THEME.textMain}`}>
+                    10,000+ AI Video Creators
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500">
+                  Trusted by content creators worldwide
+                </p>
+              </div>
             </div>
 
-            {/* Orbiting Floating Cards */}
-            <motion.div animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute top-[10%] left-[15%] bg-white p-5 rounded-3xl shadow-[0_15px_40px_rgba(0,0,0,0.06)] border border-slate-50 z-20">
-              <Laptop className="text-emerald-500 size-8" strokeWidth={1.5} />
-            </motion.div>
-            <motion.div animate={{ y: [10, -10, 10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} className="absolute top-[22%] right-[5%] bg-white p-5 rounded-3xl shadow-[0_15px_40px_rgba(0,0,0,0.06)] border border-slate-50 z-20">
-              <Lightbulb className="text-yellow-500 size-8" strokeWidth={1.5} />
-            </motion.div>
-            <motion.div animate={{ y: [-8, 8, -8] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-[28%] left-[2%] bg-white p-5 rounded-3xl shadow-[0_15px_40px_rgba(0,0,0,0.06)] border border-slate-50 z-20">
-              <TrendingUp className="text-blue-500 size-8" strokeWidth={1.5} />
-            </motion.div>
-            <motion.div animate={{ y: [8, -8, 8] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-[18%] right-[12%] bg-white p-5 rounded-3xl shadow-[0_15px_40px_rgba(0,0,0,0.06)] border border-slate-50 z-20">
-              <Code className="text-rose-500 size-8" strokeWidth={1.5} />
-            </motion.div>
-
-            {/* Decorative Dots */}
-            <div className="absolute top-[18%] left-[45%] size-3 bg-yellow-400 rounded-full" />
-            <div className="absolute bottom-[25%] right-[32%] size-2.5 bg-[var(--accent-color)] rounded-full" />
-            <div className="absolute top-[48%] left-[12%] size-2 bg-blue-500 rounded-full" />
           </motion.div>
         </div>
 
-        {/* BOTTOM CARDS & STATS */}
+        {/* BOTTOM CARDS - Hidden on phone view */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="mt-16 lg:mt-24 flex flex-col xl:flex-row gap-8 items-stretch xl:items-end justify-between"
+          className="hidden md:flex mt-16 lg:mt-24 flex-col xl:flex-row gap-8 items-stretch xl:items-end justify-between"
         >
           {/* Feature Cards Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
@@ -201,15 +209,6 @@ const HeroSection = () => {
             <FeatureCard icon={Code} iconColor="text-blue-500" iconBg="bg-blue-50" title="Real Projects" desc="Build portfolio with real-world experience" />
             <FeatureCard icon={Users} iconColor="text-emerald-500" iconBg="bg-emerald-50" title="Active Community" desc="Collaborate, learn and grow together" />
             <FeatureCard icon={TrendingUp} iconColor="text-orange-500" iconBg="bg-orange-50" title="Career Focused" desc="Get job-ready skills that matter" />
-          </div>
-
-          {/* Stats Box */}
-          <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-50 flex items-center justify-between gap-6 shrink-0 w-full xl:w-auto overflow-x-auto">
-            <StatItem icon={GraduationCap} color="bg-[var(--brand-color)]" title="250+" subtitle="Courses" />
-            <div className="w-px h-12 bg-slate-100 shrink-0" />
-            <StatItem icon={Users} color="bg-blue-500" title="10K+" subtitle="Students" />
-            <div className="w-px h-12 bg-slate-100 shrink-0" />
-            <StatItem icon={Star} color="bg-[var(--accent-color)]" title="98%" subtitle="Satisfaction" />
           </div>
         </motion.div>
       </div>
@@ -229,25 +228,13 @@ const FeatureCard = ({ icon: Icon, iconColor, iconBg, title, desc }) => (
   </div>
 );
 
-const StatItem = ({ icon: Icon, color, title, subtitle }) => (
-  <div className="flex items-center gap-4 shrink-0">
-    <div className={`size-12 ${color} text-white rounded-full flex items-center justify-center shadow-lg`}>
-      <Icon className="size-6" strokeWidth={1.5} />
-    </div>
-    <div>
-      <h4 className="font-black text-2xl text-slate-900">{title}</h4>
-      <p className="text-xs font-medium text-slate-500">{subtitle}</p>
-    </div>
-  </div>
-);
-
 // ==========================================
 // 2. MARQUEE SECTION
 // ==========================================
 const MarqueeSection = () => {
   const { agency, isMainSite } = useAgency();
-  const academyName = !isMainSite && agency ? agency.name.toUpperCase() : "AI COURSES";
-  const items = ["3D VIDEO MAKER", "AI COURSE", "2D CARTOON", "CARTOON VIDEO", academyName];
+  const academyName = !isMainSite && agency ? agency.name.toUpperCase() : "AI VIDEO ACADEMY";
+  const items = ["AI AVATAR VLOGGING", "3D ANIMATION", "HISTORICAL AI DOCUMENTARY", "AI INFLUENCER ADS", "ANIME & STICKMAN", academyName];
 
   return (
     <section className="relative w-full bg-slate-950 py-5 overflow-hidden z-10">
@@ -389,12 +376,6 @@ const HomeCourseCard = ({ data }) => {
             className="size-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/70 opacity-80" />
-          
-          <div className="absolute bottom-4 left-4">
-            <span className="text-[10px] font-black text-[var(--brand-color)] bg-white px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-sm border border-white/50">
-              {category}
-            </span>
-          </div>
         </div>
       </Link>
 
@@ -531,7 +512,7 @@ const Home = () => {
   return (
     // Style wrapper to inject the theme variables globally to this page
     <main
-      className={`min-h-screen w-full overflow-x-hidden ${THEME.textMain}`}
+      className={`min-h-screen w-full overflow-x-hidden font-roboto-condensed ${THEME.textMain}`}
       style={{
         '--brand-color': '#6366f1', // Indigo/Purple mapping from image
         '--accent-color': '#ec4899'  // Pink mapping from image

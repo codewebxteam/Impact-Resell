@@ -100,7 +100,7 @@ const AccordionSection = ({ section, isOpenDefault }) => {
             >
               <div className="flex items-center gap-3 text-slate-600">
                 <PlayCircle className="size-4 text-slate-400" />
-                <span>{lesson.title}</span>
+                <span>{typeof lesson === "object" ? (lesson.title || lesson.name || "Lesson") : String(lesson)}</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-slate-400 hidden sm:block">

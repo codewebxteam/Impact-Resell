@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -93,16 +94,12 @@ const AboutUs = () => {
               <h1 className={`text-4xl md:text-6xl font-black leading-[1.1] mb-6 tracking-tight ${THEME.textMain}`}>
                 We Are Building The <br />
                 <span className={THEME.gradientText}>
-                  Future of Learning.
+                  Future of AI Video Creation.
                 </span>
               </h1>
 
               <p className={`text-lg leading-relaxed mb-8 max-w-xl font-medium ${THEME.textMuted}`}>
-                {academyName} wasn’t built in a boardroom. It started with a
-                simple vision: education should be accessible, practical, and
-                future-ready. We empower learners with AI-driven tools, hands-on
-                projects, and industry-aligned skills to bridge the gap between
-                knowledge and real-world careers.
+                {academyName} was built with a clear mission: to empower creators, marketers, and storytellers to produce viral AI videos, 3D animations, avatar vlogs, and AI influencer ads using cutting-edge AI tools without expensive camera setups.
               </p>
 
               <div className="flex flex-wrap gap-6 mt-10">
@@ -115,7 +112,7 @@ const AboutUs = () => {
                       Mission
                     </p>
                     <p className={`font-bold text-sm md:text-base ${THEME.textMain}`}>
-                      Empower 1M+ Creators
+                      Empower 1M+ AI Video Creators
                     </p>
                   </div>
                 </div>
@@ -131,7 +128,7 @@ const AboutUs = () => {
                       Values
                     </p>
                     <p className={`font-bold text-sm md:text-base ${THEME.textMain}`}>
-                      Students First, Always
+                      Practical AI Workflows
                     </p>
                   </div>
                 </div>
@@ -191,10 +188,10 @@ const AboutUs = () => {
             >
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center">
                 {[
-                  { label: "Industry-Aligned", icon: Briefcase },
-                  { label: "Project-Based", icon: Layers },
-                  { label: "Future-Ready Skills", icon: Cpu },
-                  { label: "Creator-First", icon: User },
+                  { label: "AI Avatar Creation", icon: User },
+                  { label: "2D & 3D Animation", icon: Layers },
+                  { label: "AI Prompt Engineering", icon: Cpu },
+                  { label: "Viral Monetization", icon: Briefcase },
                 ].map((item, i) => (
                   <motion.div
                     key={i}
@@ -226,26 +223,25 @@ const AboutUs = () => {
               Why <span className={THEME.gradientText}>{shortName}?</span>
             </h2>
             <p className={`text-base md:text-lg font-medium ${THEME.textMuted}`}>
-              We don't just sell courses; we curate career paths. Here is what
-              sets us apart from the crowd.
+              We don't just teach software; we teach step-by-step viral video creation and channel monetization.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                title: "Curated Content",
-                desc: "We manually verify every course. No outdated tutorials. Only industry-standard, high-quality AI-Powered lessons.",
+                title: "Curated AI Workflows",
+                desc: "Learn exact prompt formulas, voice synthesis, and image-to-video tools. No outdated tutorials—only battle-tested AI workflows.",
                 color: "bg-blue-50 text-blue-600",
               },
               {
-                title: "Community Driven",
-                desc: "We foster a supportive learning community where creators grow, collaborate, and learn together.",
+                title: "Creator Community",
+                desc: "Join thousands of AI video creators, exchange prompt strategies, get feedback on videos, and collaborate on viral channels.",
                 color: "bg-cyan-50 text-cyan-600",
               },
               {
-                title: "Affordable Pricing",
-                desc: "High-quality education should be accessible. We work directly with creators to offer fair, region-appropriate pricing.",
+                title: "Monetization Ready",
+                desc: "Turn skills into income. Learn how to launch faceless YouTube channels, Instagram Reels, and sell video creation services to clients.",
                 color: "bg-indigo-50 text-indigo-600",
               },
             ].map((card, i) => (
@@ -301,15 +297,7 @@ const AboutUs = () => {
                     "
                   </span>
                   <p className={`text-base md:text-lg leading-relaxed relative z-10 font-medium ${THEME.textMuted}`}>
-                    At <strong className={THEME.textMain}>{academyName}</strong>, we believe learning should be practical,
-                    accessible, and future-ready. Our philosophy is built around
-                    hands-on, project-based education that reflects real
-                    industry workflows. By combining structured learning paths,
-                    modern tools, and AI-driven approaches, we help learners
-                    move beyond theory and build skills that are relevant,
-                    applicable, and career-focused. Every course is designed to
-                    support creators at every stage—guiding them from
-                    foundational concepts to industry-ready confidence.
+                    At <strong className={THEME.textMain}>{academyName}</strong>, we believe video creation should be fast, accessible, and future-ready. Our philosophy is built around practical, project-based education that reflects real AI content creator workflows. From generating realistic AI avatars and 3D animations to crafting viral UGC ads and documentary scripts, we help you master tools that make high-quality video production effortless.
                   </p>
                 </div>
               </div>

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -18,7 +19,7 @@ import {
   Star,
   BookOpen
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { useAgency } from "../../context/AgencyContext"; // [KEEP] Subdomain Logic untouched
 
 // ==========================================
@@ -53,13 +54,24 @@ const THEME = {
 
 const AboutUs = () => {
   const { agency, isMainSite } = useAgency();
+  const location = useLocation();
+  const isDev = location.pathname.startsWith("/dev/");
+  const themeName = isDev ? location.pathname.split("/")[2] : "";
+  const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
+  const contactUrl = isDev ? `/dev/${themeName}/contact` : "/contact";
 
   // [LOGIC] Dynamic Name
   const academyName = !isMainSite && agency ? agency.name : "AI Courses";
   const shortName = !isMainSite && agency ? agency.name : "AI Courses";
 
   return (
-    <div className={`min-h-screen w-full relative overflow-hidden font-sans selection:bg-[var(--brand-color)] selection:text-white ${THEME.bg}`}>
+    <div
+      className={`min-h-screen w-full relative overflow-hidden font-roboto-condensed selection:bg-[var(--brand-color)] selection:text-white ${THEME.bg}`}
+      style={{
+        '--brand-color': '#6366f1',
+        '--accent-color': '#ec4899'
+      }}
+    >
       
       {/* Background Ambient Glows & Patterns */}
       <div className={`absolute -left-40 top-0 h-[600px] w-[600px] rounded-full ${THEME.brandGlow} pointer-events-none`} />
@@ -335,13 +347,13 @@ const AboutUs = () => {
 
             <div className="flex flex-col sm:flex-row justify-center gap-5 relative z-10">
               <NavLink
-                to="/courses"
+                to={coursesUrl}
                 className={`px-8 py-4 rounded-full font-bold text-sm md:text-base flex items-center justify-center gap-2 ${THEME.buttonPrimary}`}
               >
                 Explore Courses <ArrowRight className="size-5" />
               </NavLink>
               <NavLink
-                to="/contact"
+                to={contactUrl}
                 className="px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-full font-bold text-sm md:text-base hover:bg-white/20 hover:-translate-y-1 transition-all shadow-lg"
               >
                 Contact Support

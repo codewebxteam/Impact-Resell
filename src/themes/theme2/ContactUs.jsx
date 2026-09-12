@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -96,7 +97,13 @@ const ContactUs = () => {
   };
 
   return (
-    <div className={`min-h-screen w-full relative overflow-hidden font-sans ${THEME.bg}`}>
+    <div
+      className={`min-h-screen w-full relative overflow-hidden font-roboto-condensed ${THEME.bg}`}
+      style={{
+        '--brand-color': '#6366f1',
+        '--accent-color': '#ec4899'
+      }}
+    >
       
       {/* Abstract Background Shapes */}
       <div className={`absolute top-[-10%] right-[-5%] h-[700px] w-[700px] rounded-full ${THEME.brandGlow} pointer-events-none`} />

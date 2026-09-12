@@ -1,16 +1,25 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Star, BookOpen, Clock, Play, Loader2, Sparkles, ArrowUpRight, GraduationCap } from "lucide-react";
+import { Search, Star, BookOpen, Clock, Play, Loader2, Sparkles, ArrowUpRight, GraduationCap, Plus, MessageCircleQuestion } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCourse } from "../../context/CourseContext";
 import { useAgency } from "../../context/AgencyContext"; 
 import AuthModal from "../../components/AuthModal";
-import FAQSection from "../../components/FAQSection";
 import CourseVideoPlayer from "../../components/CourseVideoPlayer";
 import DemoVideoSection from "../../components/DemoVideoSection";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/config";
+
+const faqs = [
+  { id: 1, question: "Do I need a high-end PC or camera to create AI videos and avatars?", answer: "No! All AI video generation, avatar creation, and 2D/3D animations can be done using cloud-based AI tools on any mobile or computer." },
+  { id: 2, question: "What video styles will I learn in this academy?", answer: "You will master AI Avatar Vlogging, 2D/3D Animation, AI Influencer UGC Ads, Historical Documentaries, Anime, Stickman, Baby Podcast, and Business Promos." },
+  { id: 3, question: "Can I monetize these AI videos on YouTube, Instagram, or sell to clients?", answer: "Yes! We teach you exact strategies to build viral YouTube Shorts, Instagram Reels, grow AI channels, and land paying clients." },
+  { id: 4, question: "Are the AI video tools free to use?", answer: "We cover completely free AI tools as well as top-tier paid AI platforms with free credits and trial workflows." },
+  { id: 5, question: "Will I get step-by-step AI prompts and project templates?", answer: "Yes! You get ready-to-use AI text prompts, voiceover setups, animation workflows, and lifetime updates." },
+  { id: 6, question: "Will I get support if I face issues while generating videos?", answer: "Yes! You’ll have direct access to WhatsApp & Email support from our team to guide you step-by-step." },
+];
 
 // ==========================================
 // THEME CONFIGURATION (Driven by CSS Variables)
@@ -97,17 +106,30 @@ const Courses = () => {
   };
 
   const handleBuyClick = async (course, rawPrice) => {
-    if (!currentUser) {
-      setIsAuthOpen(true);
-      return; 
-    }
-
     const priceDisplay =
       rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
         ? "Free"
         : `₹${rawPrice}`;
 
     if (!isMainSite && priceDisplay !== "Free") {
+      // 1. If partner set a custom payment link, open it directly
+      const customPaymentLink =
+        agency?.customPaymentLinks?.[course.id] ||
+        (course.id === "bundle" ? (agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink) : null);
+      const partnerCoursePaymentLink =
+        course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
+      const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
+
+      if (finalPaymentLink) {
+        window.open(finalPaymentLink, "_blank");
+        return;
+      }
+
+      if (!currentUser) {
+        setIsAuthOpen(true);
+        return; 
+      }
+
       if (!agency?.whatsapp) {
         return alert("Partner contact number not found. Please contact support.");
       }
@@ -138,6 +160,11 @@ const Courses = () => {
       return;
     }
 
+    if (!currentUser) {
+      setIsAuthOpen(true);
+      return; 
+    }
+
     try {
       await enrollCourse(course);
       navigate("/dashboard/my-courses");
@@ -154,7 +181,13 @@ const Courses = () => {
   });
 
   return (
-    <div className={`min-h-screen w-full relative overflow-hidden font-sans ${THEME.bg}`}>
+    <div
+      className={`min-h-screen w-full relative overflow-hidden font-roboto-condensed ${THEME.bg}`}
+      style={{
+        '--brand-color': '#6366f1',
+        '--accent-color': '#ec4899'
+      }}
+    >
       
       {/* Abstract Background Elements */}
       <div className={`absolute top-0 right-0 w-[800px] h-[800px] bg-[var(--brand-color)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none`} />
@@ -319,7 +352,7 @@ const Courses = () => {
         </div>
       </div>
 
-      <FAQSection />
+      <Theme2FAQSection />
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} defaultMode="login" />
 
@@ -327,6 +360,89 @@ const Courses = () => {
         <CourseVideoPlayer course={playingCourse} onClose={() => setShowVideoPlayer(false)} />
       )}
     </div>
+  );
+};
+
+const Theme2FAQSection = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const location = useLocation();
+  const isDev = location.pathname.startsWith("/dev/");
+  const themeName = isDev ? location.pathname.split("/")[2] : "";
+  const contactUrl = isDev ? `/dev/${themeName}/contact` : "/contact";
+
+  return (
+    <section className="w-full relative py-20 md:py-28 px-6 bg-white overflow-hidden font-roboto-condensed">
+      <div className="absolute top-1/3 -right-40 size-96 rounded-full bg-[var(--brand-color)]/5 blur-[140px]" />
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-14 lg:gap-16">
+
+          {/* LEFT: heading + support prompt */}
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <div className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.2em] uppercase text-[var(--brand-color)] mb-5">
+              <MessageCircleQuestion className="size-4" /> faq.log
+            </div>
+            <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.05]">
+              Questions, <br /> answered.
+            </h2>
+            <p className="mt-6 text-slate-500 font-medium max-w-sm">
+              Everything you need to know before you enroll. Can't find it here? Our team replies fast.
+            </p>
+
+            <div className="mt-10 rounded-3xl border border-slate-100 bg-slate-50 p-6 md:p-8">
+              <p className="font-mono text-xs text-slate-400 mb-2">$ still_stuck --help</p>
+              <h3 className="text-lg font-bold text-slate-900 mb-5">Talk to our team directly</h3>
+              <Link to={contactUrl}>
+                <button className="w-full sm:w-auto px-7 py-3.5 rounded-full font-bold text-sm text-white transition-transform hover:-translate-y-0.5" style={{ backgroundColor: "var(--brand-color)" }}>
+                  Get in Touch
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* RIGHT: numbered Q/A log */}
+          <div className="flex flex-col">
+            {faqs.map((faq, index) => {
+              const isOpen = activeIndex === index;
+              return (
+                <motion.div
+                  key={faq.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.06 }}
+                  className={`border-b ${index === 0 ? "border-t" : ""} border-slate-100`}
+                >
+                  <button
+                    onClick={() => setActiveIndex(isOpen ? null : index)}
+                    className="w-full flex items-start gap-5 py-6 text-left cursor-pointer outline-none group bg-transparent"
+                  >
+                    <span className={`font-mono text-xs mt-1 shrink-0 transition-colors ${isOpen ? "text-[var(--brand-color)]" : "text-slate-300"}`}>
+                      Q{String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className={`flex-1 text-base md:text-lg font-bold transition-colors ${isOpen ? "text-slate-900" : "text-slate-600 group-hover:text-slate-900"}`}>
+                      {faq.question}
+                    </span>
+                    <div className={`size-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all duration-300 border ${isOpen ? "rotate-45 border-[var(--brand-color)] text-[var(--brand-color)]" : "border-slate-200 text-slate-400"}`}>
+                      <Plus className="size-3.5" />
+                    </div>
+                  </button>
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }}>
+                        <div className="pl-[3.1rem] pb-7 pr-8">
+                          <p className="text-slate-500 text-sm md:text-base leading-relaxed font-medium">{faq.answer}</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 };
 
@@ -348,6 +464,13 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
   } else if (typeof course.lectures === "string" || typeof course.lectures === "number") {
     lecturesCount = course.lectures;
   }
+
+  const priceDisplay =
+    displayPrice === "Free" || displayPrice === 0 || displayPrice === "0"
+      ? "Free"
+      : typeof displayPrice === "string" && displayPrice.startsWith("₹")
+      ? displayPrice
+      : `₹${displayPrice}`;
 
   return (
     <div className={`group flex flex-col h-full ${THEME.cardOuter}`}>
@@ -371,19 +494,6 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
           
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/60 opacity-80" />
-
-          <div className="absolute bottom-4 left-4">
-            <span className="text-[10px] font-black text-[var(--brand-color)] bg-white px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-sm border border-white/50">
-              {category}
-            </span>
-          </div>
-
-          {/* Floating Instructor Avatar */}
-          <div className="absolute -bottom-4 right-6 size-12 rounded-full border-4 border-white bg-slate-100 flex items-center justify-center shadow-md overflow-hidden z-20">
-             <div className="size-full flex items-center justify-center font-black text-sm text-slate-500 bg-slate-200">
-                {instructor[0]}
-             </div>
-          </div>
         </div>
       </Link>
 
@@ -409,21 +519,14 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
         {/* Footer Area */}
         <div className="mt-auto pt-5 border-t border-slate-100 border-dashed flex flex-col gap-4">
           
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Mentor</span>
-               <span className={`text-xs font-extrabold ${THEME.textMain}`}>{instructor}</span>
+          {!isMainSite && (
+            <div className="flex items-center justify-between pb-1">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Price</span>
+              <span className={`text-xl font-black ${priceDisplay === "Free" ? "text-emerald-500" : THEME.textMain}`}>
+                {priceDisplay}
+              </span>
             </div>
-
-            {!isMainSite && (
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Price</span>
-                <span className={`text-xl font-black ${priceDisplay === "Free" ? "text-emerald-500" : THEME.textMain}`}>
-                  {priceDisplay}
-                </span>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-3 pt-2">
