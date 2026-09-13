@@ -31,7 +31,7 @@ const Theme1Header = ({ currentTheme = "theme1" }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { currentUser, userData, logout } = useAuth();
-  const { agency } = useAgency();
+  const { agency, isMainSite } = useAgency();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -95,17 +95,19 @@ const Theme1Header = ({ currentTheme = "theme1" }) => {
     try {
       await logout();
       setShowProfileMenu(false);
-      navigate("/");
     } catch (error) {
       console.error("Failed to log out", error);
     }
   };
 
+  const isDev = location.pathname.startsWith("/dev/");
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
+
   const navLinks = [
-    { name: "Home", path: currentTheme ? `/dev/${currentTheme}/home` : "/", icon: Home },
-    { name: "Courses", path: currentTheme ? `/dev/${currentTheme}/courses` : "/courses", icon: GraduationCap },
-    { name: "About Us", path: currentTheme ? `/dev/${currentTheme}/about` : "/about", icon: Users },
-    { name: "Contact Us", path: currentTheme ? `/dev/${currentTheme}/contact` : "/contact", icon: Mail },
+    { name: "Home", path: getRoute("/home"), icon: Home },
+    { name: "Courses", path: getRoute("/courses"), icon: GraduationCap },
+    { name: "About Us", path: getRoute("/about"), icon: Users },
+    { name: "Contact Us", path: getRoute("/contact"), icon: Mail },
     ...(currentUser ? [{ name: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
   ];
 
@@ -126,7 +128,7 @@ const Theme1Header = ({ currentTheme = "theme1" }) => {
           
           {/* Logo */}
           <NavLink 
-            to={currentTheme ? `/dev/${currentTheme}/home` : "/"} 
+            to={getRoute("/home")} 
             className="flex items-center gap-3 group shrink-0"
           >
             {agency?.logoUrl ? (
@@ -143,7 +145,7 @@ const Theme1Header = ({ currentTheme = "theme1" }) => {
             
             <div className="flex flex-col">
               <span className="text-[16px] sm:text-[18px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                {agency?.name || "Your Academy"}
+                {!isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses")}
               </span>
               <span className="text-[10.5px] sm:text-[11.5px] font-medium text-slate-500 leading-tight">
                 {agency?.tagline || "Learn AI. Create Impact."}

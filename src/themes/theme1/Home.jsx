@@ -84,10 +84,18 @@ const faqs = [
 // ==========================================
 const HeroSection = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { agency, isMainSite } = useAgency();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
+  const isDev = location.pathname.startsWith("/dev/");
+  const themeName = isDev ? location.pathname.split("/")[2] : "";
+  const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
+
+  const academyName = !isMainSite && agency?.name ? agency.name : "AI Video & Animation Academy";
+
   const handleExploreCourses = () => {
-    navigate("/courses");
+    navigate(coursesUrl);
   };
 
   return (
@@ -120,7 +128,7 @@ const HeroSection = () => {
             {/* Small badge */}
             <div className={`mb-4 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.18em] shadow-sm backdrop-blur-md ${THEME.badgeBg}`}>
               <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-cyan-500 shadow-[0_0_0_4px_rgba(6,182,212,0.12)] animate-pulse" />
-              AI Video & Animation Academy
+              {academyName}
               <Sparkles size={13} />
             </div>
 
@@ -437,6 +445,7 @@ const CardsSwapSection = () => {
 // ==========================================
 const Theme1CourseCard = ({ course }) => {
   const location = useLocation();
+  const { isMainSite, getPrice } = useAgency();
   const isDev = location.pathname.startsWith("/dev/");
   const themeName = isDev ? location.pathname.split("/")[2] : "";
   const courseUrl = isDev
@@ -455,6 +464,8 @@ const Theme1CourseCard = ({ course }) => {
   const imageUrl = course.image || (course.videoId ? `https://img.youtube.com/vi/${course.videoId}/maxresdefault.jpg` : defaultImages[0]);
   const lessons = course.lectures?.length ? `${course.lectures.length}+ Lessons` : (course.lessons || "12+ Lessons");
   const level = course.level || "Beginner Friendly";
+  const rawPrice = getPrice ? getPrice(course.id, course.price || "499") : (course.price || "499");
+  const displayPrice = rawPrice === "Free" || rawPrice === 0 || rawPrice === "0" ? "Free" : `₹${rawPrice}`;
 
   return (
     <motion.div
@@ -487,8 +498,8 @@ const Theme1CourseCard = ({ course }) => {
         </p>
       </Link>
 
-      {/* Card Footer: Metadata + Round Blue Arrow Button */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100/80">
+      {/* Card Footer: Metadata + Price + Round Blue Arrow Button */}
+      <div className="flex items-center justify-between pt-3 border-t border-slate-100/80">
         <div className="flex flex-col gap-1 text-slate-500">
           <div className="flex items-center gap-1.5 text-[11.5px] font-medium text-slate-500">
             <BookOpen className="size-3.5 text-slate-400" />
@@ -500,12 +511,19 @@ const Theme1CourseCard = ({ course }) => {
           </div>
         </div>
 
-        <Link
-          to={courseUrl}
-          className="size-10 rounded-full bg-[#0070f3] hover:bg-[#0051cc] text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-110 transition-all duration-300 shrink-0"
-        >
-          <ArrowRight className="size-4.5 stroke-[2.2]" />
-        </Link>
+        <div className="flex items-center gap-3">
+          {!isMainSite && (
+            <span className="text-base font-black text-slate-900">
+              {displayPrice}
+            </span>
+          )}
+          <Link
+            to={courseUrl}
+            className="size-10 rounded-full bg-[#0070f3] hover:bg-[#0051cc] text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-110 transition-all duration-300 shrink-0"
+          >
+            <ArrowRight className="size-4.5 stroke-[2.2]" />
+          </Link>
+        </div>
       </div>
     </motion.div>
   );

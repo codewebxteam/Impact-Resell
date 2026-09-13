@@ -10,7 +10,7 @@ import { db } from "../../firebase/config";
 import {
   PlayCircle,
   ShieldCheck,
-  Infinity,
+  Infinity as InfinityIcon,
   Trophy,
   Smartphone,
   FileText,
@@ -96,7 +96,12 @@ const CourseDetails = () => {
 
   const isDev = location.pathname.startsWith("/dev/");
   const currentTheme = isDev ? location.pathname.split("/")[2] : "theme5";
-  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : path);
+  const getRoute = (path) => {
+    if (isDev) return `/dev/${currentTheme}${path}`;
+    if (path === "/home") return "/";
+    if (path.startsWith("/coursedetails/")) return path.replace("/coursedetails/", "/courses/");
+    return path;
+  };
 
   const userHasAccess = Boolean(course?.id && typeof isEnrolled === "function" && isEnrolled(course.id));
 
@@ -183,6 +188,7 @@ const CourseDetails = () => {
       }
 
       if (!currentUser) {
+        localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice: displayPrice }));
         setIsAuthOpen(true);
         return;
       }
@@ -220,6 +226,7 @@ const CourseDetails = () => {
     }
 
     if (!currentUser) {
+      localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice: displayPrice }));
       setIsAuthOpen(true);
       return;
     }
@@ -504,7 +511,7 @@ const CourseDetails = () => {
                   <span>12+ Full HD Video Masterclasses</span>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Infinity className="size-4 text-purple-600 shrink-0" />
+                  <InfinityIcon className="size-4 text-purple-600 shrink-0" />
                   <span>Full Lifetime Access & Updates</span>
                 </div>
                 <div className="flex items-center gap-2.5">

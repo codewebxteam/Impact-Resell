@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCourse } from "../../context/CourseContext";
-import { useAgency } from "../../context/AgencyContext"; // [KEEP] Subdomain Logic untouched
+import { useAgency } from "../../context/AgencyContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import {
@@ -13,7 +13,10 @@ import {
   Lock,
   PlayCircle,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  GraduationCap,
+  ShieldCheck,
+  Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -25,29 +28,22 @@ import AuthModal from "../../components/AuthModal";
 import CourseVideoPlayer from "../../components/CourseVideoPlayer";
 
 // ==========================================
-// THEME CONFIGURATION (Driven by CSS Variables)
+// THEME 3 CONFIGURATION (Aesthetic: #fedc5c & Slate-950)
 // ==========================================
 const THEME = {
   bg: "bg-slate-50",
-  textMain: "text-slate-900",
-  textMuted: "text-slate-500",
-  accentText: "text-[var(--brand-color)]",
-  gradientText: "bg-gradient-to-r from-slate-900 via-[var(--brand-color)] to-[var(--accent-color)] bg-clip-text text-transparent",
+  textMain: "text-slate-950",
+  textMuted: "text-slate-600",
+  accentText: "text-amber-600",
   
-  // New Ultra-Modern Card Style
-  cardOuter: "bg-white p-2.5 rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_30px_60px_rgba(0,0,0,0.08)] transition-all duration-500",
-  cardInner: "bg-slate-50 w-full h-full rounded-[2rem] p-6 md:p-8 flex flex-col",
+  cardOuter: "bg-white p-3 rounded-[2.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_25px_50px_rgba(254,220,92,0.2)] transition-all duration-500",
+  cardInner: "bg-slate-50/70 w-full h-full rounded-[2rem] p-6 md:p-8 flex flex-col",
   
-  // Buttons
-  buttonPrimary: "bg-gradient-to-r from-[var(--brand-color)] to-[var(--accent-color)] text-white shadow-lg shadow-[var(--brand-color)]/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-1",
-  buttonOutline: "bg-white border border-slate-200 text-slate-700 hover:border-[var(--brand-color)] hover:text-[var(--brand-color)] transition-all shadow-sm",
+  buttonPrimary: "bg-[#fedc5c] text-slate-950 font-black shadow-lg shadow-amber-400/30 hover:bg-amber-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1",
+  buttonOutline: "bg-white border-2 border-slate-200 text-slate-900 hover:border-amber-400 hover:bg-amber-50 transition-all font-black shadow-xs",
   
-  // Ambient Glows
-  accentGlow: "bg-[var(--accent-color)]/10 blur-[120px]",
-  brandGlow: "bg-[var(--brand-color)]/10 blur-[120px]",
-  
-  // UI Accents
-  iconBg: "bg-[var(--brand-color)]/10 text-[var(--brand-color)]",
+  iconBg: "bg-[#fedc5c] text-slate-950",
+  badgeBg: "bg-white border border-amber-400/40 text-slate-950 shadow-sm backdrop-blur font-black",
 };
 
 const CourseDetails = () => {
@@ -55,7 +51,7 @@ const CourseDetails = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { isEnrolled, enrollCourse } = useCourse();
-  const { loading: agencyLoading, isMainSite, agency, getPrice } = useAgency(); // [KEEP] Subdomain Logic
+  const { loading: agencyLoading, isMainSite, agency, getPrice } = useAgency();
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [course, setCourse] = useState(null);
@@ -67,7 +63,6 @@ const CourseDetails = () => {
 
   const userHasAccess = course ? isEnrolled(course.id) : false;
 
-  // Admin controlled Demo Videos logic
   const demoVideos = useMemo(() => {
     if (course?.demoVideos && Array.isArray(course.demoVideos)) {
       return course.demoVideos;
@@ -83,7 +78,7 @@ const CourseDetails = () => {
         if (docSnap.exists()) {
           let data = docSnap.data();
 
-          // --- ACCESS CONTROL CHECK ---
+          // Access control check
           const coursePartnerId = data.partnerId;
           const isOwner = currentUser?.uid && coursePartnerId === currentUser.uid;
           const allowed = !coursePartnerId || coursePartnerId === "admin" || isOwner || (!isMainSite && coursePartnerId === agency?.id);
@@ -94,29 +89,21 @@ const CourseDetails = () => {
             return;
           }
 
-          // --- PARTNER DEMO OVERRIDE LOGIC ---
+          // Partner demo overrides logic
           let overridesToApply = null;
 
           if (!isMainSite && agency?.courseDemoOverrides?.[docSnap.id]) {
-            // Live on subdomain
             overridesToApply = agency.courseDemoOverrides[docSnap.id];
           } else if (isMainSite && currentUser) {
-             // Preview for Partner on Main Site
-             const userRef = doc(db, "users", currentUser.uid);
-             const userSnap = await getDoc(userRef);
-             
-             if (userSnap.exists()) {
-                if (userSnap.data().role === "partner") {
-                   const agencyRef = doc(db, "agencies", currentUser.uid);
-                   const agencySnap = await getDoc(agencyRef);
-                   
-                   if (agencySnap.exists()) {
-                      if (agencySnap.data().courseDemoOverrides?.[docSnap.id]) {
-                         overridesToApply = agencySnap.data().courseDemoOverrides[docSnap.id];
-                      }
-                   }
-                }
-             }
+            const userRef = doc(db, "users", currentUser.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists() && userSnap.data().role === "partner") {
+              const agencyRef = doc(db, "agencies", currentUser.uid);
+              const agencySnap = await getDoc(agencyRef);
+              if (agencySnap.exists() && agencySnap.data().courseDemoOverrides?.[docSnap.id]) {
+                overridesToApply = agencySnap.data().courseDemoOverrides[docSnap.id];
+              }
+            }
           }
 
           if (overridesToApply) {
@@ -124,7 +111,6 @@ const CourseDetails = () => {
               data.mainVideoId = overridesToApply.mainVideoId;
             }
             if (overridesToApply.demoVideos !== undefined && overridesToApply.demoVideos.length > 0) {
-              // Combine Admin Demos and Partner Demos so all added videos show
               data.demoVideos = [...(data.demoVideos || []), ...overridesToApply.demoVideos];
             }
           }
@@ -214,38 +200,37 @@ const CourseDetails = () => {
     window.location.reload();
   };
 
-  // UI loading check with Subdomain Logic
-  if (loading || agencyLoading)
+  if (loading || agencyLoading) {
     return (
       <div className={`h-screen w-screen flex items-center justify-center ${THEME.bg}`}>
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[var(--brand-color)]"></div>
-          <p className={`${THEME.textMain} font-bold animate-pulse text-lg`}>
-            {!isMainSite && agency
-              ? `Loading ${agency.name}...`
-              : "Initializing Academy..."}
+          <Loader2 className="animate-spin size-12 text-amber-500" />
+          <p className={`${THEME.textMain} font-black animate-pulse text-lg`}>
+            {!isMainSite && agency ? `Loading ${agency.name}...` : "Initializing Academy..."}
           </p>
         </div>
       </div>
     );
+  }
 
-  if (!course)
+  if (!course) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${THEME.bg}`}>
         <div className={THEME.cardOuter}>
           <div className={`${THEME.cardInner} text-center items-center justify-center p-12`}>
-             <p className={`font-extrabold text-2xl ${THEME.textMain}`}>Course data is unavailable.</p>
+            <p className={`font-black text-2xl ${THEME.textMain}`}>Course data is unavailable.</p>
           </div>
         </div>
       </div>
     );
+  }
 
   return (
     <div className={`min-h-screen relative overflow-hidden font-sans pb-20 ${THEME.bg}`}>
       
-      {/* Background Ambient Glows */}
-      <div className={`absolute top-40 -left-40 h-[600px] w-[600px] rounded-full ${THEME.accentGlow} pointer-events-none`} />
-      <div className={`absolute top-[30%] -right-40 h-[700px] w-[700px] rounded-full ${THEME.brandGlow} pointer-events-none`} />
+      {/* Background Subtle Amber Glows */}
+      <div className="absolute top-20 -left-40 h-[500px] w-[500px] rounded-full bg-amber-300/10 blur-[130px] pointer-events-none" />
+      <div className="absolute top-[40%] -right-40 h-[600px] w-[600px] rounded-full bg-yellow-400/10 blur-[140px] pointer-events-none" />
 
       <div className="relative z-10">
         <CourseHero course={course} />
@@ -267,13 +252,13 @@ const CourseDetails = () => {
               
               {/* 1. Introduction Video */}
               {course?.mainVideoId && (
-                <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} className={THEME.cardOuter}>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={THEME.cardOuter}>
                   <div className={`${THEME.cardInner} p-4 md:p-5`}>
                     <div className="flex items-center gap-3 mb-4 px-2">
                       <div className={`size-12 rounded-xl flex items-center justify-center shadow-sm ${THEME.iconBg}`}>
-                        <PlayCircle className="size-6" />
+                        <PlayCircle className="size-6 stroke-[2.5]" />
                       </div>
-                      <h2 className={`text-2xl font-extrabold tracking-tight ${THEME.textMain}`}>
+                      <h2 className={`text-2xl font-black tracking-tight ${THEME.textMain}`}>
                         Course Introduction
                       </h2>
                     </div>
@@ -291,13 +276,13 @@ const CourseDetails = () => {
                     >
                       <img
                         src={`https://img.youtube.com/vi/${course.mainVideoId}/maxresdefault.jpg`}
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity duration-700 group-hover:scale-105"
+                        className="w-full h-full object-cover opacity-85 group-hover:opacity-60 transition-opacity duration-700 group-hover:scale-105"
                         alt="Intro"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-50" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent opacity-60" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="size-20 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.15)] group-hover:scale-110 transition-transform duration-300">
-                          <PlayCircle className="text-[var(--brand-color)] size-10 ml-1" fill="currentColor" />
+                        <div className="size-20 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                          <PlayCircle className="text-amber-500 size-10 ml-1 stroke-[2.5]" fill="currentColor" />
                         </div>
                       </div>
                     </div>
@@ -307,18 +292,18 @@ const CourseDetails = () => {
 
               {/* 2. Study Material Section */}
               {course?.driveLink && (
-                <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{delay: 0.1}} className={THEME.cardOuter}>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={THEME.cardOuter}>
                   <div className={`${THEME.cardInner} flex-col md:flex-row items-center justify-between gap-6`}>
                     <div className="flex items-center gap-5 w-full md:w-auto text-center md:text-left">
-                      <div className={`size-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm mx-auto md:mx-0 ${THEME.iconBg}`}>
-                        <FileText size={32} />
+                      <div className={`size-16 rounded-2xl flex items-center justify-center shrink-0 shadow-md mx-auto md:mx-0 ${THEME.iconBg}`}>
+                        <FileText size={32} className="stroke-[2.5]" />
                       </div>
                       <div>
-                        <h2 className={`text-xl font-extrabold ${THEME.textMain}`}>
-                          Study Material & Notes
+                        <h2 className={`text-xl font-black ${THEME.textMain}`}>
+                          Study Material & Resources
                         </h2>
-                        <p className={`text-sm font-medium mt-1 ${THEME.textMuted}`}>
-                          Premium resources included with enrollment
+                        <p className={`text-sm font-bold mt-1 ${THEME.textMuted}`}>
+                          Ready prompts, scripts & animation templates included
                         </p>
                       </div>
                     </div>
@@ -328,7 +313,7 @@ const CourseDetails = () => {
                           href={course.driveLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-sm ${THEME.buttonPrimary} w-full`}
+                          className={`flex items-center justify-center gap-2 px-8 py-4 rounded-full font-black text-sm ${THEME.buttonPrimary} w-full`}
                         >
                           <Download size={18} /> Download Now
                         </a>
@@ -347,12 +332,12 @@ const CourseDetails = () => {
 
               {/* 3. Demo Lessons Grid */}
               {demoVideos.length > 0 && (
-                <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{delay: 0.2}} className="space-y-6 pt-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-6 pt-4">
                   <div className="flex items-center gap-3 px-2">
                     <div className={`size-10 rounded-xl flex items-center justify-center ${THEME.iconBg}`}>
-                       <PlayCircle className="size-5" />
+                      <PlayCircle className="size-5 stroke-[2.5]" />
                     </div>
-                    <h2 className={`text-3xl font-extrabold tracking-tight ${THEME.textMain}`}>
+                    <h2 className={`text-3xl font-black tracking-tight ${THEME.textMain}`}>
                       Free Starter Lessons
                     </h2>
                   </div>
@@ -361,7 +346,7 @@ const CourseDetails = () => {
                     {demoVideos.map((video, idx) => (
                       <div key={idx} className={THEME.cardOuter}>
                         <div
-                          className={`w-full h-full bg-slate-50 rounded-[2rem] p-2 pb-0 flex flex-col group cursor-pointer overflow-hidden`}
+                          className="w-full h-full bg-slate-50 rounded-[2rem] p-2 pb-0 flex flex-col group cursor-pointer overflow-hidden"
                           onClick={() => openPlayer(demoVideos, idx)}
                         >
                           <div className="aspect-video relative rounded-[1.5rem] bg-slate-900 overflow-hidden shadow-inner">
@@ -370,10 +355,10 @@ const CourseDetails = () => {
                               className="w-full h-full object-cover opacity-90 group-hover:opacity-70 transition-all duration-500 group-hover:scale-105"
                               alt={video.title}
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent opacity-60" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent opacity-60" />
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="size-14 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                <PlayCircle className="text-[var(--brand-color)] size-7 ml-0.5" fill="currentColor" />
+                              <div className="size-14 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                <PlayCircle className="text-amber-500 size-7 ml-0.5 stroke-[2.5]" fill="currentColor" />
                               </div>
                             </div>
                           </div>
@@ -381,7 +366,7 @@ const CourseDetails = () => {
                             <p className={`text-[10px] uppercase font-black tracking-widest mb-1 ${THEME.accentText}`}>
                               Lesson {idx + 1}
                             </p>
-                            <h3 className={`font-extrabold text-sm line-clamp-2 leading-tight ${THEME.textMain}`}>
+                            <h3 className={`font-black text-sm line-clamp-2 leading-tight ${THEME.textMain}`}>
                               {video.title}
                             </h3>
                           </div>
@@ -394,22 +379,19 @@ const CourseDetails = () => {
                       <div className={THEME.cardOuter}>
                         <div
                           onClick={handleEnroll}
-                          className={`w-full h-full bg-slate-900 rounded-[2rem] p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-500 group relative overflow-hidden`}
+                          className="w-full h-full bg-slate-950 rounded-[2rem] p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-500 group relative overflow-hidden"
                         >
-                          {/* Background Glow */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand-color)]/20 to-[var(--accent-color)]/20 mix-blend-overlay"></div>
-                          
                           <div className="size-16 bg-white/10 rounded-2xl flex items-center justify-center mb-5 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 backdrop-blur-sm border border-white/10">
-                            <Sparkles className="text-yellow-400 size-8" fill="currentColor" />
+                            <Sparkles className="text-amber-400 size-8 fill-amber-400" />
                           </div>
-                          <h3 className="text-white font-extrabold text-xl mb-2 tracking-tight">
+                          <h3 className="text-white font-black text-xl mb-2 tracking-tight">
                             Unlock Full Access
                           </h3>
-                          <p className="text-slate-400 font-medium text-xs mb-6 max-w-[200px]">
-                            Enroll now to get access to all premium lessons and materials.
+                          <p className="text-slate-400 font-bold text-xs mb-6 max-w-[220px]">
+                            Enroll now to access all lessons, project prompts, and resources.
                           </p>
-                          <button className={`px-8 py-3.5 rounded-full font-bold text-sm w-full flex items-center justify-center gap-2 ${THEME.buttonPrimary}`}>
-                            Enroll Now <ArrowRight className="size-4" />
+                          <button className={`px-8 py-3.5 rounded-full font-black text-sm w-full flex items-center justify-center gap-2 ${THEME.buttonPrimary}`}>
+                            Enroll Now <ArrowRight className="size-4 stroke-[2.5]" />
                           </button>
                         </div>
                       </div>
@@ -418,11 +400,11 @@ const CourseDetails = () => {
                 </motion.div>
               )}
 
-              {/* Curriculum Section wrapped in the new card style */}
-              <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{delay: 0.3}} className={THEME.cardOuter}>
-                 <div className="bg-white rounded-[2rem] overflow-hidden">
-                    <Curriculum course={course} syllabus={course.syllabusContent} />
-                 </div>
+              {/* Curriculum Section */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={THEME.cardOuter}>
+                <div className="bg-white rounded-[2rem] overflow-hidden">
+                  <Curriculum course={course} syllabus={course.syllabusContent} />
+                </div>
               </motion.div>
 
             </div>

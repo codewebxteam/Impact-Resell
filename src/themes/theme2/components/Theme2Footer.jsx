@@ -9,7 +9,11 @@ import {
   X,
   MessageCircle,
   ShieldCheck,
+  MapPin,
+  Mail,
+  Phone,
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { useAgency } from "../../../context/AgencyContext";
 
 const SocialIcon = ({ Icon, href }) => (
@@ -34,10 +38,15 @@ const SocialIcon = ({ Icon, href }) => (
 const Theme2Footer = ({ currentTheme = "theme2" }) => {
   const [activePolicy, setActivePolicy] = useState(null);
   const { agency, isMainSite } = useAgency();
+  const location = useLocation();
 
-  const academyName = !isMainSite && agency ? agency.name : "AI Courses";
+  const isDev = location.pathname.startsWith("/dev/");
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
+
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Nexus Academy");
   const supportEmail = !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
   const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
+  const contactAddress = !isMainSite && agency?.address ? agency.address : (isMainSite ? "Near Metro Station, Nirman Vihar, East Delhi 110092" : "");
   const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I need some information.")}`;
   const instaLink = !isMainSite && agency?.instagram ? agency.instagram : "https://www.instagram.com/";
   const currentYear = new Date().getFullYear();
@@ -85,11 +94,11 @@ const Theme2Footer = ({ currentTheme = "theme2" }) => {
 
   const footerLinks = {
     Academy: [
-      { name: "Courses", href: currentTheme ? `/dev/${currentTheme}/courses` : "/courses" },
+      { name: "Courses", href: getRoute("/courses") },
     ],
     Company: [
-      { name: "About Us", href: currentTheme ? `/dev/${currentTheme}/about` : "/about" },
-      { name: "Contact Us", href: currentTheme ? `/dev/${currentTheme}/contact` : "/contact" },
+      { name: "About Us", href: getRoute("/about") },
+      { name: "Contact Us", href: getRoute("/contact") },
       ...(isMainSite ? [{ name: "Register as a Partner", href: "#", isPartner: true }] : []),
     ],
     Resources: [
@@ -132,6 +141,19 @@ const Theme2Footer = ({ currentTheme = "theme2" }) => {
             <p className="text-slate-400 text-xs sm:text-sm max-w-md font-medium leading-relaxed">
               Learn AI avatar vlogging, 2D/3D animation, and viral video creation with our community.
             </p>
+
+            {contactAddress && (
+              <div className="flex items-center gap-2 mt-4 text-xs text-slate-400 font-medium">
+                <MapPin className="size-3.5 text-purple-400 shrink-0" />
+                <span>{contactAddress}</span>
+              </div>
+            )}
+            {supportEmail && (
+              <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400 font-medium">
+                <Mail className="size-3.5 text-purple-400 shrink-0" />
+                <a href={`mailto:${supportEmail}`} className="hover:text-purple-400 transition-colors">{supportEmail}</a>
+              </div>
+            )}
           </motion.div>
 
           <motion.div

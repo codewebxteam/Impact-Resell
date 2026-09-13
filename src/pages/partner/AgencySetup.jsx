@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom"; // [ADDED]
 import { useAuth } from "../../context/AuthContext";
 import { useAgency } from "../../context/AgencyContext";
 import { db } from "../../firebase/config";
@@ -10,8 +10,6 @@ import {
   setDoc,
   collection,
   getDocs,
-  query,
-  where,
   deleteDoc,
 } from "firebase/firestore";
 import {
@@ -29,7 +27,11 @@ import {
   DollarSign,
   Smartphone,
   Layout,
+  Palette,
+  Check,
+  ExternalLink,
 } from "lucide-react";
+import { THEMES_METADATA } from "../../themes/themeMap";
 
 // Simple debounce function
 const simpleDebounce = (func, wait) => {
@@ -47,7 +49,6 @@ const simpleDebounce = (func, wait) => {
 const AgencySetup = () => {
   const { currentUser } = useAuth();
   const { refreshAgency } = useAgency();
-  const navigate = useNavigate(); // [ADDED]
 
   // --- STEPS CONFIG ---
   const [step, setStep] = useState(1);
@@ -57,7 +58,7 @@ const AgencySetup = () => {
 
   // --- DATA STATES ---
   const [courses, setCourses] = useState([]);
-  const [ebooks, setEbooks] = useState([]);
+  const [, setEbooks] = useState([]);
 
   // --- FORM STATE ---
   const [formData, setFormData] = useState({
@@ -68,6 +69,7 @@ const AgencySetup = () => {
     email: "",
     address: "",
     upiId: "",
+    theme: "theme1",
     customPrices: {},
     customPaymentLinks: {},
     promoType: "none",
@@ -116,6 +118,7 @@ const AgencySetup = () => {
             email: data.email || currentUser.email || "",
             address: data.address || "",
             upiId: data.upi || "",
+            theme: data.theme || "theme1",
             customPrices: data.customPrices || {},
             customPaymentLinks: data.customPaymentLinks || {},
             promoType: data.promoType || "none",
@@ -219,6 +222,7 @@ const AgencySetup = () => {
         email: formData.email,
         address: formData.address,
         upi: formData.upiId,
+        theme: formData.theme || "theme1",
         customPrices: formData.customPrices,
         customPaymentLinks: formData.customPaymentLinks,
         promoType: formData.promoType,
@@ -392,7 +396,7 @@ const AgencySetup = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-8 max-w-lg mx-auto"
+                    className="space-y-8 max-w-2xl mx-auto"
                   >
                     <div className="text-center mb-8">
                       <div className="size-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -402,11 +406,11 @@ const AgencySetup = () => {
                         Brand Identity
                       </h2>
                       <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-                        Name your digital institute
+                        Name your digital institute & choose your website theme
                       </p>
                     </div>
 
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                           Institute Name
@@ -521,6 +525,95 @@ const AgencySetup = () => {
                           }
                         />
                         <p className="text-[10px] text-slate-400 font-bold ml-1">This video will be displayed prominently on your academy's homepage.</p>
+                      </div>
+
+                      {/* THEME SELECTION */}
+                      <div className="space-y-3 pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                            <Palette size={14} className="text-indigo-600" />
+                            Choose Academy Website Theme
+                          </label>
+                          <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                            5 Themes
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 font-medium ml-1">
+                          Select the visual theme for your student portal. You can preview each design in real-time.
+                        </p>
+
+                        <div className="grid grid-cols-1 gap-3">
+                          {THEMES_METADATA.map((t) => {
+                            const isSelected = (formData.theme || "theme1") === t.id;
+                            return (
+                              <div
+                                key={t.id}
+                                onClick={() => setFormData({ ...formData, theme: t.id })}
+                                className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                                  isSelected
+                                    ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
+                                    : "border-slate-200 hover:border-slate-300 bg-white"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                                  {/* Radio indicator */}
+                                  <div
+                                    className={`size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                                      isSelected
+                                        ? "border-indigo-600 bg-indigo-600 text-white"
+                                        : "border-slate-300 bg-white"
+                                    }`}
+                                  >
+                                    {isSelected && <Check size={12} strokeWidth={3} />}
+                                  </div>
+
+                                  {/* Theme details */}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                      <h4 className="text-xs font-black text-slate-900 uppercase">
+                                        {t.name}
+                                      </h4>
+                                      <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase bg-slate-100 text-slate-600">
+                                        {t.badge}
+                                      </span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-medium line-clamp-1">
+                                      {t.description}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                                  {/* Color swatches */}
+                                  <div className="flex items-center -space-x-1">
+                                    {t.colors.map((c, i) => (
+                                      <span
+                                        key={i}
+                                        className="size-4 rounded-full border-2 border-white shadow-xs"
+                                        style={{ backgroundColor: c }}
+                                        title={c}
+                                      />
+                                    ))}
+                                  </div>
+
+                                  {/* Live Preview Button */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(`/dev/${t.id}/home`, "_blank");
+                                    }}
+                                    className="px-2.5 py-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg flex items-center gap-1 transition-colors"
+                                    title={`Preview ${t.name} live`}
+                                  >
+                                    <span>Preview</span>
+                                    <ExternalLink size={10} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -924,6 +1017,14 @@ const AgencySetup = () => {
                         </span>
                         <span className="text-sm font-black text-slate-900">
                           {formData.whatsappNumber}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">
+                          Portal Theme
+                        </span>
+                        <span className="text-sm font-black text-indigo-600 capitalize">
+                          {THEMES_METADATA.find((t) => t.id === (formData.theme || "theme1"))?.name || "Cyber Neon"}
                         </span>
                       </div>
                     </div>

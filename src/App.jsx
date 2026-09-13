@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -60,6 +60,11 @@ const FixDemoStudent = () => {
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import FullPageSkeleton from "./components/FullPageSkeleton";
+
+// --- Theme Components ---
+import { themeMap } from "./themes/themeMap";
+import ThemeHeader from "./themes/components/ThemeHeader";
+import ThemeFooter from "./themes/components/ThemeFooter";
 
 // --- Public Pages ---
 import Home from "./pages/Home";
@@ -163,8 +168,63 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+const PortalPage = (props) => {
+  const { page, defaultComponent: DefaultComponent } = props;
+  const { isMainSite, agency } = useAgency();
+
+  if (isMainSite) {
+    return (
+      <>
+        <Navbar />
+        <DefaultComponent />
+        <Footer />
+      </>
+    );
+  }
+
+  const activeTheme = agency?.theme || "theme1";
+  const ThemePage = themeMap[activeTheme]?.[page] || themeMap.theme1[page];
+
+  return (
+    <div className="relative min-h-screen flex flex-col">
+      <ThemeHeader currentTheme={activeTheme} />
+      <main className="flex-grow">
+        <ThemePage />
+      </main>
+      <ThemeFooter currentTheme={activeTheme} />
+    </div>
+  );
+};
+
+// --- Dynamic Certificate Verification Page Wrapper ---
+const VerifyPage = () => {
+  const { isMainSite, agency } = useAgency();
+
+  if (isMainSite) {
+    return (
+      <>
+        <Navbar />
+        <VerifyCertificate />
+        <Footer />
+      </>
+    );
+  }
+
+  const activeTheme = agency?.theme || "theme1";
+
+  return (
+    <div className="relative min-h-screen flex flex-col">
+      <ThemeHeader currentTheme={activeTheme} />
+      <main className="flex-grow">
+        <VerifyCertificate />
+      </main>
+      <ThemeFooter currentTheme={activeTheme} />
+    </div>
+  );
+};
+
 const AppContent = () => {
-  const { loading: agencyLoading, isMainSite, agency } = useAgency();
+  const { loading: agencyLoading } = useAgency();
 
   if (agencyLoading) {
     return <FullPageSkeleton />;
@@ -174,99 +234,46 @@ const AppContent = () => {
     <>
       <ScrollToTop />
       <Routes>
-        {/* PUBLIC ROUTES */}
+        {/* PUBLIC PORTAL ROUTES */}
         <Route
           path="/"
-          element={
-            <>
-              <Navbar />
-              <Home />
-              <Footer />
-            </>
-          }
+          element={<PortalPage page="home" defaultComponent={Home} />}
         />
+        <Route path="/home" element={<Navigate to="/" replace />} />
 
         {/* VERIFICATION ROUTES (Publicly Accessible) */}
-        <Route
-          path="/verify"
-          element={
-            <>
-              <Navbar />
-              <VerifyCertificate />
-              <Footer />
-            </>
-          }
-        />
-        <Route
-          path="/verify/:certificateId"
-          element={
-            <>
-              <Navbar />
-              <VerifyCertificate />
-              <Footer />
-            </>
-          }
-        />
+        <Route path="/verify" element={<VerifyPage />} />
+        <Route path="/verify/:certificateId" element={<VerifyPage />} />
 
         <Route
           path="/courses"
-          element={
-            <>
-              <Navbar />
-              <Courses />
-              <Footer />
-            </>
-          }
+          element={<PortalPage page="courses" defaultComponent={Courses} />}
         />
         <Route
           path="/courses/:id"
           element={
-            <>
-              <Navbar />
-              <CourseDetails />
-              <Footer />
-            </>
-          }
-        />
-        {/* <Route
-          path="/ebooks"
-          element={
-            <>
-              <Navbar />
-              <EBooks />
-              <Footer />
-            </>
+            <PortalPage
+              page="coursedetails"
+              defaultComponent={CourseDetails}
+            />
           }
         />
         <Route
-          path="/ebooks/:id"
+          path="/coursedetails/:id"
           element={
-            <>
-              <Navbar />
-              <EBookDetails />
-              <Footer />
-            </>
+            <PortalPage
+              page="coursedetails"
+              defaultComponent={CourseDetails}
+            />
           }
-        /> */}
+        />
         <Route
           path="/about"
-          element={
-            <>
-              <Navbar />
-              <AboutUs />
-              <Footer />
-            </>
-          }
+          element={<PortalPage page="about" defaultComponent={AboutUs} />}
         />
         <Route
           path="/contact"
-          element={
-            <>
-              <Navbar />
-              <ContactUs />
-              <Footer />
-            </>
-          }
+          element={<PortalPage page="contact" defaultComponent={ContactUs} />}
         />
 
         {/* AGENCY SETUP */}

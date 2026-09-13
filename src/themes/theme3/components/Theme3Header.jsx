@@ -32,7 +32,7 @@ const Theme3Header = ({ currentTheme = "theme3" }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { currentUser, userData, logout } = useAuth();
-  const { agency } = useAgency();
+  const { agency, isMainSite } = useAgency();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -44,6 +44,12 @@ const Theme3Header = ({ currentTheme = "theme3" }) => {
   let dashboardPath = "/dashboard";
   if (isPartner) dashboardPath = "/partner";
   if (isAdmin) dashboardPath = "/admin";
+
+  const isDev = location.pathname.startsWith("/dev/");
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
+
+  const academyName = !isMainSite && agency?.name ? agency.name : "AI Video Academy";
+  const tagline = !isMainSite && agency?.tagline ? agency.tagline : "Master AI Avatars & Animation";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -68,10 +74,10 @@ const Theme3Header = ({ currentTheme = "theme3" }) => {
   };
 
   const navLinks = [
-    { name: "Home", path: currentTheme ? `/dev/${currentTheme}/home` : "/", icon: Home },
-    { name: "Courses", path: currentTheme ? `/dev/${currentTheme}/courses` : "/courses", icon: GraduationCap },
-    { name: "About Us", path: currentTheme ? `/dev/${currentTheme}/about` : "/about", icon: Users },
-    { name: "Contact Us", path: currentTheme ? `/dev/${currentTheme}/contact` : "/contact", icon: Mail },
+    { name: "Home", path: getRoute("/home"), icon: Home },
+    { name: "Courses", path: getRoute("/courses"), icon: GraduationCap },
+    { name: "About Us", path: getRoute("/about"), icon: Users },
+    { name: "Contact Us", path: getRoute("/contact"), icon: Mail },
     ...(currentUser ? [{ name: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
   ];
 
@@ -89,19 +95,27 @@ const Theme3Header = ({ currentTheme = "theme3" }) => {
       >
         <div className="max-w-[1500px] mx-auto px-5 sm:px-10 lg:px-16 flex items-center justify-between">
           <NavLink 
-            to={currentTheme ? `/dev/${currentTheme}/home` : "/"} 
+            to={getRoute("/home")} 
             className="flex items-center gap-3 group shrink-0"
           >
-            <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#fedc5c] text-slate-950 shadow-md shadow-amber-400/30 group-hover:scale-105 transition-transform duration-300">
-              <GraduationCap className="w-5 h-5 text-slate-950 stroke-[2.5]" />
-            </div>
+            {agency?.logo ? (
+              <img
+                src={agency.logo}
+                alt={academyName}
+                className="h-9 sm:h-10 w-auto object-contain rounded-xl"
+              />
+            ) : (
+              <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#fedc5c] text-slate-950 shadow-md shadow-amber-400/30 group-hover:scale-105 transition-transform duration-300">
+                <GraduationCap className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+              </div>
+            )}
             
             <div className="flex flex-col">
               <span className="text-[16px] sm:text-[18px] font-black tracking-tight text-slate-900 leading-tight">
-                {agency?.name || "AI Video Academy"}
+                {academyName}
               </span>
               <span className="text-[10.5px] sm:text-[11.5px] font-bold text-amber-600 leading-tight">
-                {agency?.tagline || "Master AI Avatars & Animation"}
+                {tagline}
               </span>
             </div>
           </NavLink>
@@ -132,7 +146,75 @@ const Theme3Header = ({ currentTheme = "theme3" }) => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            {!currentUser && (
+            {currentUser ? (
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-slate-100/90 transition-all border border-slate-200/80 cursor-pointer bg-white shadow-xs"
+                >
+                  <div className="size-8 rounded-full bg-[#fedc5c] text-slate-950 flex items-center justify-center font-black text-xs shadow-xs">
+                    {currentUser.displayName ? currentUser.displayName[0].toUpperCase() : "U"}
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-xs font-black text-slate-900 leading-none">
+                      {currentUser.displayName ? currentUser.displayName.split(" ")[0] : "Student"}
+                    </p>
+                  </div>
+                  <ChevronDown className={`size-4 text-slate-400 transition-transform duration-300 ${showProfileMenu ? "rotate-180" : ""}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showProfileMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-[100]"
+                    >
+                      <div className="p-4 border-b border-slate-50 bg-slate-50/50">
+                        <p className="text-sm font-black text-slate-900 truncate">
+                          {currentUser.displayName || "Student"}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {currentUser.email}
+                        </p>
+                        {isAdmin && (
+                          <span className="mt-1 inline-block text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            Admin Access
+                          </span>
+                        )}
+                        {isPartner && (
+                          <span className="mt-1 inline-block text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            Partner Portal
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-2 space-y-1">
+                        <Link
+                          to={dashboardPath}
+                          onClick={() => setShowProfileMenu(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm font-bold text-slate-700 rounded-xl hover:bg-amber-50 hover:text-amber-900 transition-colors"
+                        >
+                          <LayoutDashboard className="size-4 text-[#fedc5c]" />
+                          <span>{isPartner ? "Partner Dashboard" : isAdmin ? "Admin Panel" : "My Dashboard"}</span>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            logout();
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-red-600 rounded-xl hover:bg-red-50 transition-colors text-left cursor-pointer"
+                        >
+                          <LogOut className="size-4" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
               <button
                 onClick={() => openAuth("login")}
                 className="inline-flex items-center gap-2 bg-[#fedc5c] hover:bg-amber-400 text-slate-950 text-[13px] sm:text-[14px] font-black px-5 sm:px-6 py-2 sm:py-2.5 rounded-full shadow-md shadow-amber-400/20 hover:shadow-lg transition-all duration-300 cursor-pointer"

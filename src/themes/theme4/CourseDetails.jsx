@@ -187,6 +187,7 @@ const Theme4CourseDetails = () => {
       }
 
       if (!currentUser) {
+        localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice: displayPrice }));
         setIsAuthOpen(true);
         return;
       }
@@ -224,6 +225,7 @@ const Theme4CourseDetails = () => {
     }
 
     if (!currentUser) {
+      localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice: displayPrice }));
       setIsAuthOpen(true);
       return;
     }

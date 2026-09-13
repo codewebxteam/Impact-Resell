@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useContext,
@@ -8,7 +9,6 @@ import React, {
 import { db } from "../firebase/config";
 import {
   doc,
-  getDoc,
   getDocFromCache,
   getDocFromServer,
   collection,
@@ -23,11 +23,14 @@ export const useAgency = () => useContext(AgencyContext);
 
 const DEFAULT_AGENCY = {
   name: "AI Courses",
+  theme: "theme1",
   themeColor: "#0f172a",
   accentColor: "#5edff4",
   email: "support@alifestable.com",
   whatsapp: "",
   address: "",
+  tagline: "",
+  logo: "",
   customPrices: {},
   customPaymentLinks: {},
   promoType: "none",
@@ -89,10 +92,12 @@ export const AgencyProvider = ({ children }) => {
       let subSnap = null;
       try {
         subSnap = await getDocFromCache(subDocRef);
-      } catch (e) {
+      } catch {
         try {
           subSnap = await getDocFromServer(subDocRef);
-        } catch (err) {}
+        } catch {
+          // Fallback handled below
+        }
       }
 
       let ownerId = null;
@@ -120,10 +125,12 @@ export const AgencyProvider = ({ children }) => {
         let agencySnap = null;
         try {
           agencySnap = await getDocFromCache(agencyDocRef);
-        } catch (e) {
+        } catch {
           try {
             agencySnap = await getDocFromServer(agencyDocRef);
-          } catch (err) {}
+          } catch {
+            // Fallback handled below
+          }
         }
 
         if (agencySnap && agencySnap.exists()) {
@@ -131,9 +138,12 @@ export const AgencyProvider = ({ children }) => {
           setAgency({
             id: ownerId,
             name: data.name || "Academy",
+            theme: data.theme || "theme1",
             email: data.email,
             whatsapp: data.whatsapp,
             address: data.address || "",
+            tagline: data.tagline || "",
+            logo: data.logo || "",
             upi: data.upi,
             customPrices: data.customPrices || {},
             customPaymentLinks: data.customPaymentLinks || {},

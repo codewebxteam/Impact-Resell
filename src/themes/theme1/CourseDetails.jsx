@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -57,8 +58,8 @@ const CourseDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { isEnrolled } = useCourse();
-  const { loading: agencyLoading, isMainSite, agency } = useAgency(); // [KEEP] Subdomain Logic
+  const { isEnrolled, enrollCourse } = useCourse();
+  const { loading: agencyLoading, isMainSite, agency, getPrice } = useAgency(); // [KEEP] Subdomain Logic
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [course, setCourse] = useState(null);
@@ -160,14 +161,75 @@ const CourseDetails = () => {
     fetchCourseDetails();
   }, [id, isMainSite, agency, currentUser]);
 
-  const handleEnroll = () => {
-    if (!course?.paymentLink) return alert("Payment link not configured.");
+  const handleEnroll = async () => {
+    if (!course) return;
+    const rawPrice = typeof getPrice === "function" ? getPrice(course.id, course.price || "499") : (course.price || "499");
+    const priceDisplay =
+      rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
+        ? "Free"
+        : `₹${rawPrice}`;
+
+    if (!isMainSite && priceDisplay !== "Free") {
+      // 1. If partner set a custom payment link, open it directly
+      const customPaymentLink =
+        agency?.customPaymentLinks?.[course.id] ||
+        (course.id === "bundle" ? (agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink) : null);
+      const partnerCoursePaymentLink =
+        course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
+      const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
+
+      if (finalPaymentLink) {
+        window.open(finalPaymentLink, "_blank");
+        return;
+      }
+
+      if (!currentUser) {
+        setIsAuthOpen(true);
+        return;
+      }
+
+      if (!agency?.whatsapp) {
+        return alert("Partner contact number not found. Please contact support.");
+      }
+
+      const studentName = currentUser?.displayName || "Student";
+      const studentEmail = currentUser?.email || "Email Not Provided";
+
+      let offerText = "";
+      if (agency?.promoType === "bogo" && course.id !== "bundle") {
+        offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
+      } else if (course.id === "bundle") {
+        offerText = `\n🎁 *Promo Applied:* All Courses Bundle`;
+      }
+
+      const message =
+        `*New Course Enrollment Request* 🎓\n\n` +
+        `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
+        `👤 *Student Name:* ${studentName}\n` +
+        `📧 *Mail:* ${studentEmail}\n\n` +
+        `📚 *Course Name:* ${course.title}\n` +
+        `💰 *Price:* ${priceDisplay}\n` +
+        `🆔 *Course ID:* ${course.id}\n` +
+        offerText + `\n\n` +
+        `Please guide me with the payment process.`;
+
+      const whatsappUrl = `https://wa.me/${agency.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank");
+      return;
+    }
+
     if (!currentUser) {
-      localStorage.setItem("pendingCheckoutCourse", JSON.stringify(course));
       setIsAuthOpen(true);
       return;
     }
-    window.location.href = course.paymentLink;
+
+    try {
+      await enrollCourse(course);
+      navigate("/dashboard/my-courses");
+    } catch (error) {
+      console.error("Enrollment error:", error);
+      alert(error.message);
+    }
   };
 
   const openPlayer = (playlist, index = 0) => {

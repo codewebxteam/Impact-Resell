@@ -31,7 +31,7 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { currentUser, userData, logout } = useAuth();
-  const { agency } = useAgency();
+  const { agency, isMainSite } = useAgency();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -50,6 +50,9 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
   let profilePath = "/dashboard/profile";
   if (isPartner) profilePath = "/partner/profile";
   if (isAdmin) profilePath = "/admin/settings";
+
+  const isDev = location.pathname.startsWith("/dev/");
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -77,17 +80,17 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
     try {
       await logout();
       setShowProfileMenu(false);
-      navigate("/");
+      navigate(getRoute("/home"));
     } catch (error) {
       console.error("Failed to log out", error);
     }
   };
 
   const navLinks = [
-    { name: "Home", path: currentTheme ? `/dev/${currentTheme}/home` : "/", icon: Home },
-    { name: "Courses", path: currentTheme ? `/dev/${currentTheme}/courses` : "/courses", icon: GraduationCap },
-    { name: "About Us", path: currentTheme ? `/dev/${currentTheme}/about` : "/about", icon: Users },
-    { name: "Contact Us", path: currentTheme ? `/dev/${currentTheme}/contact` : "/contact", icon: Mail },
+    { name: "Home", path: getRoute("/home"), icon: Home },
+    { name: "Courses", path: getRoute("/courses"), icon: GraduationCap },
+    { name: "About Us", path: getRoute("/about"), icon: Users },
+    { name: "Contact Us", path: getRoute("/contact"), icon: Mail },
     ...(currentUser ? [{ name: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
   ];
 
@@ -105,7 +108,7 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
       >
         <div className="max-w-[1500px] mx-auto px-5 sm:px-10 lg:px-16 flex items-center justify-between">
           <NavLink 
-            to={currentTheme ? `/dev/${currentTheme}/home` : "/"} 
+            to={getRoute("/home")} 
             className="flex items-center gap-3 group shrink-0"
           >
             <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
@@ -114,7 +117,7 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
             
             <div className="flex flex-col">
               <span className="text-[16px] sm:text-[18px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                {agency?.name || "Theme 2 Academy"}
+                {!isMainSite && agency?.name ? agency.name : (agency?.name || "AI Nexus Academy")}
               </span>
               <span className="text-[10.5px] sm:text-[11.5px] font-medium text-purple-600 leading-tight">
                 {agency?.tagline || "Innovate. Elevate. Succeed."}

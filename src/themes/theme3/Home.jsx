@@ -65,9 +65,11 @@ const faqs = [
 const HeroSection = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { agency, isMainSite } = useAgency();
   const isDev = location.pathname.startsWith("/dev/");
   const themeName = isDev ? location.pathname.split("/")[2] : "";
   const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
+  const academyName = !isMainSite && agency?.name ? agency.name : "AI Video & Avatar Academy";
 
   const handleExploreCourses = () => navigate(coursesUrl);
 
@@ -101,7 +103,7 @@ const HeroSection = () => {
             {/* Small badge */}
             <div className={`mb-4 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] uppercase tracking-[0.18em] ${THEME.badgeBg}`}>
               <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-amber-400 shadow-[0_0_0_4px_rgba(254,220,92,0.3)] animate-pulse" />
-              AI Video & Avatar Academy
+              {academyName}
               <Sparkles size={13} className="text-amber-500 fill-amber-400" />
             </div>
 

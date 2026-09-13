@@ -154,7 +154,12 @@ const Courses = () => {
 
   const isDev = location.pathname.startsWith("/dev/");
   const currentTheme = isDev ? location.pathname.split("/")[2] : "theme5";
-  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : path);
+  const getRoute = (path) => {
+    if (isDev) return `/dev/${currentTheme}${path}`;
+    if (path === "/home") return "/";
+    if (path.startsWith("/coursedetails/")) return path.replace("/coursedetails/", "/courses/");
+    return path;
+  };
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -212,6 +217,7 @@ const Courses = () => {
       }
 
       if (!currentUser) {
+        localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice: priceDisplay }));
         setIsAuthOpen(true);
         return;
       }
@@ -251,6 +257,7 @@ const Courses = () => {
     }
 
     if (!currentUser) {
+      localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice: priceDisplay }));
       setIsAuthOpen(true);
       return;
     }

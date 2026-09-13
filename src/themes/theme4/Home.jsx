@@ -147,10 +147,12 @@ const fallbackCoursesData = [
 const HeroSection = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { agency, isMainSite } = useAgency();
   const [showDemoModal, setShowDemoModal] = useState(false);
   const isDev = location.pathname.startsWith("/dev/");
   const themeName = isDev ? location.pathname.split("/")[2] : "";
   const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
+  const academyName = !isMainSite && agency?.name ? agency.name : "AIFlix Academy";
 
   return (
     <section className="relative w-full overflow-hidden flex items-center mt-16 sm:mt-20 bg-white">
@@ -182,7 +184,7 @@ const HeroSection = () => {
             {/* Small badge */}
             <div className="mb-4 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[11.5px] font-black uppercase tracking-[0.16em] bg-violet-50/90 border border-violet-200/90 text-violet-700 shadow-xs backdrop-blur-md">
               <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-violet-600 animate-pulse" />
-              #1 AI Video & Animation Creation Academy
+              {academyName}
               <Sparkles size={13} className="text-violet-600 fill-violet-400" />
             </div>
 

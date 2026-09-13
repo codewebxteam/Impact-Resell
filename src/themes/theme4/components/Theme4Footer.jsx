@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from "react";
+import { useLocation, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Twitter,
@@ -14,9 +15,11 @@ import {
   MessageCircle,
   Heart,
   FileCheck,
-  Sparkles
+  Sparkles,
+  MapPin,
+  Mail,
+  Phone,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useAgency } from "../../../context/AgencyContext";
 
 const SocialIcon = ({ Icon, href, title }) => (
@@ -39,11 +42,16 @@ const SocialIcon = ({ Icon, href, title }) => (
 const Theme4Footer = ({ currentTheme = "theme4" }) => {
   const [activePolicy, setActivePolicy] = useState(null);
   const { agency, isMainSite } = useAgency();
+  const location = useLocation();
+
+  const isDev = location.pathname.startsWith("/dev/");
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
 
   // Dynamic Agency Data (Synced with Subdomain & Partner config)
   const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix Academy");
   const supportEmail = !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
-  const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
+  const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 80840 37252";
+  const contactAddress = isMainSite ? "Near Metro Station, Nirman Vihar, East Delhi 110092" : (agency?.address || "Digital Campus (Online)");
   const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I need some information regarding courses.")}`;
   const instaLink = !isMainSite && agency?.instagram ? agency.instagram : "https://www.instagram.com/";
   const currentYear = new Date().getFullYear();
@@ -132,25 +140,20 @@ const Theme4Footer = ({ currentTheme = "theme4" }) => {
 
   const footerLinks = {
     Academy: [
-      { name: "Courses", href: currentTheme ? `/dev/${currentTheme}/courses` : "/courses" },
+      { name: "Courses", href: getRoute("/courses") },
+      { name: "About Us", href: getRoute("/about") },
+      { name: "Contact Us", href: getRoute("/contact") },
     ],
     Company: [
-      { name: "About Us", href: currentTheme ? `/dev/${currentTheme}/about` : "/about" },
-      { name: "Contact Us", href: currentTheme ? `/dev/${currentTheme}/contact` : "/contact" },
-      ...(isMainSite ? [{ name: "Register as a Partner", href: "#", isPartner: true }] : []),
-    ],
-    Resources: [
       { name: "Verify Certificate", href: "/verify", isVerify: true },
-      { name: "Blog", href: "/blog" },
-    ],
-    Legal: [
       { name: "Privacy Policy", href: "#", type: "privacy" },
       { name: "Refund Policy", href: "#", type: "refund" },
+      ...(isMainSite ? [{ name: "Register as a Partner", href: "#", isPartner: true }] : []),
     ],
   };
 
   return (
-    <footer className="relative bg-slate-50 text-slate-800 pt-16 pb-12 font-sans overflow-hidden border-t border-slate-200/80">
+    <footer className="relative bg-slate-50 text-slate-800 pt-16 pb-24 lg:pb-12 font-sans overflow-hidden border-t border-slate-200/80">
       {/* Background Subtle Gradient Glow */}
       <div className="absolute top-0 left-1/4 size-96 bg-violet-200/40 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 size-96 bg-indigo-200/40 rounded-full blur-[120px] pointer-events-none" />
@@ -167,7 +170,7 @@ const Theme4Footer = ({ currentTheme = "theme4" }) => {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <Link to={currentTheme ? `/dev/${currentTheme}/home` : "/"} className="flex items-center gap-3 mb-4 group">
+            <Link to={getRoute("/home")} className="flex items-center gap-3 mb-4 group">
               <div className="size-10 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-pink-500 text-white flex items-center justify-center shadow-md shadow-violet-500/25">
                 <GraduationCap className="size-5 stroke-[2.5]" />
               </div>
@@ -190,6 +193,22 @@ const Theme4Footer = ({ currentTheme = "theme4" }) => {
             <p className="text-slate-500 text-xs sm:text-sm max-w-md font-bold leading-relaxed">
               Empowering creators, students, and professionals to create high-impact viral videos, 2D/3D animation, and AI influencers.
             </p>
+
+            {/* Partner Contact Details */}
+            <div className="mt-5 space-y-2 text-xs text-slate-600 font-bold">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="size-4 text-violet-600 shrink-0 mt-0.5" />
+                <span>{contactAddress}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Mail className="size-4 text-violet-600 shrink-0" />
+                <a href={`mailto:${supportEmail}`} className="hover:text-violet-600 transition-colors">{supportEmail}</a>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Phone className="size-4 text-violet-600 shrink-0" />
+                <a href={whatsappLink} target="_blank" rel="noreferrer" className="hover:text-violet-600 transition-colors">{supportPhone}</a>
+              </div>
+            </div>
           </motion.div>
 
           {/* Need Help WhatsApp Card */}

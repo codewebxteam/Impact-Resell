@@ -6,7 +6,6 @@ import {
   Award,
   Video,
   Users,
-  Infinity,
   CheckCircle2,
   ArrowRight,
   ShieldCheck,
@@ -23,7 +22,7 @@ const AboutUs = () => {
 
   const isDev = location.pathname.startsWith("/dev/");
   const currentTheme = isDev ? location.pathname.split("/")[2] : "theme5";
-  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : path);
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
 
   const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
 

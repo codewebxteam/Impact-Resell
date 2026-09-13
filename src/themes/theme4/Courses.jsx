@@ -705,7 +705,9 @@ const Courses = () => {
 // THEME 4 COURSE CARD (3-COL FULL CARD)
 // ==========================================
 const Theme4CourseCardFull = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSite, currentTheme = "theme4" }) => {
-  const courseUrl = currentTheme ? `/dev/${currentTheme}/coursedetails/${course.id}` : `/courses/${course.id}`;
+  const location = useLocation();
+  const isDev = location.pathname.startsWith("/dev/");
+  const courseUrl = isDev ? `/dev/${currentTheme}/coursedetails/${course.id}` : `/courses/${course.id}`;
 
   const imageUrl =
     course.image ||

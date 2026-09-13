@@ -1,80 +1,9 @@
 import React from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
-// Theme 1
-import Theme1Home from './theme1/Home';
-import Theme1Courses from './theme1/Courses';
-import Theme1CourseDetails from './theme1/CourseDetails';
-import Theme1AboutUs from './theme1/AboutUs';
-import Theme1ContactUs from './theme1/ContactUs';
-
-// Theme 2
-import Theme2Home from './theme2/Home';
-import Theme2Courses from './theme2/Courses';
-import Theme2CourseDetails from './theme2/CourseDetails';
-import Theme2AboutUs from './theme2/AboutUs';
-import Theme2ContactUs from './theme2/ContactUs';
-
-// Theme 3
-import Theme3Home from './theme3/Home';
-import Theme3Courses from './theme3/Courses';
-import Theme3AboutUs from './theme3/AboutUs';
-import Theme3ContactUs from './theme3/ContactUs';
-
-// Theme 4
-import Theme4Home from './theme4/Home';
-import Theme4Courses from './theme4/Courses';
-import Theme4CourseDetails from './theme4/CourseDetails';
-import Theme4AboutUs from './theme4/AboutUs';
-import Theme4ContactUs from './theme4/ContactUs';
-
-// Theme 5
-import Theme5Home from './theme5/Home';
-import Theme5Courses from './theme5/Courses';
-import Theme5CourseDetails from './theme5/CourseDetails';
-import Theme5AboutUs from './theme5/AboutUs';
-import Theme5ContactUs from './theme5/ContactUs';
-
+import { themeMap } from './themeMap';
 import ThemeHeader from './components/ThemeHeader';
 import ThemeFooter from './components/ThemeFooter';
-
-const themeMap = {
-  theme1: {
-    home: Theme1Home,
-    courses: Theme1Courses,
-    coursedetails: Theme1CourseDetails,
-    about: Theme1AboutUs,
-    contact: Theme1ContactUs,
-  },
-  theme2: {
-    home: Theme2Home,
-    courses: Theme2Courses,
-    coursedetails: Theme2CourseDetails,
-    about: Theme2AboutUs,
-    contact: Theme2ContactUs,
-  },
-  theme3: {
-    home: Theme3Home,
-    courses: Theme3Courses,
-    coursedetails: Theme1CourseDetails,
-    about: Theme3AboutUs,
-    contact: Theme3ContactUs,
-  },
-  theme4: {
-    home: Theme4Home,
-    courses: Theme4Courses,
-    coursedetails: Theme4CourseDetails,
-    about: Theme4AboutUs,
-    contact: Theme4ContactUs,
-  },
-  theme5: {
-    home: Theme5Home,
-    courses: Theme5Courses,
-    coursedetails: Theme5CourseDetails,
-    about: Theme5AboutUs,
-    contact: Theme5ContactUs,
-  }
-};
 
 const DevThemeViewer = () => {
   const { theme, page } = useParams();

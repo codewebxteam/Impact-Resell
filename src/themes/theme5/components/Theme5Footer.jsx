@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from "react";
+import { useLocation, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Twitter,
@@ -16,9 +17,11 @@ import {
   FileCheck,
   Sparkles,
   Send,
-  Play
+  Play,
+  MapPin,
+  Mail,
+  Phone,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useAgency } from "../../../context/AgencyContext";
 
 const SocialIcon = ({ Icon, href, title }) => (
@@ -40,11 +43,16 @@ const Theme5Footer = ({ currentTheme = "theme5" }) => {
   const [emailInput, setEmailInput] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const { agency, isMainSite } = useAgency();
+  const location = useLocation();
+
+  const isDev = location.pathname.startsWith("/dev/");
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
 
   // Dynamic Agency Data (Synced with Subdomain & Partner config)
   const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
   const supportEmail = !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
-  const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
+  const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 80840 37252";
+  const contactAddress = isMainSite ? "Near Metro Station, Nirman Vihar, East Delhi 110092" : (agency?.address || "Digital Campus (Online)");
   const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I need some information regarding courses.")}`;
   const instaLink = !isMainSite && agency?.instagram ? agency.instagram : "https://www.instagram.com/";
   const currentYear = new Date().getFullYear();
@@ -160,8 +168,6 @@ const Theme5Footer = ({ currentTheme = "theme5" }) => {
     },
   };
 
-  const getRoute = (path) => (currentTheme ? `/dev/${currentTheme}${path}` : path);
-
   return (
     <footer className="w-full bg-[#f8f9fd] border-t border-indigo-50/80 pt-16 pb-12 font-sans relative overflow-hidden">
       {/* Background Soft Glows */}
@@ -201,6 +207,22 @@ const Theme5Footer = ({ currentTheme = "theme5" }) => {
               Helping creators, students, and professionals learn AI video creation and turn ideas into reality. Master prompt craft, avatars, and animations.
             </p>
 
+            {/* Partner Contact Details */}
+            <div className="pt-2 space-y-2 text-xs text-slate-600 font-bold">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="size-4 text-indigo-600 shrink-0 mt-0.5" />
+                <span>{contactAddress}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Mail className="size-4 text-indigo-600 shrink-0" />
+                <a href={`mailto:${supportEmail}`} className="hover:text-indigo-600 transition-colors">{supportEmail}</a>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Phone className="size-4 text-indigo-600 shrink-0" />
+                <a href={whatsappLink} target="_blank" rel="noreferrer" className="hover:text-indigo-600 transition-colors">{supportPhone}</a>
+              </div>
+            </div>
+
             {/* Social Icons */}
             <div className="flex items-center gap-2.5 pt-2">
               <SocialIcon Icon={Youtube} href="https://youtube.com" title="YouTube" />
@@ -233,15 +255,24 @@ const Theme5Footer = ({ currentTheme = "theme5" }) => {
                 </Link>
               </li>
               <li>
-                <a href="#testimonials" className="hover:text-indigo-600 transition-colors">
-                  Success Stories
-                </a>
-              </li>
-              <li>
                 <Link to={getRoute("/contact")} className="hover:text-indigo-600 transition-colors">
                   Contact
                 </Link>
               </li>
+              {isMainSite && (
+                <li>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.dispatchEvent(new CustomEvent("openPartnerModal"));
+                    }}
+                    className="text-indigo-600 font-bold hover:underline"
+                  >
+                    Register as a Partner
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 

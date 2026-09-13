@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Twitter,
@@ -9,6 +10,9 @@ import {
   X,
   MessageCircle,
   ShieldCheck,
+  MapPin,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { useAgency } from "../../../context/AgencyContext";
 
@@ -34,10 +38,15 @@ const SocialIcon = ({ Icon, href }) => (
 const Theme3Footer = ({ currentTheme = "theme3" }) => {
   const [activePolicy, setActivePolicy] = useState(null);
   const { agency, isMainSite } = useAgency();
+  const location = useLocation();
 
-  const academyName = !isMainSite && agency ? agency.name : "AI Courses";
+  const isDev = location.pathname.startsWith("/dev/");
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
+
+  const academyName = !isMainSite && agency ? agency.name : "AI Video Academy";
   const supportEmail = !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
-  const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
+  const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 80840 37252";
+  const contactAddress = isMainSite ? "Near Metro Station, Nirman Vihar, East Delhi 110092" : (agency?.address || "Digital Campus (Online)");
   const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I need some information.")}`;
   const instaLink = !isMainSite && agency?.instagram ? agency.instagram : "https://www.instagram.com/";
   const currentYear = new Date().getFullYear();
@@ -85,20 +94,15 @@ const Theme3Footer = ({ currentTheme = "theme3" }) => {
 
   const footerLinks = {
     Academy: [
-      { name: "Courses", href: currentTheme ? `/dev/${currentTheme}/courses` : "/courses" },
+      { name: "Courses", href: getRoute("/courses") },
+      { name: "About Us", href: getRoute("/about") },
+      { name: "Contact Us", href: getRoute("/contact") },
     ],
     Company: [
-      { name: "About Us", href: currentTheme ? `/dev/${currentTheme}/about` : "/about" },
-      { name: "Contact Us", href: currentTheme ? `/dev/${currentTheme}/contact` : "/contact" },
-      ...(isMainSite ? [{ name: "Register as a Partner", href: "#", isPartner: true }] : []),
-    ],
-    Resources: [
       { name: "Verify Certificate", href: "/verify" },
-      { name: "Blog", href: "/blog" },
-    ],
-    Legal: [
       { name: "Privacy Policy", href: "#", type: "privacy" },
       { name: "Refund Policy", href: "#", type: "refund" },
+      ...(isMainSite ? [{ name: "Register as a Partner", href: "#", isPartner: true }] : []),
     ],
   };
 
@@ -132,6 +136,22 @@ const Theme3Footer = ({ currentTheme = "theme3" }) => {
             <p className="text-slate-400 text-xs sm:text-sm max-w-md font-medium leading-relaxed">
               Learn AI avatar vlogging, 2D/3D animation, and viral video creation with our community.
             </p>
+
+            {/* Partner Contact Details */}
+            <div className="mt-5 space-y-2 text-xs text-slate-400">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="size-4 text-[#fedc5c] shrink-0 mt-0.5" />
+                <span>{contactAddress}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Mail className="size-4 text-[#fedc5c] shrink-0" />
+                <a href={`mailto:${supportEmail}`} className="hover:text-white transition-colors">{supportEmail}</a>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Phone className="size-4 text-[#fedc5c] shrink-0" />
+                <a href={whatsappLink} target="_blank" rel="noreferrer" className="hover:text-white transition-colors">{supportPhone}</a>
+              </div>
+            </div>
           </motion.div>
 
           <motion.div

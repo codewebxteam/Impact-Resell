@@ -82,7 +82,7 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
   };
 
   const isDev = location.pathname.startsWith("/dev/");
-  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : path);
+  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
 
   const navLinks = [
     { name: "Home", path: getRoute("/home") },
@@ -92,6 +92,7 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
   ];
 
   const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
+  const tagline = !isMainSite && agency?.tagline ? agency.tagline : "Learn Today, Create Tomorrow";
 
   return (
     <>
@@ -112,13 +113,21 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
             to={getRoute("/home")}
             className="flex items-center gap-3 group shrink-0"
           >
-            <div className="size-10 sm:size-11 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-0.5 shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
-              <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center overflow-hidden">
-                <div className="size-6 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-lg flex items-center justify-center text-white">
-                  <Play className="size-3.5 fill-white ml-0.5" />
+            {agency?.logo ? (
+              <img
+                src={agency.logo}
+                alt={brandName}
+                className="h-10 sm:h-11 w-auto object-contain rounded-xl"
+              />
+            ) : (
+              <div className="size-10 sm:size-11 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-0.5 shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
+                <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center overflow-hidden">
+                  <div className="size-6 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-lg flex items-center justify-center text-white">
+                    <Play className="size-3.5 fill-white ml-0.5" />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
@@ -128,7 +137,7 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
                 <span className="inline-block size-2 rounded-full bg-pink-500" />
               </div>
               <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase -mt-1 hidden sm:block">
-                Learn Today, Create Tomorrow
+                {tagline}
               </span>
             </div>
           </Link>

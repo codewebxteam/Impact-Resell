@@ -13,7 +13,7 @@ import {
   FileCheck,
   FolderGit2,
   Award,
-  Infinity,
+  Infinity as InfinityIcon,
   Layers,
   Video,
   ChevronLeft,
@@ -206,7 +206,12 @@ const Home = () => {
 
   const isDev = location.pathname.startsWith("/dev/");
   const currentTheme = isDev ? location.pathname.split("/")[2] : "theme5";
-  const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : path);
+  const getRoute = (path) => {
+    if (isDev) return `/dev/${currentTheme}${path}`;
+    if (path === "/home") return "/";
+    if (path.startsWith("/coursedetails/")) return path.replace("/coursedetails/", "/courses/");
+    return path;
+  };
 
   const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
 
@@ -371,7 +376,7 @@ const Home = () => {
               {/* Pill badge */}
               <div className="mb-3.5 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[11.5px] font-black uppercase tracking-[0.14em] bg-white/95 border border-purple-200/90 text-purple-700 shadow-sm backdrop-blur-md">
                 <Sparkles size={12} className="text-amber-500 fill-amber-400" />
-                <span>AI Powered Learning For Everyone</span>
+                <span>{brandName}</span>
               </div>
 
               {/* Heading */}
@@ -480,7 +485,7 @@ const Home = () => {
             {/* 5. Lifetime Access */}
             <div className="flex flex-col items-center text-center p-2 pt-4 sm:pt-2">
               <div className="size-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mb-3 shadow-2xs">
-                <Infinity className="size-6" />
+                <InfinityIcon className="size-6" />
               </div>
               <h4 className="text-sm font-bold text-slate-900">Lifetime</h4>
               <p className="text-xs text-slate-500 font-medium">Access</p>
@@ -676,7 +681,7 @@ const Home = () => {
           {/* Card 3: Lifetime Access */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/70 shadow-xs hover:shadow-xl hover:border-amber-200 transition-all duration-300 text-left group">
             <div className="size-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-              <Infinity className="size-6" />
+              <InfinityIcon className="size-6" />
             </div>
             <h3 className="text-lg font-black text-slate-900 mb-2">
               Lifetime Access
