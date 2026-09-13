@@ -30,8 +30,11 @@ import {
   Palette,
   Check,
   ExternalLink,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import { THEMES_METADATA } from "../../themes/themeMap";
+import { uploadToImageKit } from "../../services/imagekitService";
 
 // Simple debounce function
 const simpleDebounce = (func, wait) => {
@@ -70,6 +73,7 @@ const AgencySetup = () => {
     address: "",
     upiId: "",
     theme: "theme1",
+    logo: "",
     customPrices: {},
     customPaymentLinks: {},
     promoType: "none",
@@ -77,6 +81,9 @@ const AgencySetup = () => {
     bundlePaymentLink: "",
     demoVideoLink: "",
   });
+
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState("");
 
   const [oldSubdomain, setOldSubdomain] = useState(null);
   const [subdomainStatus, setSubdomainStatus] = useState("idle");
@@ -119,6 +126,7 @@ const AgencySetup = () => {
             address: data.address || "",
             upiId: data.upi || "",
             theme: data.theme || "theme1",
+            logo: data.logo || "",
             customPrices: data.customPrices || {},
             customPaymentLinks: data.customPaymentLinks || {},
             promoType: data.promoType || "none",
@@ -198,6 +206,41 @@ const AgencySetup = () => {
     }));
   };
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setLogoError("Please select a valid image file (PNG, JPG, SVG, WEBP).");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoError("Logo size must be less than 5MB.");
+      return;
+    }
+
+    setLogoError("");
+    setLogoUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const cleanFileName = `logo_${formData.subdomain || currentUser?.uid || "academy"}_${Date.now()}.${ext}`;
+      const result = await uploadToImageKit(file, cleanFileName, "/partner-logos");
+      setFormData((prev) => ({ ...prev, logo: result.url }));
+    } catch (err) {
+      console.error("Logo upload error:", err);
+      setLogoError(err.message || "Failed to upload logo to ImageKit.");
+    } finally {
+      setLogoUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData((prev) => ({ ...prev, logo: "" }));
+    setLogoError("");
+  };
+
   // --- SUBMIT (FIXED REDIRECTION) ---
   const handleFinalSubmit = async () => {
     if (!currentUser?.uid) return;
@@ -223,6 +266,7 @@ const AgencySetup = () => {
         address: formData.address,
         upi: formData.upiId,
         theme: formData.theme || "theme1",
+        logo: formData.logo || "",
         customPrices: formData.customPrices,
         customPaymentLinks: formData.customPaymentLinks,
         promoType: formData.promoType,
@@ -427,6 +471,105 @@ const AgencySetup = () => {
                             })
                           }
                         />
+                      </div>
+
+                      {/* ACADEMY LOGO UPLOAD (ImageKit Powered) */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                            <ImageIcon size={13} className="text-indigo-600" />
+                            Academy Logo (Optional)
+                          </label>
+                          <span className="text-[9px] font-bold text-slate-400">
+                            Powered by ImageKit CDN
+                          </span>
+                        </div>
+
+                        {formData.logo ? (
+                          <div className="p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-4 w-full sm:w-auto">
+                              <div className="relative size-16 rounded-xl bg-slate-900 border border-slate-800 p-2 flex items-center justify-center shrink-0 shadow-inner">
+                                <img
+                                  src={formData.logo}
+                                  alt="Academy Logo Preview"
+                                  className="max-h-full max-w-full object-contain"
+                                />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 text-emerald-600 mb-0.5">
+                                  <CheckCircle2 size={13} />
+                                  <span className="text-xs font-black uppercase">Logo Uploaded</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-medium truncate max-w-xs sm:max-w-sm">
+                                  {formData.logo}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                              <label className="cursor-pointer px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-[11px] font-bold text-slate-700 hover:text-slate-900 transition-colors shadow-2xs">
+                                <span>Change</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={handleLogoUpload}
+                                  disabled={logoUploading}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={handleRemoveLogo}
+                                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-[11px] font-bold transition-colors cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className={`relative block w-full p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all ${
+                            logoUploading
+                              ? "bg-slate-50 border-indigo-300 pointer-events-none"
+                              : "bg-slate-50/50 hover:bg-white border-slate-200 hover:border-indigo-400"
+                          }`}>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleLogoUpload}
+                              disabled={logoUploading}
+                            />
+                            {logoUploading ? (
+                              <div className="flex flex-col items-center justify-center gap-2">
+                                <Loader2 size={24} className="animate-spin text-indigo-600" />
+                                <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">
+                                  Uploading to ImageKit CDN...
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center gap-2">
+                                <div className="size-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                  <Upload size={18} />
+                                </div>
+                                <div>
+                                  <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                                    Click or drop your logo here
+                                  </span>
+                                  <p className="text-[10px] text-slate-400 font-bold mt-0.5">
+                                    PNG, JPG, SVG, WEBP up to 5MB (Transparent background recommended)
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </label>
+                        )}
+
+                        {logoError && (
+                          <div className="flex items-center gap-1.5 text-red-500 text-[11px] font-bold mt-1.5">
+                            <AlertCircle size={12} />
+                            <span>{logoError}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -1018,6 +1161,23 @@ const AgencySetup = () => {
                         <span className="text-sm font-black text-slate-900">
                           {formData.whatsappNumber}
                         </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">
+                          Academy Logo
+                        </span>
+                        {formData.logo ? (
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={formData.logo}
+                              alt="Logo"
+                              className="size-6 object-contain rounded bg-slate-900 p-0.5"
+                            />
+                            <span className="text-xs font-black text-emerald-600">Attached</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-bold text-slate-400">Default Brand Icon</span>
+                        )}
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-bold text-slate-400 uppercase">

@@ -182,13 +182,21 @@ const Theme5Footer = ({ currentTheme = "theme5" }) => {
           {/* Column 1: Brand & Socials (4 cols) */}
           <div className="lg:col-span-4 space-y-5">
             <Link to={getRoute("/home")} className="flex items-center gap-3 group inline-flex">
-              <div className="size-10 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-0.5 shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
-                <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center overflow-hidden">
-                  <div className="size-6 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-lg flex items-center justify-center text-white">
-                    <Play className="size-3.5 fill-white ml-0.5" />
+              {agency?.logo || agency?.logoUrl ? (
+                <img
+                  src={agency.logo || agency.logoUrl}
+                  alt={academyName}
+                  className="size-10 object-contain rounded-xl shadow-md"
+                />
+              ) : (
+                <div className="size-10 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-0.5 shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
+                  <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center overflow-hidden">
+                    <div className="size-6 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-lg flex items-center justify-center text-white">
+                      <Play className="size-3.5 fill-white ml-0.5" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">

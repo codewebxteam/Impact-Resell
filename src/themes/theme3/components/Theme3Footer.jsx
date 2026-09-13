@@ -120,11 +120,19 @@ const Theme3Footer = ({ currentTheme = "theme3" }) => {
             transition={{ duration: 0.5 }}
           >
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="size-9 sm:size-10 bg-[#fedc5c] rounded-xl flex items-center justify-center shadow-md shadow-amber-400/30">
-                <span className="text-slate-950 font-black text-lg uppercase">
-                  {academyName.charAt(0)}
-                </span>
-              </div>
+              {agency?.logo || agency?.logoUrl ? (
+                <img
+                  src={agency.logo || agency.logoUrl}
+                  alt={academyName}
+                  className="size-9 sm:size-10 object-contain rounded-xl shadow-md"
+                />
+              ) : (
+                <div className="size-9 sm:size-10 bg-[#fedc5c] rounded-xl flex items-center justify-center shadow-md shadow-amber-400/30">
+                  <span className="text-slate-950 font-black text-lg uppercase">
+                    {academyName.charAt(0)}
+                  </span>
+                </div>
+              )}
               <span className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                 {academyName}
               </span>

@@ -131,10 +131,10 @@ const Theme1Header = ({ currentTheme = "theme1" }) => {
             to={getRoute("/home")} 
             className="flex items-center gap-3 group shrink-0"
           >
-            {agency?.logoUrl ? (
+            {agency?.logo || agency?.logoUrl ? (
               <img
-                src={agency.logoUrl}
-                alt="Logo"
+                src={agency.logo || agency.logoUrl}
+                alt={agency?.name || "Logo"}
                 className="w-9 h-9 sm:w-10 sm:h-10 object-contain rounded-xl shadow-xs"
               />
             ) : (

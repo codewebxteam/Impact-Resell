@@ -171,9 +171,17 @@ const Theme4Footer = ({ currentTheme = "theme4" }) => {
             transition={{ duration: 0.5 }}
           >
             <Link to={getRoute("/home")} className="flex items-center gap-3 mb-4 group">
-              <div className="size-10 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-pink-500 text-white flex items-center justify-center shadow-md shadow-violet-500/25">
-                <GraduationCap className="size-5 stroke-[2.5]" />
-              </div>
+              {agency?.logo || agency?.logoUrl ? (
+                <img
+                  src={agency.logo || agency.logoUrl}
+                  alt={academyName}
+                  className="size-10 object-contain rounded-xl shadow-md"
+                />
+              ) : (
+                <div className="size-10 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-pink-500 text-white flex items-center justify-center shadow-md shadow-violet-500/25">
+                  <GraduationCap className="size-5 stroke-[2.5]" />
+                </div>
+              )}
               <div className="flex flex-col">
                 <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-tight">
                   {academyName}

@@ -111,9 +111,17 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
             to={getRoute("/home")} 
             className="flex items-center gap-3 group shrink-0"
           >
-            <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
-              <GraduationCap className="w-5 h-5 text-white stroke-[2.2]" />
-            </div>
+            {agency?.logo || agency?.logoUrl ? (
+              <img
+                src={agency.logo || agency.logoUrl}
+                alt={agency?.name || "Logo"}
+                className="w-9 h-9 sm:w-10 sm:h-10 object-contain rounded-xl shadow-xs"
+              />
+            ) : (
+              <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
+                <GraduationCap className="w-5 h-5 text-white stroke-[2.2]" />
+              </div>
+            )}
             
             <div className="flex flex-col">
               <span className="text-[16px] sm:text-[18px] font-extrabold tracking-tight text-slate-900 leading-tight">
