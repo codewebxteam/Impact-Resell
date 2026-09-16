@@ -143,7 +143,8 @@ export const AgencyProvider = ({ children }) => {
             whatsapp: data.whatsapp,
             address: data.address || "",
             tagline: data.tagline || "",
-            logo: data.logo || "",
+            logo: data.logo || data.logoUrl || "",
+            logoUrl: data.logoUrl || data.logo || "",
             upi: data.upi,
             customPrices: data.customPrices || {},
             customPaymentLinks: data.customPaymentLinks || {},
@@ -191,7 +192,105 @@ export const AgencyProvider = ({ children }) => {
       );
       document.title = isMainSite
         ? "AI Courses"
-        : `${agency?.name} | Learning Portal`;
+        : `${agency?.name || "Academy"} | Learning Portal`;
+
+      // --- DYNAMIC PWA MANIFEST (Native Chrome / Browser Install) ---
+      try {
+        const appName = !isMainSite && agency?.name ? agency.name : "AI Courses";
+        const shortName =
+          !isMainSite && agency?.name
+            ? agency.name.length > 15
+              ? agency.name.substring(0, 15)
+              : agency.name
+            : "AI Courses";
+        const logoUrl = agency?.logo || agency?.logoUrl || "/vite.svg";
+        const themeColor = agency?.themeColor || "#0f172a";
+        const tagline =
+          agency?.tagline ||
+          (!isMainSite && agency?.name
+            ? `Learn & Grow with ${agency.name}`
+            : "Explore and master top AI tools and skills");
+
+        const manifestData = {
+          name: appName,
+          short_name: shortName,
+          description: tagline,
+          start_url: window.location.origin + "/",
+          scope: window.location.origin + "/",
+          display: "standalone",
+          background_color: "#ffffff",
+          theme_color: themeColor,
+          orientation: "portrait-primary",
+          icons: [
+            {
+              src: logoUrl,
+              sizes: "192x192 256x256 512x512",
+              type: "image/png",
+              purpose: "any maskable",
+            },
+          ],
+        };
+
+        const blob = new Blob([JSON.stringify(manifestData)], {
+          type: "application/manifest+json",
+        });
+        const manifestBlobUrl = URL.createObjectURL(blob);
+
+        let manifestLink = document.getElementById("dynamic-manifest");
+        if (!manifestLink) {
+          manifestLink = document.createElement("link");
+          manifestLink.id = "dynamic-manifest";
+          manifestLink.rel = "manifest";
+          document.head.appendChild(manifestLink);
+        }
+        manifestLink.href = manifestBlobUrl;
+
+        // Dynamic Favicon & Apple Touch Icon
+        if (logoUrl) {
+          let appleIcon = document.getElementById("dynamic-apple-icon");
+          if (!appleIcon) {
+            appleIcon = document.createElement("link");
+            appleIcon.id = "dynamic-apple-icon";
+            appleIcon.rel = "apple-touch-icon";
+            document.head.appendChild(appleIcon);
+          }
+          appleIcon.href = logoUrl;
+
+          let favIcon = document.querySelector("link[rel='icon']");
+          if (favIcon) {
+            favIcon.href = logoUrl;
+          }
+        }
+
+        // Meta Tags for Native PWA Install
+        let metaTheme = document.querySelector("meta[name='theme-color']");
+        if (!metaTheme) {
+          metaTheme = document.createElement("meta");
+          metaTheme.name = "theme-color";
+          document.head.appendChild(metaTheme);
+        }
+        metaTheme.content = themeColor;
+
+        let metaAppName = document.querySelector("meta[name='application-name']");
+        if (!metaAppName) {
+          metaAppName = document.createElement("meta");
+          metaAppName.name = "application-name";
+          document.head.appendChild(metaAppName);
+        }
+        metaAppName.content = appName;
+
+        let metaAppleTitle = document.querySelector(
+          "meta[name='apple-mobile-web-app-title']"
+        );
+        if (!metaAppleTitle) {
+          metaAppleTitle = document.createElement("meta");
+          metaAppleTitle.name = "apple-mobile-web-app-title";
+          document.head.appendChild(metaAppleTitle);
+        }
+        metaAppleTitle.content = appName;
+      } catch (err) {
+        console.warn("Dynamic manifest error:", err);
+      }
     }
   }, [agency, isMainSite, loading]);
 
