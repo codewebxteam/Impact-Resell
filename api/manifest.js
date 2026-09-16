@@ -118,7 +118,7 @@ export default async function handler(req, res) {
         src: academyLogo,
         sizes: "512x512",
         type: "image/png",
-        purpose: "any maskable"
+        purpose: "any"
       }
     ]
   };

@@ -226,7 +226,7 @@ export const AgencyProvider = ({ children }) => {
               src: logoUrl,
               sizes: "192x192 256x256 512x512",
               type: "image/png",
-              purpose: "any maskable",
+              purpose: "any",
             },
           ],
         };
