@@ -35,15 +35,15 @@ const AboutUs = () => {
   const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
   const contactUrl = isDev ? `/dev/${themeName}/contact` : "/contact";
 
-  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix Academy");
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
   const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
   const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I want to know more about the academy.")}`;
 
   const stats = [
-    { label: "Active Creators", value: "10,000+", icon: Users, color: "text-violet-600 bg-violet-50" },
-    { label: "AI Video Modules", value: "15+", icon: Layers, color: "text-indigo-600 bg-indigo-50" },
-    { label: "Course Rating", value: "4.9/5", icon: Star, color: "text-amber-500 bg-amber-50" },
-    { label: "Practical Learning", value: "100%", icon: ShieldCheck, color: "text-emerald-600 bg-emerald-50" },
+    { label: "AI Video Modules", value: "Comprehensive", icon: Layers, color: "text-indigo-600 bg-indigo-50" },
+    { label: "Hands-on Practice", value: "Real Projects", icon: ShieldCheck, color: "text-emerald-600 bg-emerald-50" },
+    { label: "Learning Access", value: "Lifetime", icon: Users, color: "text-violet-600 bg-violet-50" },
+    { label: "Skill Mastery", value: "Step-by-Step", icon: Star, color: "text-amber-500 bg-amber-50" },
   ];
 
   const pillars = [
@@ -259,9 +259,9 @@ const AboutUs = () => {
         {/* ================= 4. WHY CHOOSE US ================= */}
         <div className="max-w-7xl mx-auto px-6 mb-20 md:mb-24">
           <div className="text-center mb-14 max-w-3xl mx-auto">
-            <span className="text-xs font-black uppercase tracking-wider text-violet-600">THE AIFLIX ADVANTAGE</span>
+            <span className="text-xs font-black uppercase tracking-wider text-violet-600">THE ACADEMY ADVANTAGE</span>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-950 mt-1">
-              Why 10,000+ Students Choose Us
+              Why Students Choose Us
             </h2>
           </div>
 

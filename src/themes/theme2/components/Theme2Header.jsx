@@ -125,10 +125,10 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
             
             <div className="flex flex-col">
               <span className="text-[16px] sm:text-[18px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                {!isMainSite && agency?.name ? agency.name : (agency?.name || "AI Nexus Academy")}
+                {!isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses")}
               </span>
               <span className="text-[10.5px] sm:text-[11.5px] font-medium text-purple-600 leading-tight">
-                {agency?.tagline || "Innovate. Elevate. Succeed."}
+                {agency?.tagline || ""}
               </span>
             </div>
           </NavLink>

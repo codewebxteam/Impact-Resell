@@ -152,7 +152,7 @@ const HeroSection = () => {
   const isDev = location.pathname.startsWith("/dev/");
   const themeName = isDev ? location.pathname.split("/")[2] : "";
   const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
-  const academyName = !isMainSite && agency?.name ? agency.name : "AIFlix Academy";
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
 
   return (
     <section className="relative w-full overflow-hidden flex items-center mt-16 sm:mt-20 bg-white">
@@ -239,27 +239,6 @@ const HeroSection = () => {
                 </div>
               ))}
             </div>
-
-            {/* Bottom 4-Counter Stats Row */}
-            <div className="hidden md:grid grid-cols-4 gap-6 mt-8 sm:mt-10 pt-6 border-t border-slate-200/60 w-full">
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-950">10K+</div>
-                <div className="text-xs font-bold text-slate-500">Happy Learners</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-950">15+</div>
-                <div className="text-xs font-bold text-slate-500">Specialized Courses</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-950">4.8/5</div>
-                <div className="text-xs font-bold text-slate-500">Average Rating</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-950">100%</div>
-                <div className="text-xs font-bold text-slate-500">Practical Learning</div>
-              </div>
-            </div>
-
           </motion.div>
         </div>
       </div>
@@ -836,7 +815,6 @@ const Home = () => {
       <HeroSection />
       <CoursesSection />
       <WhyChooseUsSection />
-      <TestimonialsSection />
       <CallToActionSection />
       <FAQSection />
     </main>

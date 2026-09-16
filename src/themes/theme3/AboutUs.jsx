@@ -45,13 +45,13 @@ const AboutUs = () => {
   const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
   const contactUrl = isDev ? `/dev/${themeName}/contact` : "/contact";
 
-  const academyName = !isMainSite && agency ? agency.name : "AI Video Academy";
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
 
   const stats = [
-    { label: "Active Creators", value: "10,000+", icon: Users },
-    { label: "AI Video Modules", value: "15+", icon: Layers },
-    { label: "Course Rating", value: "4.9/5", icon: Star },
-    { label: "Support Hours", value: "24/7", icon: ShieldCheck },
+    { label: "AI Video Modules", value: "Comprehensive", icon: Layers },
+    { label: "Hands-on Practice", value: "Real Projects", icon: ShieldCheck },
+    { label: "Learning Access", value: "Lifetime", icon: Users },
+    { label: "Skill Mastery", value: "Step-by-Step", icon: Star },
   ];
 
   const pillars = [

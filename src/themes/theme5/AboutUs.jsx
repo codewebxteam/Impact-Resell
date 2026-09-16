@@ -24,7 +24,7 @@ const AboutUs = () => {
   const currentTheme = isDev ? location.pathname.split("/")[2] : "theme5";
   const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
 
-  const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
+  const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
 
   return (
     <div className="min-h-screen bg-[#faf9fe] font-sans pb-24 pt-24 sm:pt-28 text-slate-800">

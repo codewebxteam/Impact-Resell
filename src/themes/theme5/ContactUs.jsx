@@ -27,7 +27,7 @@ const ContactUs = () => {
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
 
-  const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
+  const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
   const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
   const supportEmail = !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
   const supportAddress = !isMainSite && agency?.address ? agency.address : "Tech Creative District, Digital Hub";

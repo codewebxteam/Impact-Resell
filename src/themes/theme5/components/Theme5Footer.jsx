@@ -48,8 +48,7 @@ const Theme5Footer = ({ currentTheme = "theme5" }) => {
   const isDev = location.pathname.startsWith("/dev/");
   const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
 
-  // Dynamic Agency Data (Synced with Subdomain & Partner config)
-  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
   const supportEmail = !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
   const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 80840 37252";
   const contactAddress = isMainSite ? "Near Metro Station, Nirman Vihar, East Delhi 110092" : (agency?.address || "Digital Campus (Online)");

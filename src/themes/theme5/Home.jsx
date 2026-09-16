@@ -213,7 +213,7 @@ const Home = () => {
     return path;
   };
 
-  const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
+  const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
 
   // Fetch only authentic admin courses from Firestore, filtering out test documents
   useEffect(() => {
@@ -412,27 +412,6 @@ const Home = () => {
                   <span>Watch Demo</span>
                 </button>
               </div>
-
-              {/* 4-Counter Stats Row (Hidden on Phone View, Visible on Desktop) */}
-              <div className="hidden md:grid grid-cols-4 gap-6 mt-8 sm:mt-10 pt-6 border-t border-slate-200/80 w-full">
-                <div>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-950">10K+</div>
-                  <div className="text-xs font-bold text-slate-500">Happy Learners</div>
-                </div>
-                <div>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-950">15+</div>
-                  <div className="text-xs font-bold text-slate-500">Specialized Courses</div>
-                </div>
-                <div>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-950">4.8/5</div>
-                  <div className="text-xs font-bold text-slate-500">Student Rating</div>
-                </div>
-                <div>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-950">100%</div>
-                  <div className="text-xs font-bold text-slate-500">Practical Learning</div>
-                </div>
-              </div>
-
             </motion.div>
           </div>
         </div>
@@ -634,7 +613,7 @@ const Home = () => {
       </section>
 
       {/* ========================================================= */}
-      {/* SECTION 5: WHY CHOOSE AIFLIX?                             */}
+      {/* SECTION 5: WHY CHOOSE US?                                 */}
       {/* ========================================================= */}
       <section className="py-12 sm:py-16 px-4 sm:px-8 lg:px-12 max-w-[1440px] mx-auto text-center">
         <div className="max-w-2xl mx-auto mb-12">

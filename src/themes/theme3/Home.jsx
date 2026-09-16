@@ -69,7 +69,7 @@ const HeroSection = () => {
   const isDev = location.pathname.startsWith("/dev/");
   const themeName = isDev ? location.pathname.split("/")[2] : "";
   const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
-  const academyName = !isMainSite && agency?.name ? agency.name : "AI Video & Avatar Academy";
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
 
   const handleExploreCourses = () => navigate(coursesUrl);
 
@@ -101,85 +101,44 @@ const HeroSection = () => {
             className="flex flex-col items-start"
           >
             {/* Small badge */}
-            <div className={`mb-4 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] uppercase tracking-[0.18em] ${THEME.badgeBg}`}>
-              <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-amber-400 shadow-[0_0_0_4px_rgba(254,220,92,0.3)] animate-pulse" />
+            <div className={`mb-4 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.18em] shadow-sm backdrop-blur-md ${THEME.badgeBg}`}>
+              <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-amber-400 shadow-[0_0_0_4px_rgba(251,191,36,0.15)] animate-pulse" />
               {academyName}
-              <Sparkles size={13} className="text-amber-500 fill-amber-400" />
+              <Sparkles size={13} className="text-[#fedc5c]" />
             </div>
 
             {/* Heading */}
-            <h1 className="text-[32px] sm:text-[56px] md:text-[64px] lg:text-[76px] font-black leading-[1.04] tracking-[-0.04em] text-slate-950">
-              Create Viral AI
+            <h1 className="text-[32px] sm:text-[56px] md:text-[64px] lg:text-[76px] font-black leading-[1.04] tracking-[-0.04em] text-slate-900">
+              Transform Ideas Into
               <br />
-              <span className="bg-gradient-to-r from-slate-950 via-amber-600 to-amber-500 bg-clip-text text-transparent">
-                Videos & Avatars.
+              <span className={THEME.gradientText}>
+                Stunning AI Videos.
               </span>
             </h1>
 
             {/* Description */}
-            <p className={`mt-2.5 sm:mt-6 max-w-[560px] text-[13.5px] sm:text-[17px] font-bold leading-relaxed sm:leading-8 ${THEME.textMuted}`}>
+            <p className={`mt-2.5 sm:mt-6 max-w-[560px] text-[13.5px] sm:text-[17px] font-medium leading-relaxed sm:leading-8 ${THEME.textMuted}`}>
               Master AI avatar vlogging, 2D & 3D animation, AI influencer ads, historical documentaries, and viral video creation with hands-on projects.
             </p>
 
             {/* Action Buttons */}
-            <div className="mt-4.5 sm:mt-8 flex flex-wrap items-center gap-3 sm:gap-6">
+            <div className="mt-4.5 sm:mt-8 flex flex-wrap items-center gap-2.5 sm:gap-4">
               <button 
                 onClick={handleExploreCourses} 
-                className={`group flex items-center gap-2.5 sm:gap-3 rounded-2xl px-5 sm:px-7 py-2.5 sm:py-4 text-[13px] sm:text-[15px] ${THEME.buttonPrimary}`}
+                className={`group flex items-center gap-2.5 sm:gap-3 rounded-2xl px-5 sm:px-7 py-2.5 sm:py-4 text-[13px] sm:text-[15px] font-bold ${THEME.buttonPrimary}`}
               >
                 Explore Courses
-                <span className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-slate-950 text-[#fedc5c] transition-transform duration-300 group-hover:rotate-45">
-                  <ArrowRight size={15} />
+                <span className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-amber-400 text-slate-950 transition-transform duration-300 group-hover:rotate-45">
+                  <ArrowUpRight size={15} />
                 </span>
               </button>
 
-              {/* Hand-drawn Curvy Arrow + Start your journey today */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <svg
-                  width="65"
-                  height="40"
-                  viewBox="0 0 100 50"
-                  fill="none"
-                  className="text-amber-500 stroke-current -rotate-6"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M 10 40 Q 45 5 85 25" />
-                  <path d="M 70 18 L 85 25 L 75 35" />
-                </svg>
-                <span className="text-slate-950 font-black text-xs sm:text-sm -rotate-6 leading-tight select-none">
-                  Start your<br />journey today!
+              <button className={`group flex items-center gap-2 sm:gap-3 rounded-2xl px-4.5 sm:px-6 py-2.5 sm:py-4 text-[13px] sm:text-[15px] font-bold ${THEME.buttonSecondary}`}>
+                <span className={`flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-full ${THEME.iconBg}`}>
+                  <Play size={13} fill="currentColor" />
                 </span>
-              </div>
-            </div>
-
-            {/* Social Trust Metrics - Hidden on phone view */}
-            <div className="hidden sm:flex mt-5 sm:mt-10 flex-wrap items-center gap-3 sm:gap-7">
-              <div className="flex items-center">
-                {[12, 32, 47, 68].map((img, index) => (
-                  <img
-                    key={index}
-                    src={`https://i.pravatar.cc/80?img=${img}`}
-                    alt="Student"
-                    className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full border-[2.5px] sm:border-[3px] border-white object-cover shadow-xs ${
-                      index !== 0 ? "-ml-2.5 sm:-ml-3" : ""
-                    }`}
-                  />
-                ))}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 size={16} className="text-amber-500 fill-amber-400" />
-                  <span className={`text-xs sm:text-sm font-black ${THEME.textMain}`}>
-                    10,000+ AI Video Creators
-                  </span>
-                </div>
-                <p className="mt-0.5 text-[10px] sm:text-xs font-bold text-slate-500">
-                  Trusted by content creators worldwide
-                </p>
-              </div>
+                How it works
+              </button>
             </div>
 
           </motion.div>
@@ -748,7 +707,6 @@ const Home = () => {
       <FeaturesOverlapBar />
       <FeaturedCoursesSection />
       <HowItWorksSection />
-      <TestimonialsSection />
       <CallToActionSection />
       <FAQSection />
     </main>

@@ -82,7 +82,8 @@ const HeroSection = () => {
   const isDev = location.pathname.startsWith("/dev/");
   const themeName = isDev ? location.pathname.split("/")[2] : "";
   const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
-  const academyName = !isMainSite && agency?.name ? agency.name : "AI Video & Avatar Mastery";
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const handleExploreCourses = () => navigate(coursesUrl);
 
@@ -167,34 +168,6 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Social Trust Metrics */}
-            <div className="mt-5 sm:mt-10 flex flex-wrap items-center gap-3 sm:gap-7">
-              <div className="flex items-center">
-                {[12, 32, 47, 68].map((img, index) => (
-                  <img
-                    key={index}
-                    src={`https://i.pravatar.cc/80?img=${img}`}
-                    alt="Student"
-                    className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full border-[2.5px] sm:border-[3px] border-white object-cover shadow-xs ${
-                      index !== 0 ? "-ml-2.5 sm:-ml-3" : ""
-                    }`}
-                  />
-                ))}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 size={15} className="text-purple-500" />
-                  <span className={`text-xs sm:text-sm font-extrabold ${THEME.textMain}`}>
-                    10,000+ AI Video Creators
-                  </span>
-                </div>
-                <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500">
-                  Trusted by content creators worldwide
-                </p>
-              </div>
-            </div>
-
           </motion.div>
         </div>
 
@@ -208,12 +181,14 @@ const HeroSection = () => {
           {/* Feature Cards Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
             <FeatureCard icon={Users} iconColor="text-[var(--brand-color)]" iconBg="bg-[var(--brand-color)]/10" title="Expert Mentors" desc="Learn from industry professionals" />
-            <FeatureCard icon={Code} iconColor="text-blue-500" iconBg="bg-blue-50" title="Real Projects" desc="Build portfolio with real-world experience" />
-            <FeatureCard icon={Users} iconColor="text-emerald-500" iconBg="bg-emerald-50" title="Active Community" desc="Collaborate, learn and grow together" />
-            <FeatureCard icon={TrendingUp} iconColor="text-orange-500" iconBg="bg-orange-50" title="Career Focused" desc="Get job-ready skills that matter" />
+            <FeatureCard icon={Sparkles} iconColor="text-[var(--brand-color)]" iconBg="bg-[var(--brand-color)]/10" title="Hands-on Practice" desc="Real projects & workflows" />
+            <FeatureCard icon={Clock} iconColor="text-[var(--brand-color)]" iconBg="bg-[var(--brand-color)]/10" title="Flexible Learning" desc="Learn at your own pace" />
+            <FeatureCard icon={BookOpen} iconColor="text-[var(--brand-color)]" iconBg="bg-[var(--brand-color)]/10" title="Curated Resources" desc="Download assets & guides" />
           </div>
         </motion.div>
       </div>
+
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} defaultMode="signup" />
     </section>
   );
 };

@@ -223,6 +223,7 @@ const Courses = () => {
 
   const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
   const whatsappLink = `https://wa.me/${supportPhone.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I want to inquire about the AI Video Creation courses.")}`;
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -480,7 +481,7 @@ const Courses = () => {
                         <span className="text-xs font-black text-violet-400 uppercase tracking-wider">VIP BUNDLE PASS</span>
                         <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-black">SAVE 85%</span>
                       </div>
-                      <h4 className="text-xl font-black mb-1">AIFlix All Masterclasses</h4>
+                      <h4 className="text-xl font-black mb-1">{academyName} All Masterclasses</h4>
                       <p className="text-xs font-bold text-slate-400 mb-4">Instant Access to all 15+ specialized video creation modules</p>
                       
                       <div className="pt-3 border-t border-slate-800 flex items-center justify-between">

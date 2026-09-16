@@ -42,7 +42,7 @@ const fallbackCourse = {
   originalPrice: "2499",
   rating: 4.9,
   students: "1,420+",
-  instructor: "AIFlix Expert Team",
+  instructor: "AI Expert Team",
   lastUpdated: "September 2024",
   image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&q=80",
   description: "Learn how to research captivating historical stories, generate photorealistic ancient assets, create cinematic camera movements, and produce viral documentary reels with AI.",
@@ -334,7 +334,7 @@ const Theme4CourseDetails = () => {
               <div>
                 <p className="text-xs font-bold text-slate-400">Created by</p>
                 <p className="font-black text-sm text-white">
-                  {course.instructor || "AIFlix Academy Master Creators"}
+                  {course.instructor || `${!isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses")} Master Creators`}
                 </p>
               </div>
             </div>

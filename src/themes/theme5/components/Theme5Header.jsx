@@ -91,8 +91,8 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
     { name: "Contact", path: getRoute("/contact") },
   ];
 
-  const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix");
-  const tagline = !isMainSite && agency?.tagline ? agency.tagline : "Learn Today, Create Tomorrow";
+  const brandName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
+  const tagline = !isMainSite && agency?.tagline ? agency.tagline : (agency?.tagline || "");
 
   return (
     <>

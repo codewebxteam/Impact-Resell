@@ -92,7 +92,7 @@ const HeroSection = () => {
   const themeName = isDev ? location.pathname.split("/")[2] : "";
   const coursesUrl = isDev ? `/dev/${themeName}/courses` : "/courses";
 
-  const academyName = !isMainSite && agency?.name ? agency.name : "AI Video & Animation Academy";
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
 
   const handleExploreCourses = () => {
     navigate(coursesUrl);
@@ -165,34 +165,6 @@ const HeroSection = () => {
                 How it works
               </button>
             </div>
-
-            {/* Social Trust Metrics */}
-            <div className="mt-5 sm:mt-10 flex flex-wrap items-center gap-3 sm:gap-7">
-              <div className="flex items-center">
-                {[12, 32, 47, 68].map((img, index) => (
-                  <img
-                    key={index}
-                    src={`https://i.pravatar.cc/80?img=${img}`}
-                    alt="Student"
-                    className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full border-[2.5px] sm:border-[3px] border-white object-cover shadow-xs ${
-                      index !== 0 ? "-ml-2.5 sm:-ml-3" : ""
-                    }`}
-                  />
-                ))}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 size={15} className="text-cyan-500" />
-                  <span className={`text-xs sm:text-sm font-extrabold ${THEME.textMain}`}>
-                    10,000+ AI Video Creators
-                  </span>
-                </div>
-                <p className="mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500">
-                  Trusted by content creators worldwide
-                </p>
-              </div>
-            </div>
           </motion.div>
 
         </div>
@@ -208,7 +180,7 @@ const HeroSection = () => {
 // ==========================================
 const MarqueeSection = () => {
   const { agency, isMainSite } = useAgency();
-  const academyName = !isMainSite && agency ? agency.name.toUpperCase() : "AI VIDEO ACADEMY";
+  const academyName = !isMainSite && agency?.name ? agency.name.toUpperCase() : (agency?.name?.toUpperCase() || "AI COURSES");
   const items = ["AI AVATAR VLOGGING", "3D ANIMATION", "HISTORICAL AI DOCUMENTARY", "AI INFLUENCER ADS", "ANIME & STICKMAN", academyName];
 
   return (

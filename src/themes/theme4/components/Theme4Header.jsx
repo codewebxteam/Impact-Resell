@@ -50,8 +50,8 @@ const Theme4Header = ({ currentTheme = "theme4" }) => {
   const isDev = location.pathname.startsWith("/dev/");
   const getRoute = (path) => (isDev ? `/dev/${currentTheme}${path}` : (path === "/home" ? "/" : path));
 
-  const academyName = !isMainSite && agency?.name ? agency.name : "AIFlix Academy";
-  const tagline = !isMainSite && agency?.tagline ? agency.tagline : "Learn Today. Create Tomorrow.";
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
+  const tagline = !isMainSite && agency?.tagline ? agency.tagline : (agency?.tagline || "");
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);

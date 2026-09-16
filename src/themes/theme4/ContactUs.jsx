@@ -31,7 +31,7 @@ const ContactUs = () => {
   const [status, setStatus] = useState("idle");
   const [openFaq, setOpenFaq] = useState(null);
 
-  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AIFlix Academy");
+  const academyName = !isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses");
   const supportEmail = !isMainSite && agency?.email ? agency.email : "support@alifestable.com";
   const supportPhone = !isMainSite && agency?.whatsapp ? agency.whatsapp : "+91 74818 96182";
   const cleanPhone = supportPhone.replace(/\D/g, "");
