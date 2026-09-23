@@ -429,14 +429,16 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-5">
-          <div className="size-8 rounded-full bg-slate-100 overflow-hidden border border-white shadow-sm flex items-center justify-center font-bold text-xs text-slate-500">
-            {instructor[0]}
+        {instructor && instructor !== "Admin" && (
+          <div className="flex items-center gap-2 mb-5">
+            <div className="size-8 rounded-full bg-slate-100 overflow-hidden border border-white shadow-sm flex items-center justify-center font-bold text-xs text-slate-500">
+              {instructor[0]}
+            </div>
+            <span className="text-xs font-medium text-slate-600">
+              By {instructor}
+            </span>
           </div>
-          <span className="text-xs font-medium text-slate-600">
-            By {instructor}
-          </span>
-        </div>
+        )}
 
         <div className="mt-auto pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between mb-3 min-h-[28px]">

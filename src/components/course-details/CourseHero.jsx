@@ -42,23 +42,6 @@ const CourseHero = ({ course }) => {
               <span>Last updated {course.lastUpdated}</span>
             </div>
           </div>
-
-          {/* Creator Info */}
-          <div className="flex items-center gap-3 pt-4 border-t border-white/10 mt-6">
-            <div className="size-10 rounded-full bg-slate-800 overflow-hidden border border-slate-700">
-              <img
-                src={`https://ui-avatars.com/api/?name=${course.instructor}&background=random`}
-                alt=""
-                className="size-full object-cover"
-              />
-            </div>
-            <div>
-              <p className="text-sm text-slate-400">Created by</p>
-              <p className="font-bold text-[#5edff4] hover:underline cursor-pointer">
-                {course.instructor}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -278,16 +278,6 @@ const CourseDetails = () => {
                 <span>Last updated {course.lastUpdated || "Recently"}</span>
               </div>
             </div>
-
-            <div className="flex items-center gap-3 pt-3">
-              <div className="size-10 rounded-full bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center font-bold text-white text-sm">
-                {course.instructor ? course.instructor[0] : "M"}
-              </div>
-              <div>
-                <p className="text-[11px] text-slate-400 font-medium">Instructor</p>
-                <p className="text-sm font-bold text-white">{course.instructor || "Master Mentor"}</p>
-              </div>
-            </div>
           </div>
 
           <div className="lg:col-span-4 hidden lg:block">

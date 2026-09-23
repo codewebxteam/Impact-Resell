@@ -167,9 +167,11 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
           <h3 className="text-lg font-bold text-slate-900 leading-tight mt-1 line-clamp-2">
             {course.title}
           </h3>
-          <p className="text-xs text-slate-500 mt-2 line-clamp-2">
-            By {course.instructor || "Alife Academy"}
-          </p>
+          {course.instructor && course.instructor !== "Admin" && (
+            <p className="text-xs text-slate-500 mt-2 line-clamp-2">
+              By {course.instructor}
+            </p>
+          )}
         </div>
 
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-50">

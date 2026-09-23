@@ -413,14 +413,16 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
 
         <div className="mt-auto pt-5 border-t border-slate-100/80">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs ${THEME.iconBg}`}>
-                {instructor[0]}
+            {instructor && instructor !== "Admin" ? (
+              <div className="flex items-center gap-2">
+                <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs ${THEME.iconBg}`}>
+                  {instructor[0]}
+                </div>
+                <span className={`text-xs font-bold ${THEME.textMain}`}>
+                  {instructor}
+                </span>
               </div>
-              <span className={`text-xs font-bold ${THEME.textMain}`}>
-                {instructor}
-              </span>
-            </div>
+            ) : <div />}
             {!isMainSite && (
               <span className={`text-2xl font-black ${THEME.textMain}`}>
                 {!finalPrice || finalPrice == 0 || finalPrice === "Free" ? "₹499" : `${finalPrice}`.startsWith("₹") ? finalPrice : `₹${finalPrice}`}

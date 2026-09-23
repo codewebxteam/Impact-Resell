@@ -324,19 +324,6 @@ const Theme4CourseDetails = () => {
               </div>
             </div>
 
-            {/* Instructor */}
-            <div className="flex items-center gap-3 pt-2">
-              <div className="size-11 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center font-black text-base shadow-md">
-                AI
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400">Created by</p>
-                <p className="font-black text-sm text-white">
-                  {course.instructor || `${!isMainSite && agency?.name ? agency.name : (agency?.name || "AI Courses")} Master Creators`}
-                </p>
-              </div>
-            </div>
-
           </div>
 
         </div>
