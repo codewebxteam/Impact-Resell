@@ -296,7 +296,7 @@ const PartnerDashboard = () => {
           totalDuration: String(selectedProduct.duration || "Self Paced"),
           watchedDuration: 0,
           price: String(sellingPrice),
-          originalPrice: String(selectedProduct.price || "Free"),
+          originalPrice: String(selectedProduct.originalPrice || selectedProduct.price || "2499"),
           category: String(selectedProduct.category || "General"),
           lectures: safeLectures, // Array!
           rating: Number(selectedProduct.rating || 0),

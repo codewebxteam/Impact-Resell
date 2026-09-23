@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import AuthModal from "../../components/AuthModal";
 import CourseVideoPlayer from "../../components/CourseVideoPlayer";
+import Curriculum from "../../components/course-details/Curriculum";
 
 const fallbackCourse = {
   id: "ai-historical-documentary",
@@ -92,7 +93,6 @@ const CourseDetails = () => {
   const [course, setCourse] = useState(fallbackCourse);
   const [loading, setLoading] = useState(true);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [openModule, setOpenModule] = useState(0);
 
   const isDev = location.pathname.startsWith("/dev/");
   const currentTheme = isDev ? location.pathname.split("/")[2] : "theme5";
@@ -122,12 +122,18 @@ const CourseDetails = () => {
           setCourse({
             ...fallbackCourse,
             ...data,
+            id: docSnap.id,
+            courseId: docSnap.id,
             title: data.title || fallbackCourse.title,
             description: data.description || fallbackCourse.description,
             price: data.price || fallbackCourse.price,
             originalPrice: data.originalPrice || fallbackCourse.originalPrice,
             image: data.image || fallbackCourse.image,
-            syllabus: Array.isArray(data.syllabus) && data.syllabus.length > 0 ? data.syllabus : fallbackCourse.syllabus,
+            syllabusContent: data.syllabus || "No syllabus provided.",
+            syllabus: data.syllabus || "No syllabus provided.",
+            driveLink: data.driveLink || "",
+            paymentLink: data.paymentLink || "",
+            mainVideoId: data.mainVideoId || null,
           });
         } else {
           setCourse(fallbackCourse);
@@ -143,85 +149,28 @@ const CourseDetails = () => {
     fetchCourse();
   }, [id]);
 
-  const rawPrice = course && typeof getPrice === "function" ? getPrice(course.id, course.price || "499") : (course?.price || "499");
+  const rawPrice =
+    course && typeof getPrice === "function"
+      ? getPrice(course.id, course.price || "499")
+      : course?.price || "499";
   const displayPrice =
-    rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
-      ? "Free"
+    !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
+      ? "₹499"
+      : `${rawPrice}`.startsWith("₹")
+      ? rawPrice
       : `₹${rawPrice}`;
   const originalPrice = course?.originalPrice ? `₹${course.originalPrice}` : "₹2,499";
 
-  const normalizedSyllabus = useMemo(() => {
-    if (Array.isArray(course?.syllabus) && course.syllabus.length > 0) {
-      return course.syllabus.map((mod, idx) => ({
-        title: typeof mod === "object" ? (mod.title || `Module ${idx + 1}`) : String(mod),
-        lessons: Array.isArray(mod?.lessons)
-          ? mod.lessons.map((l, lIdx) =>
-              typeof l === "object" ? (l.title || l.name || `Lesson ${lIdx + 1}`) : String(l)
-            )
-          : [],
-      }));
-    }
-    if (Array.isArray(course?.lectures) && course.lectures.length > 0) {
-      return [
-        {
-          title: "Course Curriculum & Video Masterclasses",
-          lessons: course.lectures.map((l, lIdx) =>
-            typeof l === "object" ? (l.title || l.name || `Lesson ${lIdx + 1}`) : String(l)
-          ),
-        },
-      ];
-    }
-    return fallbackCourse.syllabus;
-  }, [course?.syllabus, course?.lectures]);
 
   const handleEnroll = async () => {
-    if (!isMainSite && displayPrice !== "Free") {
-      // 1. Direct payment link redirection if set by partner
-      const customPaymentLink = agency?.customPaymentLinks?.[course.id];
-      const partnerCoursePaymentLink =
-        course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
-      const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
+    // 1. Direct payment link redirection if set by partner
+    const customPaymentLink = agency?.customPaymentLinks?.[course.id];
+    const partnerCoursePaymentLink =
+      course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
+    const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
 
-      if (finalPaymentLink) {
-        window.open(finalPaymentLink, "_blank");
-        return;
-      }
-
-      if (!currentUser) {
-        localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice: displayPrice }));
-        setIsAuthOpen(true);
-        return;
-      }
-
-      // 2. WhatsApp fallback
-      if (!agency?.whatsapp) {
-        alert("Partner WhatsApp contact not configured.");
-        return;
-      }
-
-      const studentName = currentUser.displayName || "Student";
-      const studentEmail = currentUser.email || "No email";
-
-      let offerText = "";
-      if (agency?.promoType === "bogo") {
-        offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
-      } else if (agency?.courseDiscount && agency.courseDiscount > 0) {
-        offerText = `\n🎁 *Special Discount:* ${agency.courseDiscount}% applied!`;
-      }
-
-      const message =
-        `*New Course Enrollment Request* 🎓\n\n` +
-        `Hello, I want to enroll in this course. Here are my details:\n\n` +
-        `👤 *Student Name:* ${studentName}\n` +
-        `📧 *Email:* ${studentEmail}\n\n` +
-        `📚 *Course Name:* ${course.title}\n` +
-        `💰 *Price:* ${displayPrice}\n` +
-        `🆔 *Course ID:* ${course.id}\n` +
-        offerText +
-        `\n\nPlease guide me with the immediate payment and access process.`;
-
-      const whatsappUrl = `https://wa.me/${agency.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, "_blank");
+    if (finalPaymentLink) {
+      window.open(finalPaymentLink, "_blank");
       return;
     }
 
@@ -231,13 +180,36 @@ const CourseDetails = () => {
       return;
     }
 
-    try {
-      await enrollCourse(course);
-      navigate("/dashboard/my-courses");
-    } catch (error) {
-      console.error("Enrollment error:", error);
-      alert(error.message);
+    // 2. WhatsApp fallback
+    const targetWhatsapp = agency?.whatsapp || "919999999999";
+    if (!agency?.whatsapp && !isMainSite) {
+      alert("Partner WhatsApp contact not configured. Please contact support.");
+      return;
     }
+
+    const studentName = currentUser.displayName || "Student";
+    const studentEmail = currentUser.email || "No email";
+
+    let offerText = "";
+    if (agency?.promoType === "bogo") {
+      offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
+    } else if (agency?.courseDiscount && agency.courseDiscount > 0) {
+      offerText = `\n🎁 *Special Discount:* ${agency.courseDiscount}% applied!`;
+    }
+
+    const message =
+      `*New Course Enrollment Request* 🎓\n\n` +
+      `Hello, I want to enroll in this course. Here are my details:\n\n` +
+      `👤 *Student Name:* ${studentName}\n` +
+      `📧 *Email:* ${studentEmail}\n\n` +
+      `📚 *Course Name:* ${course.title}\n` +
+      `💰 *Price:* ${displayPrice}\n` +
+      `🆔 *Course ID:* ${course.id}\n` +
+      offerText +
+      `\n\nPlease share payment details so I can complete enrollment and get access.`;
+
+    const whatsappUrl = `https://wa.me/${targetWhatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   const handleAlreadyPaid = () => {
@@ -349,67 +321,8 @@ const CourseDetails = () => {
               </div>
             )}
 
-            {/* Curriculum Accordion */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-indigo-50/80 shadow-sm">
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                    Course Curriculum
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-                    Step-by-step video masterclasses, prompt blueprints & project assets
-                  </p>
-                </div>
-                <div className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1.5 rounded-full">
-                  12+ Lessons
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {normalizedSyllabus.map((mod, idx) => {
-                  const isOpen = openModule === idx;
-
-                  return (
-                    <div
-                      key={idx}
-                      className="border border-slate-200/80 rounded-2xl overflow-hidden transition-colors"
-                    >
-                      <button
-                        onClick={() => setOpenModule(isOpen ? null : idx)}
-                        className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-black text-slate-900 text-sm sm:text-base hover:text-purple-600 transition-colors cursor-pointer bg-[#faf9fe]"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="size-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-black shrink-0">
-                            {idx + 1}
-                          </div>
-                          <span>{mod.title}</span>
-                        </div>
-                        <ChevronDown className={`size-4.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-                      </button>
-
-                      <AnimatePresence>
-                        {isOpen && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="p-4 sm:p-5 bg-white border-t border-slate-100 space-y-2.5"
-                          >
-                            {mod.lessons.map((lesson, lIdx) => (
-                              <div key={lIdx} className="flex items-center gap-2.5 text-xs sm:text-sm text-slate-600 font-medium">
-                                <PlayCircle className="size-4 text-purple-500 shrink-0" />
-                                <span>{lesson}</span>
-                              </div>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Curriculum (Real Backend Syllabus) */}
+            <Curriculum course={course} syllabus={course.syllabusContent || course.syllabus} />
 
             {/* Verifiable Certificate Guarantee Box */}
             <div className="bg-gradient-to-br from-indigo-900 via-purple-950 to-slate-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">

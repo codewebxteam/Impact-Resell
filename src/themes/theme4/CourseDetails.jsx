@@ -32,6 +32,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import AuthModal from "../../components/AuthModal";
 import CourseVideoPlayer from "../../components/CourseVideoPlayer";
+import Curriculum from "../../components/course-details/Curriculum";
 
 const fallbackCourse = {
   id: "ai-historical-documentary",
@@ -106,7 +107,6 @@ const Theme4CourseDetails = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [openModule, setOpenModule] = useState(0);
 
   const [activeVideoPlaylist, setActiveVideoPlaylist] = useState(null);
   const [startIndex, setStartIndex] = useState(0);
@@ -147,7 +147,22 @@ const Theme4CourseDetails = () => {
             return;
           }
 
-          setCourse(data);
+          setCourse({
+            id: docSnap.id,
+            courseId: docSnap.id,
+            ...data,
+            instructor: data.instructor || "Mentor",
+            category: data.category || "General",
+            image:
+              data.image ||
+              (data.videoId
+                ? `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`
+                : "https://placehold.co/800x400"),
+            syllabusContent: data.syllabus || "No syllabus provided.",
+            driveLink: data.driveLink || "",
+            paymentLink: data.paymentLink || "",
+            mainVideoId: data.mainVideoId || null,
+          });
         } else {
           // Check if fallback course matches id
           setCourse(fallbackCourse);
@@ -165,8 +180,8 @@ const Theme4CourseDetails = () => {
 
   const rawPrice = course ? getPrice(course.id, course.price || "499") : "499";
   const displayPrice =
-    rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
-      ? "Free"
+    !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
+      ? "₹499"
       : typeof rawPrice === "string" && rawPrice.startsWith("₹")
       ? rawPrice
       : `₹${rawPrice}`;
@@ -174,53 +189,14 @@ const Theme4CourseDetails = () => {
   const originalPrice = course?.originalPrice ? `₹${course.originalPrice}` : "₹2,499";
 
   const handleEnroll = async () => {
-    if (!isMainSite && displayPrice !== "Free") {
-      // 1. If partner set a custom payment link, open it directly
-      const customPaymentLink = agency?.customPaymentLinks?.[course.id];
-      const partnerCoursePaymentLink =
-        course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
-      const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
+    // 1. If partner set a custom payment link, open it directly
+    const customPaymentLink = agency?.customPaymentLinks?.[course.id];
+    const partnerCoursePaymentLink =
+      course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
+    const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
 
-      if (finalPaymentLink) {
-        window.open(finalPaymentLink, "_blank");
-        return;
-      }
-
-      if (!currentUser) {
-        localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice: displayPrice }));
-        setIsAuthOpen(true);
-        return;
-      }
-
-      // 2. Fallback to WhatsApp if no payment link configured
-      if (!agency?.whatsapp) {
-        alert("Partner WhatsApp number not configured.");
-        return;
-      }
-
-      const studentName = currentUser.displayName || "Student";
-      const studentEmail = currentUser.email || "No email";
-
-      let offerText = "";
-      if (agency?.promoType === "bogo") {
-        offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
-      } else if (agency?.courseDiscount && agency.courseDiscount > 0) {
-        offerText = `\n🎁 *Special Discount:* ${agency.courseDiscount}% applied!`;
-      }
-
-      const message =
-        `*New Course Enrollment Request* 🎓\n\n` +
-        `Hello, I want to enroll in this course. Here are my details:\n\n` +
-        `👤 *Student Name:* ${studentName}\n` +
-        `📧 *Email:* ${studentEmail}\n\n` +
-        `📚 *Course Name:* ${course.title}\n` +
-        `💰 *Price:* ${displayPrice}\n` +
-        `🆔 *Course ID:* ${course.id}\n` +
-        offerText +
-        `\n\nPlease guide me with the immediate payment and access process.`;
-
-      const whatsappUrl = `https://wa.me/${agency.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, "_blank");
+    if (finalPaymentLink) {
+      window.open(finalPaymentLink, "_blank");
       return;
     }
 
@@ -230,13 +206,36 @@ const Theme4CourseDetails = () => {
       return;
     }
 
-    try {
-      await enrollCourse(course);
-      navigate("/dashboard/my-courses");
-    } catch (error) {
-      console.error("Enrollment error:", error);
-      alert(error.message);
+    // 2. Fallback to WhatsApp if no payment link configured
+    const targetWhatsapp = agency?.whatsapp || "919999999999";
+    if (!agency?.whatsapp && !isMainSite) {
+      alert("Partner WhatsApp number not configured. Please contact support.");
+      return;
     }
+
+    const studentName = currentUser.displayName || "Student";
+    const studentEmail = currentUser.email || "No email";
+
+    let offerText = "";
+    if (agency?.promoType === "bogo") {
+      offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
+    } else if (agency?.courseDiscount && agency.courseDiscount > 0) {
+      offerText = `\n🎁 *Special Discount:* ${agency.courseDiscount}% applied!`;
+    }
+
+    const message =
+      `*New Course Enrollment Request* 🎓\n\n` +
+      `Hello, I want to enroll in this course. Here are my details:\n\n` +
+      `👤 *Student Name:* ${studentName}\n` +
+      `📧 *Email:* ${studentEmail}\n\n` +
+      `📚 *Course Name:* ${course.title}\n` +
+      `💰 *Price:* ${displayPrice}\n` +
+      `🆔 *Course ID:* ${course.id}\n` +
+      offerText +
+      `\n\nPlease share payment details so I can complete enrollment and get access.`;
+
+    const whatsappUrl = `https://wa.me/${targetWhatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   const openPlayer = (playlist, index = 0) => {
@@ -270,8 +269,7 @@ const Theme4CourseDetails = () => {
     );
   }
 
-  const learningList = course.learningOutcomes || fallbackCourse.learningOutcomes;
-  const curriculumModules = course.modules || fallbackCourse.modules;
+  const learningList = course.learningOutcomes || null;
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden font-sans bg-slate-50">
@@ -351,95 +349,31 @@ const Theme4CourseDetails = () => {
           {/* LEFT CONTENT (8 cols) */}
           <div className="lg:col-span-8 space-y-12">
             
-            {/* 1. What You Will Learn Card */}
-            <div className="bg-white rounded-3xl p-7 sm:p-10 border border-slate-200/90 shadow-sm">
-              <div className="flex items-center gap-2.5 mb-6">
-                <div className="size-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
-                  <Zap className="size-5 stroke-[2.5]" />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-950">
-                  What You'll Master in This Course
-                </h2>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                {learningList.map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                    <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
-                    <span className="text-xs sm:text-sm font-bold text-slate-700 leading-snug">{item}</span>
+            {/* 1. What You Will Learn Card (only if explicit outcomes exist) */}
+            {learningList && learningList.length > 0 && (
+              <div className="bg-white rounded-3xl p-7 sm:p-10 border border-slate-200/90 shadow-sm">
+                <div className="flex items-center gap-2.5 mb-6">
+                  <div className="size-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+                    <Zap className="size-5 stroke-[2.5]" />
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 2. Course Curriculum Accordion */}
-            <div className="bg-white rounded-3xl p-7 sm:p-10 border border-slate-200/90 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-950">
-                    Course Curriculum
+                    What You'll Master in This Course
                   </h2>
-                  <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1">
-                    {curriculumModules.length} Modules • Complete Step-by-Step Training
-                  </p>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {learningList.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                      <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm font-bold text-slate-700 leading-snug">{item}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
 
-              <div className="space-y-3.5">
-                {curriculumModules.map((module, idx) => (
-                  <div
-                    key={idx}
-                    className="border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-50/50"
-                  >
-                    <button
-                      onClick={() => setOpenModule(openModule === idx ? null : idx)}
-                      className="w-full flex items-center justify-between p-4 sm:p-5 text-left font-black text-sm sm:text-base text-slate-900 hover:text-violet-600 transition-colors cursor-pointer bg-white"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="size-7 rounded-lg bg-violet-100 text-violet-700 font-black text-xs flex items-center justify-center">
-                          0{idx + 1}
-                        </span>
-                        <span>{module.title}</span>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs font-bold text-slate-400 hidden sm:inline">{module.duration}</span>
-                        <ChevronDown
-                          className={`size-4 text-slate-400 transition-transform ${
-                            openModule === idx ? "rotate-180 text-violet-600" : ""
-                          }`}
-                        />
-                      </div>
-                    </button>
-
-                    {openModule === idx && (
-                      <div className="p-4 sm:p-5 space-y-2.5 border-t border-slate-100 bg-slate-50">
-                        {module.lessons.map((lesson, lIdx) => (
-                          <div
-                            key={lIdx}
-                            className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100 text-xs sm:text-sm font-bold text-slate-700"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              {lesson.isPreview ? (
-                                <Play className="size-3.5 text-violet-600 fill-violet-600" />
-                              ) : (
-                                <Lock className="size-3.5 text-slate-400" />
-                              )}
-                              <span>{lesson.title}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs font-black">
-                              {lesson.isPreview && (
-                                <span className="text-[10px] bg-violet-50 text-violet-600 px-2 py-0.5 rounded">Preview</span>
-                              )}
-                              <span className="text-slate-400">{lesson.duration}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* 2. Course Curriculum (Real Backend Syllabus) */}
+            <Curriculum course={course} syllabus={course.syllabusContent || course.syllabus} />
 
             {/* 3. Certificate of Completion */}
             <div className="bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-3xl p-8 sm:p-10 shadow-xl relative overflow-hidden">

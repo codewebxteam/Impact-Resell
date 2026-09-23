@@ -1,28 +1,55 @@
 import React, { useState } from "react";
 import { ChevronDown, PlayCircle, Lock, BookOpen } from "lucide-react";
 
-const Curriculum = ({ syllabus }) => {
-  // 1. Handle String Syllabus (From Admin Panel)
-  if (typeof syllabus === "string") {
-    const lines = syllabus.split("\n").filter((line) => line.trim() !== "");
+const Curriculum = ({ syllabus, course }) => {
+  // Determine raw syllabus or fallback from course
+  let content = syllabus;
+  if (!content || content === "No syllabus provided.") {
+    if (course?.syllabus && course.syllabus !== "No syllabus provided.") {
+      content = course.syllabus;
+    } else if (course?.syllabusContent && course.syllabusContent !== "No syllabus provided.") {
+      content = course.syllabusContent;
+    }
+  }
+
+  // Fallback to course.lectures if syllabus is missing
+  if ((!content || content === "No syllabus provided.") && Array.isArray(course?.lectures) && course.lectures.length > 0) {
+    content = course.lectures.map((l, i) =>
+      typeof l === "string" ? l : (l.title || `Lesson ${i + 1}`)
+    );
+  }
+
+  // 1. Handle String Syllabus (From Admin Panel / Firestore)
+  if (typeof content === "string") {
+    const lines = content.split("\n").filter((line) => line.trim() !== "");
 
     return (
       <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-xl font-bold text-slate-900">Course Syllabus</h3>
-          <p className="text-sm text-slate-500 mt-1">Overview & Key Topics</p>
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">Course Syllabus</h3>
+            <p className="text-sm text-slate-500 mt-1">
+              {lines.length > 0 ? `${lines.length} Topics / Lessons • Overview & Key Topics` : "Overview & Key Topics"}
+            </p>
+          </div>
+          {lines.length > 0 && (
+            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">
+              {lines.length} Lessons
+            </span>
+          )}
         </div>
-        <div className="p-6">
+        <div className="p-6 max-h-[600px] overflow-y-auto">
           {lines.length > 0 ? (
-            <ul className="space-y-3">
+            <ul className="space-y-2.5">
               {lines.map((line, idx) => (
                 <li
                   key={idx}
-                  className="flex items-start gap-3 text-slate-600 text-sm leading-relaxed"
+                  className="flex items-start gap-3.5 text-slate-700 text-sm leading-relaxed p-2.5 rounded-xl hover:bg-slate-50 transition-colors"
                 >
-                  <div className="mt-1.5 size-1.5 rounded-full bg-[#0891b2] shrink-0" />
-                  <span>{line.replace(/^[•-]\s*/, "")}</span>{" "}
-                  {/* Remove existing bullets if any */}
+                  <span className="mt-0.5 size-6 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
+                  <span className="pt-0.5 font-medium text-slate-800">{line.replace(/^[•-]\s*/, "")}</span>
                 </li>
               ))}
             </ul>
@@ -36,8 +63,41 @@ const Curriculum = ({ syllabus }) => {
     );
   }
 
-  // 2. Handle Array Syllabus (Old Static Data / Structured Data)
-  if (Array.isArray(syllabus)) {
+  // 2. Handle Array Syllabus (Strings or Structured Sections)
+  if (Array.isArray(content)) {
+    // If it is an array of plain strings (e.g. from lectures or plain list)
+    if (content.length > 0 && typeof content[0] === "string") {
+      return (
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Course Syllabus</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                {content.length} Lessons • Overview & Key Topics
+              </p>
+            </div>
+            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">
+              {content.length} Lessons
+            </span>
+          </div>
+          <div className="p-6 max-h-[600px] overflow-y-auto">
+            <ul className="space-y-2.5">
+              {content.map((item, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-start gap-3.5 text-slate-700 text-sm leading-relaxed p-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                >
+                  <span className="mt-0.5 size-6 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
+                  <span className="pt-0.5 font-medium text-slate-800">{item.replace(/^[•-]\s*/, "")}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50">

@@ -26,16 +26,16 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
     : course.price;
 
   const formatCurrency = (amount) => {
-    if (!amount) return "Free";
+    if (!amount) return "₹499";
     const strAmount = String(amount).toLowerCase();
-    if (strAmount === "free" || strAmount === "0") return "Free";
+    if (strAmount === "free" || strAmount === "0") return "₹499";
     const numericValue = parseInt(String(amount).replace(/[^0-9]/g, ""));
-    if (isNaN(numericValue) || numericValue === 0) return "Free";
+    if (isNaN(numericValue) || numericValue === 0) return "₹499";
     return `₹${numericValue.toLocaleString("en-IN")}`;
   };
 
   const displayPrice = formatCurrency(dynamicPrice);
-  const displayOriginalPrice = formatCurrency(course.originalPrice);
+  const displayOriginalPrice = formatCurrency(course.originalPrice || "2499");
 
   // --- WhatsApp Redirect Logic ---
   const handlePartnerBuy = () => {
@@ -77,7 +77,7 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
   };
 
   const calculateDiscount = () => {
-    if (displayPrice === "Free" || !course.originalPrice) return "100% off";
+    if (!course.originalPrice) return "Special Offer";
     const offerPrice = parseInt(String(dynamicPrice).replace(/[^0-9]/g, ""));
     const listingPrice = parseInt(
       String(course.originalPrice).replace(/[^0-9]/g, "")
@@ -182,25 +182,18 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
                     setIsAuthOpen(true);
                     return;
                   }
-                  // 2. Then Check Partner/Main Logic
-                  if (!isMainSite && displayPrice !== "Free") {
-                    handlePartnerBuy();
-                  } else {
-                    onEnroll({
-                      ...course,
-                      finalPrice: dynamicPrice,
-                      commission: !isMainSite ? "Calculated at Checkout" : 0,
-                    });
-                  }
+                  // 2. Route to payment link or WhatsApp
+                  handlePartnerBuy();
                 }}
                 className="w-full py-4 text-slate-900 font-bold text-lg rounded-xl transition-all shadow-lg active:scale-95 mb-4 cursor-pointer"
                 style={{
                   backgroundColor: agency?.accentColor || "#5edff4",
-                  boxShadow: `0 10px 15px -3px ${agency?.accentColor || "#5edff4"
-                    }33`,
+                  boxShadow: `0 10px 15px -3px ${
+                    agency?.accentColor || "#5edff4"
+                  }33`,
                 }}
               >
-                {displayPrice === "Free" ? "Enroll for Free" : "Buy Now"}
+                Buy Now
               </button>
             )
           )}

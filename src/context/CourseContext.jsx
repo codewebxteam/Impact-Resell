@@ -72,7 +72,7 @@ export const CourseProvider = ({ children }) => {
           videoProgress: 0,
           totalDuration: String(c.duration || "Self Paced"),
           watchedDuration: 0,
-          price: String(c.price || "Free"),
+          price: String(c.price || "499"),
           category: String(c.category || "General"),
           lectures: safeLectures,
           rating: Number(c.rating || 0),
@@ -137,13 +137,15 @@ export const CourseProvider = ({ children }) => {
     }
 
     // Calculate actual price - ALWAYS use offer price (course.price)
-    const offerPriceStr = String(course.price || "Free");
-    let actualPrice = 0;
-    if (offerPriceStr !== "Free") {
+    const offerPriceStr = String(course.price || "499");
+    let actualPrice = 499;
+    if (offerPriceStr && offerPriceStr !== "Free") {
       const numericPrice = parseInt(offerPriceStr.replace(/[^0-9]/g, ""));
-      actualPrice = isPartner
-        ? Math.round(numericPrice * (agency.pricingMultiplier || 1))
-        : numericPrice;
+      if (!isNaN(numericPrice) && numericPrice > 0) {
+        actualPrice = isPartner
+          ? Math.round(numericPrice * (agency.pricingMultiplier || 1))
+          : numericPrice;
+      }
     }
 
     // --- [CRITICAL FIX] Ensure lectures is ALWAYS an Array ---
@@ -174,8 +176,8 @@ export const CourseProvider = ({ children }) => {
       videoProgress: 0,
       totalDuration: String(course.duration || "Self Paced"), // Updated default
       watchedDuration: 0,
-      price: String(course.price || "Free"),
-      originalPrice: String(course.originalPrice || course.price || "Free"),
+      price: String(course.price || "499"),
+      originalPrice: String(course.originalPrice || course.price || "2499"),
       category: String(course.category || "General"),
 
       // [FIXED] Saving lectures as Array, NOT String

@@ -313,7 +313,7 @@ const GlassCourseCard = ({ data }) => {
           {!isMainSite && (
             <div className="flex items-end gap-2 mb-6">
               <span className={`text-3xl font-black ${THEME.accentText}`}>
-                {price == 0 || price === "Free" ? "Free" : `₹${price}`}
+                {!price || price == 0 || price === "Free" ? "₹499" : `${price}`.startsWith("₹") ? price : `₹${price}`}
               </span>
             </div>
           )}
@@ -437,7 +437,7 @@ const Theme1CourseCard = ({ course }) => {
   const lessons = course.lectures?.length ? `${course.lectures.length}+ Lessons` : (course.lessons || "12+ Lessons");
   const level = course.level || "Beginner Friendly";
   const rawPrice = getPrice ? getPrice(course.id, course.price || "499") : (course.price || "499");
-  const displayPrice = rawPrice === "Free" || rawPrice === 0 || rawPrice === "0" ? "Free" : `₹${rawPrice}`;
+  const displayPrice = !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0" ? "₹499" : `${rawPrice}`.startsWith("₹") ? rawPrice : `₹${rawPrice}`;
 
   return (
     <motion.div

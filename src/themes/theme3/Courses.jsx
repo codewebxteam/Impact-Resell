@@ -86,71 +86,69 @@ const Courses = () => {
 
   const handleBuyClick = async (course, rawPrice) => {
     const priceDisplay =
-      rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
-        ? "Free"
+      !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
+        ? "₹499"
+        : `${rawPrice}`.startsWith("₹")
+        ? rawPrice
         : `₹${rawPrice}`;
 
-    if (!isMainSite && priceDisplay !== "Free") {
-      // 1. If partner set a custom payment link, open it directly
-      const customPaymentLink =
-        agency?.customPaymentLinks?.[course.id] ||
-        (course.id === "bundle" ? (agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink) : null);
-      const partnerCoursePaymentLink =
-        course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
-      const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
+    // 1. If partner set a custom payment link, open it directly
+    const customPaymentLink =
+      agency?.customPaymentLinks?.[course.id] ||
+      (course.id === "bundle"
+        ? agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink
+        : null);
+    const partnerCoursePaymentLink =
+      course.partnerId && course.partnerId !== "admin"
+        ? course.paymentLink
+        : null;
+    const finalPaymentLink =
+      customPaymentLink ||
+      partnerCoursePaymentLink ||
+      (course.paymentLink || null);
 
-      if (finalPaymentLink) {
-        window.open(finalPaymentLink, "_blank");
-        return;
-      }
-
-      if (!currentUser) {
-        setIsAuthOpen(true);
-        return; 
-      }
-
-      if (!agency?.whatsapp) {
-        return alert("Partner contact number not found. Please contact support.");
-      }
-
-      const studentName = currentUser?.displayName || "Student";
-      const studentEmail = currentUser?.email || "Email Not Provided";
-
-      let offerText = "";
-      if (agency?.promoType === "bogo" && course.id !== "bundle") {
-        offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
-      } else if (course.id === "bundle") {
-        offerText = `\n🎁 *Promo Applied:* All Courses Bundle`;
-      }
-
-      const message =
-        `*New Course Enrollment Request* 🎓\n\n` +
-        `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
-        `👤 *Student Name:* ${studentName}\n` +
-        `📧 *Mail:* ${studentEmail}\n\n` +
-        `📚 *Course Name:* ${course.title}\n` +
-        `💰 *Price:* ${priceDisplay}\n` +
-        `🆔 *Course ID:* ${course.id}\n` +
-        offerText + `\n\n` +
-        `Please guide me with the payment process.`;
-
-      const whatsappUrl = `https://wa.me/${agency.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, "_blank");
+    if (finalPaymentLink) {
+      window.open(finalPaymentLink, "_blank");
       return;
     }
 
     if (!currentUser) {
       setIsAuthOpen(true);
-      return; 
+      return;
     }
 
-    try {
-      await enrollCourse(course);
-      navigate("/dashboard/my-courses");
-    } catch (error) {
-      console.error("Enrollment error:", error);
-      alert(error.message);
+    const targetWhatsapp = agency?.whatsapp || "919999999999";
+    if (!agency?.whatsapp && !isMainSite) {
+      return alert("Partner contact number not configured. Please contact support.");
     }
+
+    const studentName = currentUser?.displayName || "Student";
+    const studentEmail = currentUser?.email || "Email Not Provided";
+
+    let offerText = "";
+    if (agency?.promoType === "bogo" && course.id !== "bundle") {
+      offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
+    } else if (course.id === "bundle") {
+      offerText = `\n🎁 *Promo Applied:* All Courses Bundle`;
+    }
+
+    const message =
+      `*New Course Enrollment Request* 🎓\n\n` +
+      `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
+      `👤 *Student Name:* ${studentName}\n` +
+      `📧 *Mail:* ${studentEmail}\n\n` +
+      `📚 *Course Name:* ${course.title}\n` +
+      `💰 *Price:* ${priceDisplay}\n` +
+      `🆔 *Course ID:* ${course.id}\n` +
+      offerText +
+      `\n\n` +
+      `Please share payment details so I can complete enrollment and get access.`;
+
+    const whatsappUrl = `https://wa.me/${targetWhatsapp.replace(
+      /\D/g,
+      ""
+    )}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   const filteredCourses = courses.filter((course) => {
@@ -443,8 +441,8 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
   }
 
   const priceDisplay =
-    displayPrice === "Free" || displayPrice === 0 || displayPrice === "0"
-      ? "Free"
+    !displayPrice || displayPrice === "Free" || displayPrice === 0 || displayPrice === "0"
+      ? "₹499"
       : typeof displayPrice === "string" && displayPrice.startsWith("₹")
       ? displayPrice
       : `₹${displayPrice}`;
@@ -496,7 +494,7 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
           {!isMainSite && (
             <div className="flex items-center justify-between pb-1">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Price</span>
-              <span className={`text-xl font-black ${priceDisplay === "Free" ? "text-emerald-500" : THEME.textMain}`}>
+              <span className={`text-xl font-black ${THEME.textMain}`}>
                 {priceDisplay}
               </span>
             </div>
@@ -522,7 +520,7 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
                   </button>
                 ) : (
                   <button onClick={onBuy} className={`flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl text-sm font-black ${THEME.buttonPrimary}`}>
-                    {priceDisplay === "Free" ? "Enroll Free" : "Enroll Now"}
+                    Enroll Now
                   </button>
                 )
               )

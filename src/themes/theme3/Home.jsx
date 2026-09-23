@@ -297,8 +297,8 @@ const HomeCourseCard = ({ data }) => {
 
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
           {!isMainSite ? (
-            <span className={`text-lg font-black ${price == 0 || price === "Free" ? "text-emerald-500" : THEME.textMain}`}>
-              {price == 0 || price === "Free" ? "Free" : `₹${price}`}
+            <span className={`text-lg font-black ${THEME.textMain}`}>
+              {!price || price == 0 || price === "Free" ? "₹499" : `${price}`.startsWith("₹") ? price : `₹${price}`}
             </span>
           ) : (
             <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">AI Course</span>

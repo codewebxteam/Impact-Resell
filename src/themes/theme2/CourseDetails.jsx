@@ -172,36 +172,24 @@ const CourseDetails = () => {
       return;
     }
 
-    if (!isMainSite && agency?.whatsapp) {
-      if (!currentUser) {
-        localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice }));
-        setIsAuthOpen(true);
-        return;
-      }
-      const cleanPhone = agency.whatsapp.replace(/[^0-9]/g, "");
-      const promoText = agency.isBogoActive
-        ? "\n🎁 Offer: Buy 1 Get All Free (BOGO Applied)"
-        : agency.bundleDiscountActive
-        ? "\n🎁 Offer: All Courses Bundle Special"
-        : "";
-      const text = `Hello ${agency.name},\n\nI want to enroll in the course:\n📚 *${course.title}*\n🆔 Course ID: ${course.id}\n💰 Price: ₹${finalPrice}${promoText}\n\n*My Details:*\n👤 Name: ${currentUser?.displayName || "Student"}\n📧 Email: ${currentUser?.email}\n\nPlease share the payment details/QR code so I can complete my enrollment.`;
-      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+    const targetPhone = agency?.whatsapp || "919999999999";
+    if (!agency?.whatsapp && !isMainSite) {
+      alert("Partner WhatsApp contact not configured. Please contact support.");
       return;
     }
-
-    // Direct enrollment if on main site or free
     if (!currentUser) {
       localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice }));
       setIsAuthOpen(true);
       return;
     }
-
-    try {
-      await enrollCourse(course);
-      navigate("/dashboard");
-    } catch (e) {
-      alert("Enrollment failed: " + e.message);
-    }
+    const cleanPhone = targetPhone.replace(/[^0-9]/g, "");
+    const promoText = agency.isBogoActive
+      ? "\n🎁 Offer: Buy 1 Get All Free (BOGO Applied)"
+      : agency.bundleDiscountActive
+      ? "\n🎁 Offer: All Courses Bundle Special"
+      : "";
+    const text = `Hello ${agency.name || "Academy"},\n\nI want to enroll in the course:\n📚 *${course.title}*\n🆔 Course ID: ${course.id}\n💰 Price: ₹${finalPrice}${promoText}\n\n*My Details:*\n👤 Name: ${currentUser?.displayName || "Student"}\n📧 Email: ${currentUser?.email}\n\nPlease share the payment details/QR code so I can complete my enrollment.`;
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const openPlayer = (playlist, index = 0) => {

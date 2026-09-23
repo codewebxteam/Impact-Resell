@@ -119,8 +119,10 @@ const ProductCard = ({ product, index }) => {
           {!isMainSite && (
             <div className="flex items-baseline gap-1 mb-3">
               <span className="text-2xl md:text-3xl font-bold text-white">
-                {finalPrice == 0 || finalPrice === "Free"
-                  ? "Free"
+                {!finalPrice || finalPrice == 0 || finalPrice === "Free"
+                  ? "₹499"
+                  : `${finalPrice}`.startsWith("₹")
+                  ? finalPrice
                   : `₹${finalPrice}`}
               </span>
             </div>

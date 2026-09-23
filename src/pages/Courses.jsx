@@ -75,58 +75,70 @@ const Courses = () => {
     }
 
     const priceDisplay =
-      rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
-        ? "Free"
+      !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
+        ? "₹499"
+        : `${rawPrice}`.startsWith("₹")
+        ? rawPrice
         : `₹${rawPrice}`;
 
-    // 2. Partner Site Logic (WhatsApp Redirect with Details)
-    if (!isMainSite && priceDisplay !== "Free") {
-      if (!agency?.whatsapp) {
-        return alert(
-          "Partner contact number not found. Please contact support."
-        );
-      }
+    // 1. Custom payment link
+    const customPaymentLink =
+      agency?.customPaymentLinks?.[course.id] ||
+      (course.id === "bundle"
+        ? agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink
+        : null);
+    const partnerCoursePaymentLink =
+      course.partnerId && course.partnerId !== "admin"
+        ? course.paymentLink
+        : null;
+    const finalPaymentLink =
+      customPaymentLink ||
+      partnerCoursePaymentLink ||
+      (course.paymentLink || null);
 
-      // Prepare Student Details (User is definitely logged in here)
-      const studentName = currentUser?.displayName || "Student";
-      const studentEmail = currentUser?.email || "Email Not Provided";
-
-      // Construct "Sundar" Message 📝
-      let offerText = "";
-      if (agency?.promoType === "bogo" && course.id !== "bundle") {
-        offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
-      } else if (course.id === "bundle") {
-        offerText = `\n🎁 *Promo Applied:* All Courses Bundle`;
-      }
-
-      const message =
-        `*New Course Enrollment Request* 🎓\n\n` +
-        `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
-        `👤 *Student Name:* ${studentName}\n` +
-        `📧 *Mail:* ${studentEmail}\n\n` +
-        `📚 *Course Name:* ${course.title}\n` +
-        `💰 *Price:* ${priceDisplay}\n` +
-        `🆔 *Course ID:* ${course.id}\n` +
-        offerText + `\n\n` +
-        `Please guide me with the payment process.`;
-
-      const whatsappUrl = `https://wa.me/${agency.whatsapp.replace(
-        /\D/g,
-        ""
-      )}?text=${encodeURIComponent(message)}`;
-
-      window.open(whatsappUrl, "_blank");
+    if (finalPaymentLink) {
+      window.open(finalPaymentLink, "_blank");
       return;
     }
 
-    // 3. Main Site / Free Course Logic (Direct Enrollment)
-    try {
-      await enrollCourse(course);
-      navigate("/dashboard/my-courses");
-    } catch (error) {
-      console.error("Enrollment error:", error);
-      alert(error.message);
+    // 2. Partner Site Logic (WhatsApp Redirect with Details)
+    const targetWhatsapp = agency?.whatsapp || "919999999999";
+    if (!agency?.whatsapp && !isMainSite) {
+      return alert(
+        "Partner contact number not configured. Please contact support."
+      );
     }
+
+    // Prepare Student Details (User is definitely logged in here)
+    const studentName = currentUser?.displayName || "Student";
+    const studentEmail = currentUser?.email || "Email Not Provided";
+
+    // Construct Message
+    let offerText = "";
+    if (agency?.promoType === "bogo" && course.id !== "bundle") {
+      offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
+    } else if (course.id === "bundle") {
+      offerText = `\n🎁 *Promo Applied:* All Courses Bundle`;
+    }
+
+    const message =
+      `*New Course Enrollment Request* 🎓\n\n` +
+      `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
+      `👤 *Student Name:* ${studentName}\n` +
+      `📧 *Mail:* ${studentEmail}\n\n` +
+      `📚 *Course Name:* ${course.title}\n` +
+      `💰 *Price:* ${priceDisplay}\n` +
+      `🆔 *Course ID:* ${course.id}\n` +
+      offerText +
+      `\n\n` +
+      `Please share payment details so I can complete enrollment and get access.`;
+
+    const whatsappUrl = `https://wa.me/${targetWhatsapp.replace(
+      /\D/g,
+      ""
+    )}?text=${encodeURIComponent(message)}`;
+
+    window.open(whatsappUrl, "_blank");
   };
 
   // Filter Logic
@@ -342,8 +354,10 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
       : course.price;
 
   const priceDisplay =
-    finalPrice === "Free" || finalPrice === 0 || finalPrice === "0"
-      ? "Free"
+    !finalPrice || finalPrice === "Free" || finalPrice === 0 || finalPrice === "0"
+      ? "₹499"
+      : `${finalPrice}`.startsWith("₹")
+      ? finalPrice
       : `₹${finalPrice}`;
   const originalPrice = course.originalPrice
     ? `₹${course.originalPrice}`
@@ -430,12 +444,8 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
               {!isMainSite && (
                 <>
                   {/* PRICE DISPLAY */}
-                  <span
-                    className={`text-xl font-bold ${
-                      priceDisplay === "Free" ? "text-green-600" : "text-slate-900"
-                    }`}
-                  >
-                    {priceDisplay}
+                  <span className="text-xl font-bold text-slate-900">
+                    {!priceDisplay || priceDisplay === "Free" || priceDisplay === "₹0" || priceDisplay === "0" ? "₹499" : priceDisplay}
                   </span>
                 </>
               )}
@@ -470,14 +480,9 @@ const CourseCard = ({ course, isEnrolled, onBuy, onPlay, displayPrice, isMainSit
                 ) : (
                   <button
                     onClick={onBuy}
-                    className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-lg cursor-pointer
-                      ${
-                        priceDisplay === "Free"
-                          ? "bg-green-600 hover:bg-green-500 shadow-green-600/20"
-                          : "bg-slate-900 hover:bg-[#5edff4] hover:text-slate-900 shadow-slate-900/10 hover:shadow-[#5edff4]/30"
-                      }`}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-lg cursor-pointer bg-slate-900 hover:bg-[#5edff4] hover:text-slate-900 shadow-slate-900/10 hover:shadow-[#5edff4]/30"
                   >
-                    {priceDisplay === "Free" ? "Enroll" : "Buy Now"}
+                    Buy Now
                   </button>
                 )
               )

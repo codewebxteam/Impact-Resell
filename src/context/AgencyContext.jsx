@@ -295,11 +295,27 @@ export const AgencyProvider = ({ children }) => {
   }, [agency, isMainSite, loading]);
 
   const getPrice = (courseId, originalPrice) => {
-    if (isMainSite || !agency?.customPrices) return originalPrice;
-    const customPrice = agency.customPrices[courseId];
-    return customPrice !== undefined && customPrice !== ""
-      ? customPrice
-      : originalPrice;
+    if (!isMainSite && agency?.customPrices) {
+      const customPrice = agency.customPrices[courseId];
+      if (
+        customPrice !== undefined &&
+        customPrice !== "" &&
+        Number(customPrice) > 0
+      ) {
+        return String(customPrice);
+      }
+    }
+    const num = Number(originalPrice);
+    if (!isNaN(num) && num > 0) {
+      return String(originalPrice);
+    }
+    return "499";
+  };
+
+  const hasPartnerSetPrice = (courseId) => {
+    if (isMainSite || !agency?.customPrices) return false;
+    const cp = agency.customPrices[courseId];
+    return cp !== undefined && cp !== "" && Number(cp) > 0;
   };
 
   return (
@@ -311,6 +327,7 @@ export const AgencyProvider = ({ children }) => {
         loading,
         refreshAgency,
         getPrice,
+        hasPartnerSetPrice,
       }}
     >
       {children}

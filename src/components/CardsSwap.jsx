@@ -47,8 +47,10 @@ const FrontendCard = ({ data }) => {
         {!isMainSite && (
           <div className="flex items-baseline gap-1 mb-4 md:mb-6">
             <span className="text-3xl md:text-4xl font-bold text-slate-900">
-              {info.price == 0 || info.price === "Free"
-                ? "Free"
+              {!info.price || info.price == 0 || info.price === "Free"
+                ? "₹499"
+                : `${info.price}`.startsWith("₹")
+                ? info.price
                 : `₹${info.price}`}
             </span>
             <span className="text-slate-400 text-sm">/course</span>
@@ -110,8 +112,10 @@ const FullStackCard = ({ data }) => {
         {!isMainSite && (
           <div className="flex items-baseline gap-1 mb-4 md:mb-6">
             <span className="text-3xl md:text-4xl font-bold text-white">
-              {info.price == 0 || info.price === "Free"
-                ? "Free"
+              {!info.price || info.price == 0 || info.price === "Free"
+                ? "₹499"
+                : `${info.price}`.startsWith("₹")
+                ? info.price
                 : `₹${info.price}`}
             </span>
           </div>
@@ -169,8 +173,10 @@ const DataScienceCard = ({ data }) => {
         {!isMainSite && (
           <div className="flex items-baseline gap-1 mb-4 md:mb-6">
             <span className="text-3xl md:text-4xl font-bold text-white">
-              {info.price == 0 || info.price === "Free"
-                ? "Free"
+              {!info.price || info.price == 0 || info.price === "Free"
+                ? "₹499"
+                : `${info.price}`.startsWith("₹")
+                ? info.price
                 : `₹${info.price}`}
             </span>
           </div>

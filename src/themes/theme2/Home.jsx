@@ -382,14 +382,12 @@ const HomeCourseCard = ({ data }) => {
             Explore
           </Link>
 
-          {!isMainSite && (
-             <div className="flex flex-col items-end">
+              <div className="flex flex-col items-end">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Price</span>
-                <span className={`text-xl font-black ${price == 0 || price === "Free" ? "text-emerald-500" : THEME.textMain}`}>
-                  {price == 0 || price === "Free" ? "Free" : `₹${price}`}
+                <span className={`text-xl font-black ${THEME.textMain}`}>
+                  {!price || price == 0 || price === "Free" ? "₹499" : `${price}`.startsWith("₹") ? price : `₹${price}`}
                 </span>
-             </div>
-          )}
+              </div>
         </div>
       </div>
     </div>

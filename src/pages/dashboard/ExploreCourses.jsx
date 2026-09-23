@@ -113,11 +113,13 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
   const { getPrice } = useAgency(); // [ADDED] Get Helper
 
   // [LOGIC] Calculate Dynamic Price
-  const finalPrice = getPrice(course.id, course.price);
-  const isFree =
-    String(finalPrice).toLowerCase() === "free" ||
-    finalPrice === 0 ||
-    finalPrice === "0";
+  const rawPrice = getPrice(course.id, course.price);
+  const displayPrice =
+    !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
+      ? "499"
+      : `${rawPrice}`.startsWith("₹")
+      ? rawPrice.replace("₹", "")
+      : rawPrice;
 
   return (
     <motion.div
@@ -178,13 +180,9 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
                 Purchased
               </span>
             ) : (
-                <span
-                  className={`block text-lg font-bold ${
-                    isFree ? "text-green-600" : "text-slate-900"
-                  }`}
-                >
-                  {isFree ? "Free" : `₹${finalPrice}`}
-                </span>
+              <span className="block text-lg font-bold text-slate-900">
+                ₹{displayPrice}
+              </span>
             )}
           </div>
 
@@ -205,8 +203,7 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
               <>Coming Soon</>
             ) : (
               <>
-                <ShoppingCart className="size-4" />{" "}
-                {isFree ? "Enroll" : "Buy Now"}
+                <ShoppingCart className="size-4" /> Buy Now
               </>
             )}
           </Link>
