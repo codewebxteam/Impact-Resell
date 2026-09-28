@@ -7,6 +7,7 @@ import { useCourse } from "../../context/CourseContext";
 import { useAgency } from "../../context/AgencyContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
 import {
   PlayCircle,
   ShieldCheck,
@@ -164,13 +165,10 @@ const CourseDetails = () => {
 
   const handleEnroll = async () => {
     // 1. Direct payment link redirection if set by partner
-    const customPaymentLink = agency?.customPaymentLinks?.[course.id];
-    const partnerCoursePaymentLink =
-      course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
-    const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink || course.paymentLink;
+    const finalPaymentLink = getCoursePaymentLink(course, agency);
 
     if (finalPaymentLink) {
-      window.open(finalPaymentLink, "_blank");
+      openPaymentLink(finalPaymentLink);
       return;
     }
 

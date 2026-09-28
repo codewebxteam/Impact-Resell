@@ -12,7 +12,8 @@ import {
 import { useAgency } from "../../context/AgencyContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import AuthModal from "../../components/AuthModal"; // [ADDED] Import AuthModal
+import AuthModal from "../../components/AuthModal";
+import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
 
 const PricingCard = ({ course, onEnroll, isEnrolled }) => {
   const { currentUser } = useAuth();
@@ -40,13 +41,10 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
   // --- WhatsApp Redirect Logic ---
   const handlePartnerBuy = () => {
     // Check if the partner has configured a custom payment link
-    const customPaymentLink = agency?.customPaymentLinks?.[course.id];
-    // If it's a custom course uploaded by the partner, they might have set the payment link there
-    const partnerCoursePaymentLink = course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
-    const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink;
+    const finalPaymentLink = getCoursePaymentLink(course, agency);
 
     if (finalPaymentLink) {
-      window.open(finalPaymentLink, "_blank");
+      openPaymentLink(finalPaymentLink);
       return;
     }
 
@@ -165,15 +163,10 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
               <button
                 onClick={() => {
                   // If partner configured custom payment link, open it right away!
-                  const customPaymentLink =
-                    agency?.customPaymentLinks?.[course.id] ||
-                    (course.id === "bundle" ? (agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink) : null);
-                  const partnerCoursePaymentLink =
-                    course.partnerId && course.partnerId !== "admin" ? course.paymentLink : null;
-                  const finalPaymentLink = customPaymentLink || partnerCoursePaymentLink;
+                  const finalPaymentLink = getCoursePaymentLink(course, agency);
 
                   if (finalPaymentLink) {
-                    window.open(finalPaymentLink, "_blank");
+                    openPaymentLink(finalPaymentLink);
                     return;
                   }
 
@@ -182,7 +175,7 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
                     setIsAuthOpen(true);
                     return;
                   }
-                  // 2. Route to payment link or WhatsApp
+                  // 2. Route to WhatsApp
                   handlePartnerBuy();
                 }}
                 className="w-full py-4 text-slate-900 font-bold text-lg rounded-xl transition-all shadow-lg active:scale-95 mb-4 cursor-pointer"

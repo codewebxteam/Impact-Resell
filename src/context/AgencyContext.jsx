@@ -33,6 +33,8 @@ const DEFAULT_AGENCY = {
   logo: "",
   customPrices: {},
   customPaymentLinks: {},
+  bundlePaymentLink: "",
+  paymentLink: "",
   promoType: "none",
   bundlePrice: "",
   demoVideoLink: "",
@@ -136,6 +138,7 @@ export const AgencyProvider = ({ children }) => {
         if (agencySnap && agencySnap.exists()) {
           const data = agencySnap.data();
           setAgency({
+            ...data,
             id: ownerId,
             name: data.name || "Academy",
             theme: data.theme || "theme1",
@@ -148,6 +151,8 @@ export const AgencyProvider = ({ children }) => {
             upi: data.upi,
             customPrices: data.customPrices || {},
             customPaymentLinks: data.customPaymentLinks || {},
+            bundlePaymentLink: data.bundlePaymentLink || data.customPaymentLinks?.["bundle"] || "",
+            paymentLink: data.paymentLink || "",
             promoType: data.promoType || "none",
             bundlePrice: data.bundlePrice || "",
             themeColor: data.themeColor || "#0f172a",

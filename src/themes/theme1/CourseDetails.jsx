@@ -21,6 +21,7 @@ import Curriculum from "../../components/course-details/Curriculum";
 import PricingCard from "../../components/course-details/PricingCard";
 import AuthModal from "../../components/AuthModal";
 import CourseVideoPlayer from "../../components/CourseVideoPlayer";
+import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
 
 // ==========================================
 // THEME CONFIGURATION (Centralized Colors)
@@ -175,22 +176,10 @@ const CourseDetails = () => {
         : `₹${rawPrice}`;
 
     // 1. If partner set a custom payment link, open it directly
-    const customPaymentLink =
-      agency?.customPaymentLinks?.[course.id] ||
-      (course.id === "bundle"
-        ? agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink
-        : null);
-    const partnerCoursePaymentLink =
-      course.partnerId && course.partnerId !== "admin"
-        ? course.paymentLink
-        : null;
-    const finalPaymentLink =
-      customPaymentLink ||
-      partnerCoursePaymentLink ||
-      (course.paymentLink || null);
+    const finalPaymentLink = getCoursePaymentLink(course, agency);
 
     if (finalPaymentLink) {
-      window.open(finalPaymentLink, "_blank");
+      openPaymentLink(finalPaymentLink);
       return;
     }
 

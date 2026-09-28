@@ -21,6 +21,7 @@ import PricingCard from "../components/course-details/PricingCard";
 import AuthModal from "../components/AuthModal";
 import CourseVideoPlayer from "../components/CourseVideoPlayer";
 import FullPageSkeleton from "../components/FullPageSkeleton";
+import { getCoursePaymentLink, openPaymentLink } from "../utils/paymentHelper";
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -130,13 +131,17 @@ const CourseDetails = () => {
   }, [id, isMainSite, agency, currentUser]);
 
   const handleEnroll = () => {
-    if (!course?.paymentLink) return alert("Payment link not configured.");
+    const finalPaymentLink = getCoursePaymentLink(course, agency);
+    if (finalPaymentLink) {
+      openPaymentLink(finalPaymentLink);
+      return;
+    }
     if (!currentUser) {
       localStorage.setItem("pendingCheckoutCourse", JSON.stringify(course));
       setIsAuthOpen(true);
       return;
     }
-    window.location.href = course.paymentLink;
+    alert("Payment link not configured.");
   };
 
   const openPlayer = (playlist, index = 0) => {

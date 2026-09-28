@@ -30,6 +30,7 @@ import { useCourse } from "../../context/CourseContext";
 import AuthModal from "../../components/AuthModal";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
 
 // Curated masterclasses for AI Video Creation
 const fallbackCoursesData = [
@@ -262,22 +263,10 @@ const Home = () => {
         : `₹${rawPrice}`;
 
     // 1. Check custom payment link configured by partner
-    const customPaymentLink =
-      agency?.customPaymentLinks?.[course.id] ||
-      (course.id === "bundle"
-        ? agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink
-        : null);
-    const partnerCoursePaymentLink =
-      course.partnerId && course.partnerId !== "admin"
-        ? course.paymentLink
-        : null;
-    const finalPaymentLink =
-      customPaymentLink ||
-      partnerCoursePaymentLink ||
-      (course.paymentLink || null);
+    const finalPaymentLink = getCoursePaymentLink(course, agency);
 
     if (finalPaymentLink) {
-      window.open(finalPaymentLink, "_blank");
+      openPaymentLink(finalPaymentLink);
       return;
     }
 

@@ -26,6 +26,7 @@ import Curriculum from "../../components/course-details/Curriculum";
 import PricingCard from "../../components/course-details/PricingCard";
 import AuthModal from "../../components/AuthModal";
 import CourseVideoPlayer from "../../components/CourseVideoPlayer";
+import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
 
 // ==========================================
 // THEME 3 CONFIGURATION (Aesthetic: #fedc5c & Slate-950)
@@ -144,28 +145,24 @@ const CourseDetails = () => {
   }, [id, isMainSite, agency, currentUser]);
 
   const handleEnroll = async () => {
-    const finalPrice = course?.price !== undefined && getPrice ? getPrice(course.id, course.price) : (course?.price || 0);
-    const partnerCoursePaymentLink = agency?.customPaymentLinks?.[course.id];
-    const finalPaymentLink = partnerCoursePaymentLink || course?.paymentLink;
+    const finalPaymentLink = getCoursePaymentLink(course, agency);
 
     if (finalPaymentLink) {
-      if (!currentUser) {
-        localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice }));
-        setIsAuthOpen(true);
-        return;
-      }
-      window.open(finalPaymentLink, "_blank");
+      openPaymentLink(finalPaymentLink);
+      return;
+    }
+
+    const finalPrice = course?.price !== undefined && getPrice ? getPrice(course.id, course.price) : (course?.price || 0);
+
+    if (!currentUser) {
+      localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice }));
+      setIsAuthOpen(true);
       return;
     }
 
     const targetPhone = agency?.whatsapp || "919999999999";
     if (!agency?.whatsapp && !isMainSite) {
       alert("Partner WhatsApp contact not configured. Please contact support.");
-      return;
-    }
-    if (!currentUser) {
-      localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice }));
-      setIsAuthOpen(true);
       return;
     }
     const cleanPhone = targetPhone.replace(/[^0-9]/g, "");

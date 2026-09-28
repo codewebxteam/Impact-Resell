@@ -33,6 +33,7 @@ import CourseVideoPlayer from "../../components/CourseVideoPlayer";
 import DemoVideoSection from "../../components/DemoVideoSection";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
 
 const fallbackCoursesData = [
   {
@@ -278,22 +279,10 @@ const Courses = () => {
         : `₹${rawPrice}`;
 
     // 1. If partner set a custom payment link, open it directly
-    const customPaymentLink =
-      agency?.customPaymentLinks?.[course.id] ||
-      (course.id === "bundle"
-        ? agency?.customPaymentLinks?.["bundle"] || agency?.bundlePaymentLink
-        : null);
-    const partnerCoursePaymentLink =
-      course.partnerId && course.partnerId !== "admin"
-        ? course.paymentLink
-        : null;
-    const finalPaymentLink =
-      customPaymentLink ||
-      partnerCoursePaymentLink ||
-      (course.paymentLink || null);
+    const finalPaymentLink = getCoursePaymentLink(course, agency);
 
     if (finalPaymentLink) {
-      window.open(finalPaymentLink, "_blank");
+      openPaymentLink(finalPaymentLink);
       return;
     }
 
