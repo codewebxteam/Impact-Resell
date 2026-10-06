@@ -94,6 +94,42 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await signInWithEmailAndPassword(auth, email, password);
     const uid = res.user.uid;
+    const emailLower = (res.user.email || email).toLowerCase().trim();
+
+    let currentRole = "student";
+
+    try {
+      const resellerSnap = await getDoc(doc(db, "allowedResellers", emailLower));
+      const userDocRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userDocRef);
+      const uData = userSnap.exists() ? userSnap.data() : null;
+
+      if (resellerSnap.exists()) {
+        currentRole = "partner";
+        if (!uData || uData.role !== "partner") {
+          await setDoc(
+            userDocRef,
+            {
+              uid,
+              name: res.user.displayName || uData?.name || "Partner",
+              email: res.user.email,
+              role: "partner",
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+          await setDoc(
+            doc(db, "allowedResellers", emailLower),
+            { status: "registered", registeredAt: new Date().toISOString() },
+            { merge: true }
+          );
+        }
+      } else if (uData?.role) {
+        currentRole = uData.role;
+      }
+    } catch (e) {
+      console.warn("Error checking reseller status on login:", e);
+    }
 
     // Safety: ensure dashboard exists
     const dashboardRef = doc(db, "dashboard", uid);
@@ -102,7 +138,7 @@ export const AuthProvider = ({ children }) => {
     if (!snap.exists()) {
       await setDoc(dashboardRef, {
         user: {
-          name: res.user.displayName || "Student",
+          name: res.user.displayName || (currentRole === "partner" ? "Partner" : "Student"),
           email: res.user.email,
           avatar: "",
         },
@@ -154,16 +190,56 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 4. [UPDATED] Monitor Auth State & Fetch Firestore Data
+  // 5. [UPDATED] Monitor Auth State & Fetch Firestore Data + Auto-Sync Partner Role
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // [NEW] Fetch user role and extra data from Firestore
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          setUserData(userDoc.data());
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userDocRef);
+          let uData = userDoc.exists() ? userDoc.data() : null;
+
+          const emailLower = (user.email || "").toLowerCase().trim();
+          let isPartnerWhitelisted = false;
+          if (emailLower) {
+            const resellerSnap = await getDoc(doc(db, "allowedResellers", emailLower));
+            if (resellerSnap.exists()) {
+              isPartnerWhitelisted = true;
+            }
+          }
+
+          if (isPartnerWhitelisted && (!uData || uData.role !== "partner")) {
+            const updated = {
+              uid: user.uid,
+              name: user.displayName || uData?.name || "Partner",
+              email: user.email,
+              role: "partner",
+              updatedAt: new Date().toISOString(),
+            };
+            await setDoc(userDocRef, updated, { merge: true });
+            uData = { ...(uData || {}), ...updated, role: "partner" };
+
+            try {
+              await setDoc(
+                doc(db, "allowedResellers", emailLower),
+                {
+                  email: emailLower,
+                  status: "registered",
+                  registeredAt: new Date().toISOString(),
+                },
+                { merge: true }
+              );
+            } catch (err) {
+              console.warn("Could not update allowedResellers status:", err);
+            }
+          }
+
+          setUserData(uData);
+          setCurrentUser(user);
+        } catch (err) {
+          console.error("Auth state error:", err);
+          setCurrentUser(user);
         }
-        setCurrentUser(user);
       } else {
         setCurrentUser(null);
         setUserData(null);

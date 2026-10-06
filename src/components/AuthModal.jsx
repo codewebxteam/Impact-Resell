@@ -188,11 +188,21 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
     try {
       if (mode === "login") {
         const userCredential = await login(formData.email, formData.password);
-        const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-        const userData = userDoc.data();
+        const uid = userCredential.user.uid;
+        const emailLower = formData.email.toLowerCase().trim();
 
-        if (userData?.role === "partner") {
-          navigate("/partner-dashboard");
+        // Check user document
+        const userDoc = await getDoc(doc(db, "users", uid));
+        let userDocData = userDoc.exists() ? userDoc.data() : null;
+
+        // Check if whitelisted partner
+        const resellerSnap = await getDoc(doc(db, "allowedResellers", emailLower));
+        const isPartnerUser = userDocData?.role === "partner" || resellerSnap.exists();
+
+        if (isPartnerUser) {
+          navigate("/partner");
+        } else if (userDocData?.role === "admin") {
+          navigate("/admin");
         } else {
           navigate("/dashboard");
         }

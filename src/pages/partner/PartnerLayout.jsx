@@ -70,11 +70,6 @@ const PartnerLayout = () => {
       icon: <TrendingUp size={20} />,
     },
     {
-      label: "Coupons",
-      path: "/partner/coupons",
-      icon: <Ticket size={20} />,
-    },
-    {
       label: "Students",
       path: "/partner/students",
       icon: <Users size={20} />,

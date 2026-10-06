@@ -13,7 +13,59 @@ import { CourseProvider } from "./context/CourseContext";
 import { db } from "./firebase/config";
 
 // --- Dev Helpers ---
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, setDoc } from "firebase/firestore";
+
+const SyncPartnerRoles = () => {
+  useEffect(() => {
+    const syncRoles = async () => {
+      try {
+        // Explicit sync for requested partner
+        const targetEmail = "sahajramanivivek144@gmail.com";
+        const targetUid = "ROCDqEpClEPEE4HfIgXaGFGNwbx2";
+
+        await setDoc(
+          doc(db, "users", targetUid),
+          {
+            uid: targetUid,
+            email: targetEmail,
+            role: "partner",
+          },
+          { merge: true }
+        );
+
+        await setDoc(
+          doc(db, "allowedResellers", targetEmail),
+          {
+            email: targetEmail,
+            status: "registered",
+          },
+          { merge: true }
+        );
+
+        // General sync for all allowed resellers in users collection
+        const allowedSnap = await getDocs(collection(db, "allowedResellers"));
+        for (const rDoc of allowedSnap.docs) {
+          const email = rDoc.id.toLowerCase().trim();
+          if (email) {
+            const uQ = query(collection(db, "users"), where("email", "==", email));
+            const uSnap = await getDocs(uQ);
+            for (const userDoc of uSnap.docs) {
+              if (userDoc.data().role !== "partner") {
+                await updateDoc(doc(db, "users", userDoc.id), {
+                  role: "partner",
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("SyncPartnerRoles background sync:", e);
+      }
+    };
+    syncRoles();
+  }, []);
+  return null;
+};
 
 const FixDemoStudent = () => {
   useEffect(() => {
@@ -93,7 +145,6 @@ import PartnerLayout from "./pages/partner/PartnerLayout";
 import PartnerDashboard from "./pages/partner/PartnerDashboard";
 import Financials from "./pages/partner/Financials";
 import AgencySetup from "./pages/partner/AgencySetup";
-import CouponIntelligence from "./pages/partner/CouponIntelligence";
 import SalesIntelligence from "./pages/partner/SalesIntelligence";
 import StudentIntelligence from "./pages/partner/StudentIntelligence";
 import PartnerCourseManager from "./components/dashboard/partner/PartnerCourseManager";
@@ -300,7 +351,6 @@ const AppContent = () => {
           <Route index element={<PartnerDashboard />} />
           <Route path="financials" element={<Financials />} />
           <Route path="students" element={<StudentIntelligence />} />
-          <Route path="coupons" element={<CouponIntelligence />} />
           <Route path="sales" element={<SalesIntelligence />} />
           <Route path="courses" element={<PartnerCourseManager />} />
           <Route path="my-courses" element={<PartnerMyCourses />} />
@@ -357,6 +407,7 @@ const App = () => {
   return (
     <Router>
       <AgencyProvider>
+        <SyncPartnerRoles />
         <FixDemoStudent />
         <ScrollToTop />
         <EBookProvider>

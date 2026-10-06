@@ -18,25 +18,28 @@ const AgencySidebar = () => {
   const { agency } = useAgency();
   const { logout } = useAuth();
 
-  // 20-Year Exp Touch: Dedicated menu structure for better maintainability
+  // Dedicated menu structure for partner console
   const menuItems = [
     {
       name: "Intelligence Overview",
-      path: "/partner-dashboard",
+      path: "/partner",
       icon: LayoutDashboard,
     },
     {
+      name: "Financials",
+      path: "/partner/financials",
+      icon: DollarSign,
+    },
+    {
       name: "Student Acquisition",
-      path: "/partner-dashboard/students",
+      path: "/partner/students",
       icon: Users,
     },
     {
-      name: "Profit Analytics",
-      path: "/partner-dashboard/reports",
-      icon: DollarSign,
+      name: "Academy Settings",
+      path: "/partner/settings",
+      icon: Settings,
     },
-    { name: "Marketing Tools", path: "/partner-dashboard/tools", icon: Globe },
-    { name: "Academy Settings", path: "/agency-setup", icon: Settings },
   ];
 
   return (

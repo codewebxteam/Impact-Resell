@@ -309,20 +309,6 @@ const Theme4Footer = ({ currentTheme = "theme4" }) => {
             <span>© {currentYear} {academyName}. All rights reserved.</span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-slate-500">
-            <span>Made with</span>
-            <Heart className="size-3.5 text-red-500 fill-red-500 animate-pulse" />
-            <span>by</span>
-            <a
-              href="https://www.codewebx.in/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-violet-600 hover:text-indigo-600 transition-colors font-black"
-            >
-              CodeWebX
-            </a>
-          </div>
-
           <div className="flex items-center gap-2.5">
             <SocialIcon Icon={Instagram} href={instaLink} title="Instagram" />
             <SocialIcon Icon={Twitter} href="#" title="Twitter" />

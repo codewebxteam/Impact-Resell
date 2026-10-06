@@ -21,6 +21,10 @@ import {
   serverTimestamp,
   deleteDoc,
   onSnapshot,
+  query,
+  where,
+  getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../../firebase/config";
 
@@ -69,15 +73,29 @@ const ResellManager = () => {
     setMessage(null);
 
     try {
+      const emailLower = newEmail.trim().toLowerCase();
       // Email ko hi Document ID bana rhe hain taaki backend pe search fast ho jaye
-      const docRef = doc(db, "allowedResellers", newEmail.trim().toLowerCase());
+      const docRef = doc(db, "allowedResellers", emailLower);
 
       // Default status 'allowed' rahega, jab user register karega toh 'registered' ho jayega
       await setDoc(docRef, {
-        email: newEmail.trim().toLowerCase(),
+        email: emailLower,
         status: "allowed",
         allowedAt: serverTimestamp(),
       });
+
+      // Also if user already exists in users collection, update their role to partner immediately
+      try {
+        const userQuery = query(collection(db, "users"), where("email", "==", emailLower));
+        const userSnap = await getDocs(userQuery);
+        for (const uDoc of userSnap.docs) {
+          await updateDoc(doc(db, "users", uDoc.id), {
+            role: "partner",
+          });
+        }
+      } catch (err) {
+        console.warn("Could not auto-update users collection on grant:", err);
+      }
 
       setNewEmail("");
       setMessage({

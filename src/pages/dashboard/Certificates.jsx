@@ -117,7 +117,7 @@ const CertificateItem = ({ courseData }) => {
         currentUser.displayName || currentUser.email.split("@")[0];
 
       // [UPDATED] Unique ID with Agency Prefix
-      // Example: IMP-REA-123456 or COD-REA-123456 (if Agency is CodeWebX)
+      // Example: IMP-REA-123456 or ACAD-REA-123456
       const prefix = issuerName
         .substring(0, 3)
         .toUpperCase()

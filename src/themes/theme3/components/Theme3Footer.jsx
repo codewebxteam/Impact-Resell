@@ -238,15 +238,6 @@ const Theme3Footer = ({ currentTheme = "theme3" }) => {
             <span>© {currentYear} {academyName}. All rights reserved.</span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-slate-400 font-medium">
-            <span>Made with</span>
-            <Heart className="size-3.5 text-red-500 fill-red-500 animate-pulse" />
-            <span>by</span>
-            <a href="https://www.codewebx.in/" target="_blank" rel="noreferrer" className="text-[#fedc5c] hover:text-amber-300 transition-colors font-bold">
-              CodeWebX
-            </a>
-          </div>
-
           <div className="flex items-center gap-3">
             <SocialIcon Icon={Twitter} href="#" />
             <SocialIcon Icon={Linkedin} href="#" />
