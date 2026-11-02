@@ -180,36 +180,36 @@ const StudentDashboard = () => {
         title: "Active Learning",
         value: timeDisplay,
         icon: Clock,
-        color: "text-[#5edff4]",
-        bg: "bg-[#5edff4]/10",
-        border: "border-[#5edff4]/20",
+        color: "text-emerald-500",
+        bg: "bg-emerald-50",
+        border: "border-slate-100",
         change: "Total Time",
       },
       {
         title: "Courses",
         value: enrolledCourses.length,
         icon: BookOpen,
-        color: "text-blue-400",
-        bg: "bg-blue-400/10",
-        border: "border-blue-400/20",
+        color: "text-blue-500",
+        bg: "bg-blue-50",
+        border: "border-slate-100",
         change: "In Progress",
       },
       {
         title: "Certificates",
         value: certificatesCount,
         icon: Award,
-        color: "text-purple-400",
-        bg: "bg-purple-400/10",
-        border: "border-purple-400/20",
+        color: "text-purple-500",
+        bg: "bg-purple-50",
+        border: "border-slate-100",
         change: "Earned",
       },
       {
         title: "Max Streak", // [UPDATED] Replaced E-Books
         value: `${gamification.maxStreak} Days`, // [UPDATED] Dynamic Max Streak
         icon: Crown, // [UPDATED] Crown Icon for Record
-        color: "text-yellow-400",
-        bg: "bg-yellow-400/10",
-        border: "border-yellow-400/20",
+        color: "text-amber-500",
+        bg: "bg-amber-50",
+        border: "border-slate-100",
         change: "All Time Best",
       },
     ]);
@@ -217,10 +217,10 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#F4F7FE]">
         <div className="flex flex-col items-center gap-4">
-          <div className="size-16 border-4 border-slate-200 border-t-[#5edff4] rounded-full animate-spin"></div>
-          <p className="text-slate-400 font-medium animate-pulse">Loading...</p>
+          <div className="size-14 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div>
+          <p className="text-slate-400 font-bold text-xs uppercase tracking-wider animate-pulse">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -230,13 +230,13 @@ const StudentDashboard = () => {
     <div className="space-y-6 md:space-y-8 pb-24 md:pb-12 font-sans text-slate-900">
       {/* === HEADER SECTION (Mobile Optimized) === */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 bg-white p-5 md:p-6 rounded-3xl md:rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#5edff4]/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-2 md:gap-3 mb-1">
             <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">
               Welcome to{" "}
-              <span className="text-[#0891b2] block md:inline">
+              <span className="text-emerald-600 block md:inline">
                 {academyName}
               </span>
             </h1>
@@ -262,7 +262,7 @@ const StudentDashboard = () => {
             </span>
           </div>
 
-          <button className="p-2.5 md:p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-[#5edff4] hover:text-[#0891b2] transition-all shadow-sm hidden md:flex">
+          <button className="p-2.5 md:p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-emerald-400 hover:text-emerald-600 transition-all shadow-sm hidden md:flex">
             <Calendar size={18} className="md:w-5 md:h-5" />
           </button>
         </div>
@@ -320,14 +320,14 @@ const StudentDashboard = () => {
           transition={{ delay: 0.3 }}
           className="lg:col-span-2 bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 text-white relative overflow-hidden flex flex-col justify-between min-h-[280px] md:min-h-[300px] shadow-2xl shadow-slate-900/20"
         >
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#5edff4] rounded-full blur-[180px] opacity-10 translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-400 rounded-full blur-[180px] opacity-10 translate-x-1/3 -translate-y-1/3 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-600 rounded-full blur-[120px] opacity-15 -translate-x-1/3 translate-y-1/3 pointer-events-none" />
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 pointer-events-none" />
 
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4 md:mb-6">
               <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg">
-                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#5edff4] animate-pulse"></span>
+                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 Resume Learning
               </span>
             </div>
@@ -361,7 +361,7 @@ const StudentDashboard = () => {
                   <span className="text-slate-200 flex items-center gap-2">
                     <Target size={14} /> Course Progress
                   </span>
-                  <span className="text-[#5edff4]">
+                  <span className="text-emerald-400">
                     {Math.round(continueLearning.progress)}%
                   </span>
                 </div>
@@ -370,7 +370,7 @@ const StudentDashboard = () => {
                     initial={{ width: 0 }}
                     animate={{ width: `${continueLearning.progress}%` }}
                     transition={{ duration: 1, delay: 0.5 }}
-                    className="h-full bg-gradient-to-r from-[#5edff4] to-[#0891b2] rounded-full shadow-[0_0_15px_rgba(94,223,244,0.5)]"
+                    className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                   />
                 </div>
               </div>
@@ -388,7 +388,7 @@ const StudentDashboard = () => {
                     : "/dashboard/explore",
                 )
               }
-              className="w-full sm:w-auto bg-white text-slate-900 p-3 md:p-4 rounded-xl md:rounded-2xl hover:scale-105 hover:bg-[#5edff4] transition-all shadow-xl shadow-black/20 group flex justify-center items-center"
+              className="w-full sm:w-auto bg-white text-slate-900 p-3 md:p-4 rounded-xl md:rounded-2xl hover:scale-105 hover:bg-emerald-400 hover:text-slate-950 transition-all shadow-xl shadow-black/20 group flex justify-center items-center"
             >
               {continueLearning ? (
                 <PlayCircle
@@ -443,7 +443,7 @@ const StudentDashboard = () => {
             </div>
             <button
               onClick={() => navigate("/dashboard/explore")}
-              className="w-full py-3 md:py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-[#0891b2] transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2 text-sm md:text-base"
+              className="w-full py-3 md:py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2 text-sm md:text-base"
             >
               Browse Catalog <ArrowRight size={16} />
             </button>
@@ -464,13 +464,13 @@ const StudentDashboard = () => {
           </h3>
           <Link
             to="/dashboard/certificates"
-            className="text-xs md:text-sm font-bold text-[#0891b2] bg-[#0891b2]/5 hover:bg-[#0891b2]/10 px-3 py-2 rounded-lg transition-colors text-center"
+            className="text-xs md:text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-colors text-center"
           >
             View Certificates
           </Link>
         </div>
 
-        <div className="bg-slate-50 rounded-2xl md:rounded-3xl p-4 md:p-6 flex flex-col md:flex-row items-center gap-4 md:gap-6 border border-slate-100 border-dashed hover:border-[#5edff4]/50 transition-colors">
+        <div className="bg-slate-50 rounded-2xl md:rounded-3xl p-4 md:p-6 flex flex-col md:flex-row items-center gap-4 md:gap-6 border border-slate-100 border-dashed hover:border-emerald-400/50 transition-colors">
           <div className="size-16 md:size-20 bg-gradient-to-br from-yellow-300 to-amber-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-amber-500/20 rotate-3 transform transition-transform group-hover:rotate-6 shrink-0">
             <Star size={32} className="fill-current md:w-[40px] md:h-[40px]" />
           </div>

@@ -72,7 +72,7 @@ const ExploreCourses = () => {
             placeholder="What do you want to learn?"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-full border border-slate-200 shadow-lg shadow-slate-200/20 outline-none focus:border-[#5edff4] focus:ring-2 focus:ring-[#5edff4]/20 transition-all"
+            className="w-full pl-12 pr-4 py-3 rounded-full border border-slate-200 shadow-lg shadow-slate-200/20 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
           />
         </div>
       </div>
@@ -161,7 +161,7 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
 
       <div className="p-6 flex flex-col flex-1">
         <div className="mb-4">
-          <span className="text-[10px] font-bold text-[#0891b2] uppercase tracking-wider">
+          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
             {course.category || "General"}
           </span>
           <h3 className="text-lg font-bold text-slate-900 leading-tight mt-1 line-clamp-2">
@@ -196,7 +196,7 @@ const ExploreCard = ({ course, isUserEnrolled }) => {
                 ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:shadow-emerald-100"
                 : course.isComingSoon
                 ? "bg-amber-50 text-amber-500 border border-amber-200 shadow-none cursor-not-allowed"
-                : "bg-slate-900 text-white hover:bg-[#5edff4] hover:text-slate-900 hover:shadow-[#5edff4]/20"
+                : "bg-slate-900 text-white hover:bg-emerald-600 hover:text-white hover:shadow-emerald-600/20"
             }`}
           >
             {isUserEnrolled ? (

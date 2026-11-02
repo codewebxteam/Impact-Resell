@@ -55,7 +55,7 @@ const Certificates = () => {
             </p>
             <Link
               to="/dashboard/explore"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-[#5edff4] text-slate-900 rounded-xl font-bold hover:bg-[#4ecee4] hover:scale-105 transition-all shadow-lg shadow-[#5edff4]/20"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 hover:scale-105 transition-all shadow-lg shadow-emerald-500/20"
             >
               Start Learning <ArrowRight size={20} />
             </Link>
@@ -355,7 +355,7 @@ const CertificateItem = ({ courseData }) => {
         <div className="w-full md:w-56 aspect-[4/3] rounded-2xl flex items-center justify-center border border-slate-100 relative overflow-hidden shrink-0 shadow-inner bg-slate-50">
           {isUnlocked ? (
             <div className="flex flex-col items-center gap-3">
-              <div className="size-16 rounded-full bg-[#5edff4]/10 flex items-center justify-center mb-1">
+              <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-1">
                 <img
                   src={impactLogo}
                   alt="Logo"
@@ -405,7 +405,7 @@ const CertificateItem = ({ courseData }) => {
               <button
                 onClick={generatePDF}
                 disabled={downloading}
-                className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-[#5edff4] hover:text-slate-900 transition-all shadow-xl hover:shadow-[#5edff4]/20 flex items-center justify-center gap-2.5 cursor-pointer active:scale-95 group-hover:scale-105"
+                className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-xl hover:shadow-emerald-600/20 flex items-center justify-center gap-2.5 cursor-pointer active:scale-95 group-hover:scale-105"
               >
                 {downloading ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -445,7 +445,7 @@ const CertificateItem = ({ courseData }) => {
 
               <Link
                 to="/dashboard/my-courses"
-                className="inline-flex items-center gap-2 text-sm font-bold text-[#0891b2] hover:text-slate-900 transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600 hover:text-slate-900 transition-colors"
               >
                 <PlayCircle size={16} /> Resume Learning to Unlock
               </Link>

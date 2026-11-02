@@ -105,11 +105,11 @@ const MyCourses = () => {
         </div>
         <div className="flex gap-3">
           <div className="relative group">
-            <Search className="absolute left-3 top-3 size-4 text-slate-400 group-focus-within:text-[#5edff4]" />
+            <Search className="absolute left-3 top-3 size-4 text-slate-400 group-focus-within:text-emerald-500" />
             <input
               type="text"
               placeholder="Search..."
-              className="bg-white border border-slate-200 pl-10 pr-4 py-2.5 rounded-xl text-sm focus:border-[#5edff4] outline-none w-full sm:w-64"
+              className="bg-white border border-slate-200 pl-10 pr-4 py-2.5 rounded-xl text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none w-full sm:w-64 transition-all"
             />
           </div>
           <button className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600">
@@ -124,7 +124,7 @@ const MyCourses = () => {
           onClick={() => setFilterStatus("all")}
           className={`pb-3 text-sm font-bold ${
             filterStatus === "all"
-              ? "text-[#0891b2] border-b-2 border-[#0891b2]"
+              ? "text-emerald-600 border-b-2 border-emerald-500"
               : "text-slate-500"
           }`}
         >
@@ -134,7 +134,7 @@ const MyCourses = () => {
           onClick={() => setFilterStatus("in-progress")}
           className={`pb-3 text-sm font-bold ${
             filterStatus === "in-progress"
-              ? "text-[#0891b2] border-b-2 border-[#0891b2]"
+              ? "text-emerald-600 border-b-2 border-emerald-500"
               : "text-slate-500"
           }`}
         >
@@ -210,7 +210,7 @@ const MyCourses = () => {
                     <div
                       key={idx}
                       onClick={() => handlePlayVideo(idx)}
-                      className="group bg-white p-3 rounded-2xl border border-slate-200 hover:border-[#5edff4] hover:shadow-md transition-all cursor-pointer flex gap-4 items-center"
+                      className="group bg-white p-3 rounded-2xl border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer flex gap-4 items-center"
                     >
                       {/* Thumb */}
                       <div className="relative w-28 h-16 md:w-36 md:h-20 bg-slate-900 rounded-xl overflow-hidden shrink-0">
@@ -231,7 +231,7 @@ const MyCourses = () => {
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block">
                           Lesson {idx + 1}
                         </span>
-                        <h3 className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug group-hover:text-[#0891b2] transition-colors">
+                        <h3 className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug group-hover:text-emerald-600 transition-colors">
                           {video.title || `Video Part ${idx + 1}`}
                         </h3>
                         <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500">
@@ -242,7 +242,7 @@ const MyCourses = () => {
                       </div>
                       <ChevronRight
                         size={18}
-                        className="text-slate-300 group-hover:text-[#5edff4]"
+                        className="text-slate-300 group-hover:text-emerald-500"
                       />
                     </div>
                   ))

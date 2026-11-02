@@ -85,7 +85,7 @@ const EBookLibrary = () => {
   if (loading)
     return (
       <div className="h-64 flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#5edff4]" />
+        <Loader2 className="animate-spin text-emerald-500" />
       </div>
     );
 
@@ -102,13 +102,13 @@ const EBookLibrary = () => {
             </p>
           </div>
           <div className="relative group">
-            <Search className="absolute left-3 top-3 size-4 text-slate-400 group-focus-within:text-[#5edff4]" />
+            <Search className="absolute left-3 top-3 size-4 text-slate-400 group-focus-within:text-emerald-500" />
             <input
               type="text"
               placeholder="Search library..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white border border-slate-200 pl-10 pr-4 py-2.5 rounded-xl text-sm focus:border-[#5edff4] focus:ring-1 focus:ring-[#5edff4] outline-none w-full sm:w-64 transition-all"
+              className="bg-white border border-slate-200 pl-10 pr-4 py-2.5 rounded-xl text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none w-full sm:w-64 transition-all"
             />
           </div>
         </div>
@@ -138,14 +138,14 @@ const EBookLibrary = () => {
                       {canAccess ? (
                         <button
                           onClick={() => setSelectedBook(book)}
-                          className="px-4 py-2 bg-white text-slate-900 rounded-lg font-bold text-xs hover:bg-[#5edff4] transition-colors flex items-center gap-2"
+                          className="px-4 py-2 bg-white text-slate-900 rounded-lg font-bold text-xs hover:bg-emerald-400 transition-colors flex items-center gap-2"
                         >
                           <BookOpen className="size-4" /> Read Now
                         </button>
                       ) : (
                         <Link
                           to={`/ebooks/${book.id}`}
-                          className="px-4 py-2 bg-white text-slate-900 rounded-lg font-bold text-xs hover:bg-[#5edff4] transition-colors flex items-center gap-2"
+                          className="px-4 py-2 bg-white text-slate-900 rounded-lg font-bold text-xs hover:bg-emerald-400 transition-colors flex items-center gap-2"
                         >
                           <ShoppingBag className="size-4" /> Buy Now
                         </Link>
@@ -162,7 +162,7 @@ const EBookLibrary = () => {
                     {canAccess ? (
                       <button
                         onClick={() => setSelectedBook(book)}
-                        className="w-full py-3 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-[#5edff4] hover:text-slate-900 transition-colors text-center shadow-lg hover:shadow-[#5edff4]/20 flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-emerald-600 transition-colors text-center shadow-lg hover:shadow-emerald-600/20 flex items-center justify-center gap-2"
                       >
                         <Eye className="size-4" /> Read Book
                       </button>

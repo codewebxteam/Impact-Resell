@@ -25,7 +25,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // [LOGIC] Dynamic Colors & Name
-  const accentColor = agency?.accentColor || "#5edff4";
+  const accentColor = agency?.accentColor || "#10b981";
   const appName = !isMainSite && agency ? agency.name : "AI Courses";
 
   const handleLogout = async () => {
@@ -60,36 +60,34 @@ const Sidebar = ({ isOpen, onClose }) => {
   ];
 
   const SidebarContent = (
-    <div className="h-full flex flex-col bg-slate-900 text-white border-r border-slate-800 relative">
-      {/* 1. BRANDING AREA (DYNAMIC) */}
-      <div className="h-20 flex items-center px-6 border-b border-slate-800/50">
+    <div className="h-full flex flex-col bg-white text-slate-900 border-r border-slate-200 relative">
+      {/* 1. BRANDING AREA */}
+      <div className="p-6 sm:p-7 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-3">
-          {/* Logo Box with Dynamic Color */}
-          <div
-            className="p-2 rounded-xl"
-            style={{ backgroundColor: `${accentColor}1A` }} // 10% Opacity
-          >
-            <GraduationCap className="size-6" style={{ color: accentColor }} />
+          <div className="size-10 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl shadow-slate-200">
+            <GraduationCap size={22} className="text-emerald-400" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-lg tracking-wide text-white leading-none">
+          <div>
+            <span className="text-lg font-black tracking-tighter uppercase block leading-none text-slate-900">
               {appName}
             </span>
-            
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 block">
+              Student Portal
+            </span>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="ml-auto lg:hidden text-slate-400 hover:text-white"
+          className="lg:hidden p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
         >
-          <X className="size-6" />
+          <X className="size-5" />
         </button>
       </div>
 
       {/* 2. MENU ITEMS */}
-      <div className="flex-1 py-8 px-4 space-y-2 overflow-y-auto custom-scrollbar">
-        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-4 mb-4">
-          Menu
+      <div className="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+        <div className="text-[11px] font-black text-slate-400 uppercase tracking-wider px-4 mb-3">
+          Learning Menu
         </div>
         {menuItems.map((item) => (
           <NavLink
@@ -97,32 +95,45 @@ const Sidebar = ({ isOpen, onClose }) => {
             to={item.path}
             onClick={() => window.innerWidth < 1024 && onClose()}
             end={item.path === "/dashboard"}
-            style={({ isActive }) => ({
-              backgroundColor: isActive ? accentColor : "transparent",
-              color: isActive ? "#0f172a" : undefined, // Slate-900 text on active
-              boxShadow: isActive ? `0 0 20px ${accentColor}4D` : "none", // 30% Opacity Glow
-            })}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden ${
+              `w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all relative group ${
                 isActive
-                  ? "font-bold"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  ? "bg-slate-950 text-white shadow-xl shadow-slate-300 font-bold"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-semibold"
               }`
             }
           >
-            <item.icon className="size-5 relative z-10" />
-            <span className="relative z-10">{item.label}</span>
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <motion.div
+                    layoutId="studentSidebarActive"
+                    className="absolute left-0 w-1.5 h-6 bg-emerald-400 rounded-r-full"
+                  />
+                )}
+                <span
+                  className={`${
+                    isActive
+                      ? "text-emerald-400"
+                      : "text-slate-400 group-hover:text-slate-900"
+                  } transition-colors`}
+                >
+                  <item.icon className="size-5" />
+                </span>
+                <span className="text-sm tracking-tight">{item.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </div>
 
       {/* 3. LOGOUT BUTTON */}
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4 border-t border-slate-100 mt-auto">
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          className="flex items-center gap-3 w-full px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all font-medium"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-400 font-bold text-xs uppercase tracking-wider hover:bg-red-50 hover:text-red-500 transition-all border border-transparent cursor-pointer"
         >
-          <LogOut className="size-5" />
+          <LogOut size={18} />
           <span>Logout</span>
         </button>
       </div>
@@ -134,29 +145,29 @@ const Sidebar = ({ isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute inset-x-4 bottom-20 bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow-2xl z-50"
+            className="absolute inset-x-4 bottom-20 bg-white border border-slate-200 p-5 rounded-2xl shadow-2xl z-50 text-slate-900"
           >
-            <div className="flex items-center gap-3 mb-3 text-white">
-              <div className="p-2 bg-red-500/20 rounded-full text-red-500">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 bg-red-50 rounded-xl text-red-500">
                 <AlertTriangle className="size-5" />
               </div>
               <div>
-                <h4 className="font-bold text-sm">Are you sure?</h4>
-                <p className="text-xs text-slate-400">
-                  You will be logged out.
+                <h4 className="font-bold text-sm text-slate-900">Are you sure?</h4>
+                <p className="text-xs text-slate-500">
+                  You will be logged out of student portal.
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-1">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-2 bg-slate-700 text-white text-xs font-bold rounded-lg hover:bg-slate-600 transition-colors"
+                className="flex-1 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleLogout}
-                className="flex-1 py-2 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+                className="flex-1 py-2 bg-red-500 text-white text-xs font-bold rounded-xl hover:bg-red-600 transition-colors shadow-md shadow-red-500/20"
               >
                 Yes, Logout
               </button>

@@ -292,8 +292,8 @@ const Profile = () => {
       {/* --- HEADER SECTION --- */}
       <div className="relative rounded-[2.5rem] overflow-hidden bg-white shadow-xl shadow-slate-200/60 border border-slate-100">
         <div className="h-48 md:h-64 bg-slate-900 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-[#0891b2] to-slate-900 opacity-80" />
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#5edff4]/30 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-emerald-800/60 to-slate-900 opacity-90" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/5 font-bold text-9xl tracking-widest select-none">
             PROFILE
           </div>
@@ -306,7 +306,7 @@ const Profile = () => {
           <div className="relative group">
             <div className="size-32 md:size-40 rounded-[2rem] bg-white p-2 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500">
               <img
-                src={formData.photoURL || `https://ui-avatars.com/api/?name=${formData.name}&background=0f172a&color=5edff4&bold=true`}
+                src={formData.photoURL || `https://ui-avatars.com/api/?name=${formData.name}&background=0f172a&color=10b981&bold=true`}
                 alt="Profile"
                 className="size-full rounded-[1.5rem] object-cover bg-slate-100"
               />
@@ -321,7 +321,7 @@ const Profile = () => {
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={loading}
-              className="absolute bottom-2 right-2 p-3 bg-[#5edff4] text-slate-900 rounded-xl shadow-lg hover:scale-110 transition-transform border-2 border-white cursor-pointer disabled:opacity-50"
+              className="absolute bottom-2 right-2 p-3 bg-emerald-400 text-slate-950 rounded-xl shadow-lg hover:scale-110 transition-transform border-2 border-white cursor-pointer disabled:opacity-50"
             >
               <Camera className="size-5" />
             </button>
@@ -355,7 +355,7 @@ const Profile = () => {
                   <button
                     onClick={handleSave}
                     disabled={loading}
-                    className="flex-1 md:flex-none py-3 px-8 rounded-xl bg-slate-900 text-white font-bold hover:bg-[#5edff4] hover:text-slate-900 transition-all shadow-lg flex items-center justify-center gap-2 min-w-[140px] cursor-pointer"
+                    className="flex-1 md:flex-none py-3 px-8 rounded-xl bg-slate-900 text-white font-bold hover:bg-emerald-400 hover:text-slate-950 transition-all shadow-lg flex items-center justify-center gap-2 min-w-[140px] cursor-pointer"
                   >
                     {loading ? (
                       <Loader2 className="animate-spin size-5" />
@@ -369,7 +369,7 @@ const Profile = () => {
               ) : (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex-1 md:flex-none py-3 px-8 rounded-xl bg-slate-900 text-white font-bold hover:bg-[#5edff4] hover:text-slate-900 transition-all shadow-lg shadow-slate-900/20 cursor-pointer"
+                  className="flex-1 md:flex-none py-3 px-8 rounded-xl bg-slate-900 text-white font-bold hover:bg-emerald-400 hover:text-slate-950 transition-all shadow-lg shadow-slate-900/20 cursor-pointer"
                 >
                   Edit Profile
                 </button>
@@ -400,16 +400,16 @@ const Profile = () => {
           </div>
 
           <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-16 bg-[#5edff4]/10 rounded-full blur-2xl" />
+            <div className="absolute top-0 right-0 p-16 bg-emerald-500/10 rounded-full blur-2xl" />
             <h3 className="font-bold text-lg mb-2 relative z-10">
               Profile Strength
             </h3>
             <div className="flex items-end gap-2 mb-2 relative z-10">
-              <span className="text-4xl font-bold text-[#5edff4]">85%</span>
+              <span className="text-4xl font-bold text-emerald-400">85%</span>
               <span className="text-slate-400 text-sm mb-1">Completed</span>
             </div>
             <div className="h-2 bg-slate-700 rounded-full overflow-hidden mb-4 relative z-10">
-              <div className="h-full w-[85%] bg-[#5edff4] rounded-full" />
+              <div className="h-full w-[85%] bg-emerald-400 rounded-full" />
             </div>
             <button className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-colors relative z-10 cursor-pointer">
               Complete Now
@@ -478,14 +478,14 @@ const Profile = () => {
                     {isEditing ? (
                       <textarea
                         ref={bioRef}
-                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#5edff4] focus:ring-1 focus:ring-[#5edff4] outline-none min-h-[120px] font-medium text-slate-700 resize-none transition-all"
+                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none min-h-[120px] font-medium text-slate-700 resize-none transition-all"
                         defaultValue={formData.bio}
                       />
                     ) : (
                       <p className="p-4 bg-slate-50 rounded-2xl text-slate-600 leading-relaxed border border-transparent">
                         {formData.bio || "No bio added yet."}
                       </p>
-                    )},
+                    )}
                   </div>
 
                   <div className="pt-8 border-t border-slate-100">
@@ -582,7 +582,7 @@ const Profile = () => {
                       <button 
                         onClick={handlePasswordChange}
                         disabled={loading || !passwords.current || !passwords.new || !passwords.confirm}
-                        className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-[#5edff4] hover:text-slate-900 transition-all shadow-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         {loading ? <Loader2 className="animate-spin size-4" /> : null}
                         Update Password
@@ -688,13 +688,13 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
         }`}
   >
     <Icon
-      className={`size-5 ${active ? "text-[#5edff4]" : "text-slate-400"}`}
+      className={`size-5 ${active ? "text-emerald-400" : "text-slate-400"}`}
     />
     {label}
     {active && (
       <motion.div
         layoutId="active-pill"
-        className="ml-auto size-2 rounded-full bg-[#5edff4]"
+        className="ml-auto size-2 rounded-full bg-emerald-400"
       />
     )}
   </button>
@@ -715,7 +715,7 @@ const InputGroup = ({
 
   return (
     <div className="space-y-2 group">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1 group-focus-within:text-[#0891b2] transition-colors">
+      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1 group-focus-within:text-emerald-600 transition-colors">
         {label}
       </label>
       <div className="relative">
@@ -723,7 +723,7 @@ const InputGroup = ({
           <Icon
             className={`size-5 ${
               isEditing
-                ? "text-slate-400 group-focus-within:text-[#5edff4]"
+                ? "text-slate-400 group-focus-within:text-emerald-500"
                 : "text-slate-300"
             }`}
           />
@@ -737,7 +737,7 @@ const InputGroup = ({
           className={`w-full pl-12 pr-12 py-3.5 rounded-xl outline-none font-bold text-slate-700 transition-all
                     ${
                       isEditing
-                        ? "bg-slate-50 border border-slate-200 focus:border-[#5edff4] focus:ring-4 focus:ring-[#5edff4]/10 focus:bg-white shadow-sm"
+                        ? "bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white shadow-sm"
                         : "bg-transparent border border-transparent"
                     } ${disabled && "opacity-60 cursor-not-allowed"}`}
         />

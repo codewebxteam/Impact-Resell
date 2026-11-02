@@ -43,19 +43,22 @@ const DashboardHeader = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30">
+    <header className="h-20 lg:h-24 bg-[#F4F7FE]/80 backdrop-blur-xl border-b border-slate-200/80 flex items-center justify-between px-6 lg:px-10 sticky top-0 z-30">
       {/* Mobile Toggle & Welcome */}
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
-          className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg lg:hidden"
+          className="p-3 bg-white border border-slate-200 text-slate-900 rounded-2xl shadow-sm lg:hidden"
         >
-          <Menu className="size-6" />
+          <Menu className="size-5" />
         </button>
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
+            Student / <span className="text-slate-900">Learning Portal</span>
+          </p>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             {greeting},{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5edff4] to-[#0891b2]">
+            <span className="text-emerald-600 font-black">
               {firstName}
             </span>{" "}
             👋
@@ -69,7 +72,7 @@ const DashboardHeader = ({ onMenuClick }) => {
         {isPartner && (
           <div
             onClick={() => navigate("/partner")}
-            className="flex items-center gap-2 sm:gap-3 bg-slate-50 border border-slate-200/90 shadow-sm hover:shadow-md rounded-full py-1.5 px-3 sm:px-4 cursor-pointer hover:border-emerald-300 transition-all group select-none"
+            className="flex items-center gap-2 sm:gap-3 bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-sm hover:shadow-md rounded-full py-1.5 px-3 sm:px-4 cursor-pointer hover:border-emerald-300 transition-all group select-none"
             title="Toggle back to Partner Panel"
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 group-hover:text-emerald-600 transition-colors">
@@ -81,39 +84,39 @@ const DashboardHeader = ({ onMenuClick }) => {
             <div
               role="switch"
               aria-checked="true"
-              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-indigo-600 group-hover:bg-indigo-700 transition-colors duration-200 ease-in-out"
+              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-950 group-hover:bg-slate-900 transition-colors duration-200 ease-in-out"
             >
               <span
-                className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out translate-x-5"
+                className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-emerald-400 shadow-md ring-0 transition duration-200 ease-in-out translate-x-5"
               />
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs font-black text-indigo-600">
-              <span className="size-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            <div className="flex items-center gap-1.5 text-xs font-black text-emerald-600">
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>Student</span>
             </div>
           </div>
         )}
 
-        <div className="hidden md:flex items-center bg-slate-100 rounded-full px-4 py-2.5 w-64">
+        <div className="hidden md:flex items-center bg-white border border-slate-200/80 rounded-full px-4 py-2 w-64 shadow-2xs">
           <Search className="size-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search..."
-            className="bg-transparent border-none outline-none text-sm ml-2 w-full text-slate-700"
+            placeholder="Search learning materials..."
+            className="bg-transparent border-none outline-none text-xs ml-2 w-full text-slate-700 font-medium"
           />
         </div>
 
-        <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full">
-          <Bell className="size-5" />
-          <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white"></span>
+        <button className="relative p-2.5 text-slate-600 hover:text-slate-900 bg-white border border-slate-200/80 hover:bg-slate-50 rounded-2xl shadow-2xs transition-colors">
+          <Bell className="size-4" />
+          <span className="absolute top-2 right-2 size-2 bg-emerald-500 rounded-full border-2 border-white"></span>
         </button>
 
         {/* PROFILE DROPDOWN */}
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className="size-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm border-2 border-slate-100 shadow-sm hover:scale-105 transition-transform"
+            className="size-10 rounded-2xl bg-slate-900 text-emerald-400 flex items-center justify-center font-black text-sm border-2 border-white shadow-md hover:scale-105 transition-transform"
           >
             {firstName[0]}
           </button>

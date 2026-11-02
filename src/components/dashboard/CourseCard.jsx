@@ -84,7 +84,7 @@ const CourseCard = ({ course, onPlay }) => {
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button
             onClick={() => onPlay && onPlay(course)}
-            className="bg-white/20 backdrop-blur-md p-3 rounded-full border border-white/50 text-white hover:bg-[#5edff4] hover:text-black transition-all transform hover:scale-110"
+            className="bg-white/20 backdrop-blur-md p-3 rounded-full border border-white/50 text-white hover:bg-emerald-400 hover:text-slate-950 transition-all transform hover:scale-110"
           >
             <PlayCircle className="size-10" />
           </button>
@@ -92,12 +92,12 @@ const CourseCard = ({ course, onPlay }) => {
 
         {totalLectures > 0 && (
           <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5">
-            <ListVideo size={12} className="text-[#5edff4]" />
+            <ListVideo size={12} className="text-emerald-400" />
             {totalLectures} Videos
           </div>
         )}
 
-        <div className="absolute bottom-3 right-3 px-3 py-1 bg-slate-900/90 backdrop-blur-md rounded-lg text-xs font-bold text-[#5edff4] border border-white/10">
+        <div className="absolute bottom-3 right-3 px-3 py-1 bg-slate-900/90 backdrop-blur-md rounded-lg text-xs font-bold text-emerald-400 border border-white/10">
           {isCompleted ? (
             <span className="flex items-center gap-1">
               <CheckCircle size={12} /> Done
@@ -111,7 +111,7 @@ const CourseCard = ({ course, onPlay }) => {
       {/* Content */}
       <div className="p-5 flex flex-col flex-1">
         <div className="mb-4">
-          <h3 className="font-bold text-lg text-slate-900 leading-tight mb-3 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+          <h3 className="font-bold text-lg text-slate-900 leading-tight mb-3 line-clamp-2 group-hover:text-emerald-600 transition-colors">
             {course.title || "Untitled Course"}
           </h3>
 
@@ -119,7 +119,7 @@ const CourseCard = ({ course, onPlay }) => {
             <div className="flex items-center gap-1.5">
               <span
                 className={`size-2 rounded-full ${
-                  course.lastAccessed ? "bg-green-500" : "bg-slate-300"
+                  course.lastAccessed ? "bg-emerald-500" : "bg-slate-300"
                 }`}
               />
               {timeAgo}
@@ -145,11 +145,11 @@ const CourseCard = ({ course, onPlay }) => {
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
               Up Next
             </p>
-            <div className="flex items-center justify-between p-2 bg-indigo-50/50 hover:bg-indigo-50 rounded-lg border border-indigo-100 transition-colors">
+            <div className="flex items-center justify-between p-2 bg-emerald-50/60 hover:bg-emerald-50 rounded-lg border border-emerald-100 transition-colors">
               <p className="text-xs font-bold text-slate-900 truncate flex-1 pr-2">
                 {nextLectureTitle}
               </p>
-              <ChevronRight size={14} className="text-indigo-400" />
+              <ChevronRight size={14} className="text-emerald-500" />
             </div>
           </div>
         )}
@@ -160,7 +160,7 @@ const CourseCard = ({ course, onPlay }) => {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
-                className="h-full bg-gradient-to-r from-[#5edff4] to-[#0891b2] rounded-full"
+                className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"
               />
             </div>
           )}
@@ -170,7 +170,7 @@ const CourseCard = ({ course, onPlay }) => {
             className={`w-full block text-center py-3 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95 ${
               isCompleted
                 ? "bg-emerald-500 text-white hover:bg-emerald-600"
-                : "bg-slate-900 text-white hover:bg-indigo-600"
+                : "bg-slate-900 text-white hover:bg-emerald-600"
             }`}
           >
             {isCompleted
