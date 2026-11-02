@@ -105,24 +105,52 @@ export const AuthProvider = ({ children }) => {
       const uData = userSnap.exists() ? userSnap.data() : null;
 
       if (resellerSnap.exists()) {
-        currentRole = "partner";
-        if (!uData || uData.role !== "partner") {
-          await setDoc(
-            userDocRef,
-            {
-              uid,
-              name: res.user.displayName || uData?.name || "Partner",
-              email: res.user.email,
-              role: "partner",
+        const resData = resellerSnap.data();
+        if (resData.accessType === "course") {
+          currentRole = "student";
+          if (!uData || uData.role !== "student") {
+            await setDoc(
+              userDocRef,
+              {
+                uid,
+                name: res.user.displayName || uData?.name || "Student",
+                email: res.user.email,
+                role: "student",
+                updatedAt: new Date().toISOString(),
+              },
+              { merge: true }
+            );
+          }
+          // Ensure student gets access to all courses
+          const ecRef = doc(db, "enrolledCourses", uid);
+          const ecSnap = await getDoc(ecRef);
+          if (!ecSnap.exists()) {
+            await setDoc(ecRef, {
+              userId: uid,
+              courses: [{ courseId: "bundle", title: "All Courses Bundle Access", enrolledAt: new Date().toISOString() }],
               updatedAt: new Date().toISOString(),
-            },
-            { merge: true }
-          );
-          await setDoc(
-            doc(db, "allowedResellers", emailLower),
-            { status: "registered", registeredAt: new Date().toISOString() },
-            { merge: true }
-          );
+            });
+          }
+        } else {
+          currentRole = "partner";
+          if (!uData || uData.role !== "partner") {
+            await setDoc(
+              userDocRef,
+              {
+                uid,
+                name: res.user.displayName || uData?.name || "Partner",
+                email: res.user.email,
+                role: "partner",
+                updatedAt: new Date().toISOString(),
+              },
+              { merge: true }
+            );
+            await setDoc(
+              doc(db, "allowedResellers", emailLower),
+              { status: "registered", registeredAt: new Date().toISOString() },
+              { merge: true }
+            );
+          }
         }
       } else if (uData?.role) {
         currentRole = uData.role;
@@ -175,18 +203,17 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
-  // 4. Reset Password Function — user ke email pe Firebase reset link bhejta hai (works on main site & subdomains)
+  // 4. Reset Password Function — user ke email pe Firebase reset link bhejta hai
   const resetPassword = async (email) => {
+    const cleanEmail = (email || "").trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new Error("Email address is required.");
+    }
     try {
-      const currentOrigin = typeof window !== "undefined" ? window.location.origin : `https://${MAIN_DOMAIN}`;
-      const actionCodeSettings = {
-        url: currentOrigin,
-      };
-      return await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      return await sendPasswordResetEmail(auth, cleanEmail);
     } catch (error) {
-      console.warn("Reset password with actionCodeSettings failed, attempting standard fallback:", error);
-      // Fallback: standard sendPasswordResetEmail without actionCodeSettings (always succeeds on subdomains and custom domains)
-      return await sendPasswordResetEmail(auth, email);
+      console.error("Firebase sendPasswordResetEmail error:", error);
+      throw error;
     }
   };
 
@@ -204,7 +231,32 @@ export const AuthProvider = ({ children }) => {
           if (emailLower) {
             const resellerSnap = await getDoc(doc(db, "allowedResellers", emailLower));
             if (resellerSnap.exists()) {
-              isPartnerWhitelisted = true;
+              const resData = resellerSnap.data();
+              if (resData.accessType === "course") {
+                // Course access student
+                if (!uData || uData.role !== "student") {
+                  const updated = {
+                    uid: user.uid,
+                    name: user.displayName || uData?.name || "Student",
+                    email: user.email,
+                    role: "student",
+                    updatedAt: new Date().toISOString(),
+                  };
+                  await setDoc(userDocRef, updated, { merge: true });
+                  uData = { ...(uData || {}), ...updated, role: "student" };
+                }
+                const ecRef = doc(db, "enrolledCourses", user.uid);
+                const ecSnap = await getDoc(ecRef);
+                if (!ecSnap.exists()) {
+                  await setDoc(ecRef, {
+                    userId: user.uid,
+                    courses: [{ courseId: "bundle", title: "All Courses Bundle Access", enrolledAt: new Date().toISOString() }],
+                    updatedAt: new Date().toISOString(),
+                  });
+                }
+              } else {
+                isPartnerWhitelisted = true;
+              }
             }
           }
 

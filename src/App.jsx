@@ -45,6 +45,8 @@ const SyncPartnerRoles = () => {
         // General sync for all allowed resellers in users collection
         const allowedSnap = await getDocs(collection(db, "allowedResellers"));
         for (const rDoc of allowedSnap.docs) {
+          const rData = rDoc.data();
+          if (rData.accessType === "course") continue; // Keep course users as students!
           const email = rDoc.id.toLowerCase().trim();
           if (email) {
             const uQ = query(collection(db, "users"), where("email", "==", email));
@@ -150,16 +152,29 @@ import StudentIntelligence from "./pages/partner/StudentIntelligence";
 import PartnerCourseManager from "./components/dashboard/partner/PartnerCourseManager";
 import PartnerMyCourses from "./components/dashboard/partner/PartnerMyCourses";
 
-// --- Admin Pages ---
-import AdminLayout from "./pages/Admin/AdminLayout";
-import IntelligenceHub from "./components/Admin/IntelligenceHub";
-import PartnerIntelligence from "./components/Admin/PartnerIntelligence";
-import StudentData from "./components/Admin/StudentData";
-import SalesManager from "./components/Admin/SalesManager";
-import PaymentManager from "./components/Admin/PaymentManager";
-import CourseManager from "./components/Admin/CourseManager";
-import EBookManager from "./components/Admin/EBookManager";
-import ResellManager from "./components/Admin/ResellManager";
+// --- Contexts ---
+import { AdminModeProvider, useAdminMode } from "./context/AdminModeContext";
+
+// --- Classic Admin Pages ---
+import ClassicAdminLayout from "./pages/Admin/AdminLayout";
+import ClassicIntelligenceHub from "./components/Admin/IntelligenceHub";
+import ClassicPartnerIntelligence from "./components/Admin/PartnerIntelligence";
+import ClassicStudentData from "./components/Admin/StudentData";
+import ClassicSalesManager from "./components/Admin/SalesManager";
+import ClassicPaymentManager from "./components/Admin/PaymentManager";
+import ClassicCourseManager from "./components/Admin/CourseManager";
+import ClassicResellManager from "./components/Admin/ResellManager";
+
+// --- New Admin Pages (pages/Admin new) ---
+import NewAdminLayout from "./pages/Admin new/AdminLayout";
+import NewIntelligenceHub from "./pages/Admin new/IntelligenceHub";
+import NewPartnerData from "./pages/Admin new/PartnerData";
+import NewStudentData from "./pages/Admin new/StudentData";
+import NewSalesManager from "./pages/Admin new/SalesManager";
+import NewCourseManager from "./pages/Admin new/CourseManager";
+import NewResellManager from "./pages/Admin new/ResellManager";
+import NewUserAccessManager from "./pages/Admin new/UserAccessManager";
+import NewDemoManager from "./pages/Admin new/DemoManager";
 
 // --- Scroll To Top Helper ---
 const ScrollToTop = () => {
@@ -176,10 +191,6 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) return null;
   if (!currentUser) return <Navigate to="/" replace />;
-
-  if (userData && userData.role === "partner") {
-    return <Navigate to="/partner" replace />;
-  }
 
   if (userData && userData.role === "admin") {
     return <Navigate to="/admin" replace />;
@@ -276,6 +287,7 @@ const VerifyPage = () => {
 
 const AppContent = () => {
   const { loading: agencyLoading } = useAgency();
+  const { adminMode } = useAdminMode();
 
   if (agencyLoading) {
     return <FullPageSkeleton />;
@@ -358,24 +370,44 @@ const AppContent = () => {
           <Route path="profile" element={<Profile />} />
         </Route>
 
-        {/* ADMIN DASHBOARD ROUTES */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminLayout />
-            </AdminRoute>
-          }
-        >
-          <Route index element={<IntelligenceHub />} />
-          <Route path="partners" element={<PartnerIntelligence />} />
-          <Route path="students" element={<StudentData />} />
-          <Route path="sales" element={<SalesManager />} />
-          <Route path="payments" element={<PaymentManager />} />
-          <Route path="courses" element={<CourseManager />} />
-          {/* <Route path="ebooks" element={<EBookManager />} /> */}
-          <Route path="partner-access" element={<ResellManager/>}/>
-        </Route>
+        {/* ADMIN DASHBOARD ROUTES (New vs Classic Toggle) */}
+        {adminMode === "new" ? (
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <NewAdminLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<NewIntelligenceHub />} />
+            <Route path="students" element={<NewStudentData />} />
+            <Route path="sales" element={<NewSalesManager />} />
+            <Route path="courses" element={<NewCourseManager />} />
+            <Route path="demo" element={<NewDemoManager />} />
+            <Route path="users" element={<NewDemoManager />} />
+            <Route path="resell" element={<NewResellManager />} />
+            <Route path="partner-access" element={<NewResellManager />} />
+            <Route path="partners" element={<NewPartnerData />} />
+          </Route>
+        ) : (
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <ClassicAdminLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<ClassicIntelligenceHub />} />
+            <Route path="partners" element={<ClassicPartnerIntelligence />} />
+            <Route path="students" element={<ClassicStudentData />} />
+            <Route path="sales" element={<ClassicSalesManager />} />
+            <Route path="payments" element={<ClassicPaymentManager />} />
+            <Route path="courses" element={<ClassicCourseManager />} />
+            <Route path="partner-access" element={<ClassicResellManager />} />
+          </Route>
+        )}
 
         {/* STUDENT DASHBOARD ROUTES */}
         <Route
@@ -406,16 +438,18 @@ const AppContent = () => {
 const App = () => {
   return (
     <Router>
-      <AgencyProvider>
-        <SyncPartnerRoles />
-        <FixDemoStudent />
-        <ScrollToTop />
-        <EBookProvider>
-          <CourseProvider>
-            <AppContent />
-          </CourseProvider>
-        </EBookProvider>
-      </AgencyProvider>
+      <AdminModeProvider>
+        <AgencyProvider>
+          <SyncPartnerRoles />
+          <FixDemoStudent />
+          <ScrollToTop />
+          <EBookProvider>
+            <CourseProvider>
+              <AppContent />
+            </CourseProvider>
+          </EBookProvider>
+        </AgencyProvider>
+      </AdminModeProvider>
     </Router>
   );
 };

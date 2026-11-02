@@ -221,9 +221,6 @@ const Footer = () => {
     Company: [
       { name: "About Us", href: "/about" },
       { name: "Contact Us", href: "/contact" },
-      ...(isMainSite
-        ? [{ name: "Register as a Partner", href: "#", isPartner: true }]
-        : []),
     ],
     Resources: [
       { name: "Verify Certificate", href: "/verify" },

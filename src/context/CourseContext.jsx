@@ -30,14 +30,15 @@ const CourseContext = createContext();
 export const useCourse = () => useContext(CourseContext);
 
 export const CourseProvider = ({ children }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const { isPartner, agency, isMainSite } = useAgency();
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const updateTimeoutRef = useRef(null);
 
-  const resolveBundleCourses = async (coursesData) => {
-    const hasBundle = coursesData.some(c => c.courseId === "bundle");
-    if (!hasBundle) return coursesData;
+  const resolveBundleCourses = async (coursesData = []) => {
+    const isPartnerUser = userData?.role === "partner" || isPartner;
+    const hasBundle = (coursesData || []).some(c => c.courseId === "bundle");
+    if (!hasBundle && !isPartnerUser) return coursesData;
 
     try {
       const coursesSnap = await getDocs(collection(db, "courseVideos"));
@@ -50,7 +51,7 @@ export const CourseProvider = ({ children }) => {
       }
       
       const dynamicCourses = allCourses.map(c => {
-        const existing = coursesData.find(ec => ec.courseId === c.id);
+        const existing = (coursesData || []).find(ec => ec.courseId === c.id);
         if (existing) return existing;
 
         let safeLectures = [];
@@ -80,10 +81,8 @@ export const CourseProvider = ({ children }) => {
         };
       });
 
-      return [
-        ...dynamicCourses,
-        coursesData.find(c => c.courseId === "bundle")
-      ];
+      const bundleItem = (coursesData || []).find(c => c.courseId === "bundle");
+      return bundleItem ? [...dynamicCourses, bundleItem] : dynamicCourses;
     } catch (err) {
       console.error("Failed to dynamically load bundle courses", err);
       return coursesData;
@@ -95,9 +94,13 @@ export const CourseProvider = ({ children }) => {
       const docRef = doc(db, "enrolledCourses", currentUser.uid);
 
       const unsubscribe = onSnapshot(docRef, async (docSnap) => {
+        const isPartnerUser = userData?.role === "partner" || isPartner;
         if (docSnap.exists()) {
           const coursesData = docSnap.data().courses || [];
           const resolvedData = await resolveBundleCourses(coursesData);
+          setEnrolledCourses(resolvedData);
+        } else if (isPartnerUser) {
+          const resolvedData = await resolveBundleCourses([]);
           setEnrolledCourses(resolvedData);
         } else {
           setEnrolledCourses([]);
@@ -108,16 +111,20 @@ export const CourseProvider = ({ children }) => {
     } else {
       setEnrolledCourses([]);
     }
-  }, [currentUser]);
+  }, [currentUser, userData, isPartner, isMainSite, agency?.id]);
 
   const loadEnrolledCourses = async () => {
     if (!currentUser) return;
     try {
+      const isPartnerUser = userData?.role === "partner" || isPartner;
       const docRef = doc(db, "enrolledCourses", currentUser.uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const coursesData = docSnap.data().courses || [];
         const resolvedData = await resolveBundleCourses(coursesData);
+        setEnrolledCourses(resolvedData);
+      } else if (isPartnerUser) {
+        const resolvedData = await resolveBundleCourses([]);
         setEnrolledCourses(resolvedData);
       }
     } catch (error) {
@@ -264,7 +271,7 @@ export const CourseProvider = ({ children }) => {
         updateTimeoutRef.current = setTimeout(async () => {
           try {
             const docRef = doc(db, "enrolledCourses", currentUser.uid);
-            await updateDoc(docRef, { courses: updatedCourses });
+            await setDoc(docRef, { courses: updatedCourses }, { merge: true });
 
             // Update progress in orders collection
             await updateOrderProgress(

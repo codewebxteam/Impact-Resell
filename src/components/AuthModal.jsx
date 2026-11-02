@@ -149,19 +149,20 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
   // --- FORGOT PASSWORD HANDLER ---
   const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    if (!formData.email || !formData.email.includes("@")) {
+    if (e && e.preventDefault) e.preventDefault();
+    const cleanEmail = (formData.email || "").trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
       setErrors({ email: "Please enter a valid email address." });
       return;
     }
     setLoading(true);
     setErrors({});
     try {
-      await resetPassword(formData.email);
+      await resetPassword(cleanEmail);
       setResetEmailSent(true);
     } catch (error) {
       console.error("Reset Password Error:", error);
-      let msg = "Something went wrong. Please try again.";
+      let msg = "Failed to send reset link. Please check your email.";
       if (error.code === "auth/user-not-found") msg = "No account found with this email.";
       if (error.code === "auth/invalid-email") msg = "Please enter a valid email address.";
       if (error.code === "auth/too-many-requests") msg = "Too many attempts. Please try again later.";
@@ -197,7 +198,9 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
         // Check if whitelisted partner
         const resellerSnap = await getDoc(doc(db, "allowedResellers", emailLower));
-        const isPartnerUser = userDocData?.role === "partner" || resellerSnap.exists();
+        const resData = resellerSnap.exists() ? resellerSnap.data() : null;
+        const isCourseStudent = resData?.accessType === "course";
+        const isPartnerUser = (userDocData?.role === "partner" || (resellerSnap.exists() && !isCourseStudent));
 
         if (isPartnerUser) {
           navigate("/partner");
@@ -207,8 +210,13 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           navigate("/dashboard");
         }
       } else {
-        const userRole = mode === "partner" ? "partner" : "student";
-        const partnerIdForSignup = mode === "partner" ? null : (isPartner ? agency.id : "direct");
+        const emailLower = formData.email.toLowerCase().trim();
+        const resellerSnap = await getDoc(doc(db, "allowedResellers", emailLower));
+        const resData = resellerSnap.exists() ? resellerSnap.data() : null;
+        const isCourseStudent = resData?.accessType === "course";
+
+        const userRole = (mode === "partner" && !isCourseStudent) ? "partner" : "student";
+        const partnerIdForSignup = userRole === "partner" ? null : (isPartner ? agency.id : "direct");
 
         // Firebase Signup
         await signup(
@@ -220,13 +228,15 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
           partnerIdForSignup
         );
 
-        // If Partner, update the allowedResellers status to "registered"
-        if (mode === "partner") {
-          const emailLower = formData.email.toLowerCase().trim();
+        if (resellerSnap.exists()) {
           await updateDoc(doc(db, "allowedResellers", emailLower), {
             status: "registered",
             registeredAt: new Date().toISOString(),
           });
+        }
+
+        // If Partner, navigate to agency setup, else student dashboard
+        if (userRole === "partner") {
           navigate("/agency-setup");
         } else {
           navigate("/dashboard");
@@ -291,190 +301,112 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         </div>
 
         <div className="p-8 overflow-y-auto custom-scrollbar">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* LOGIN MODE FIELDS */}
-            {mode === "login" && (
-              <>
-                <InputGroup
-                  icon={Mail}
-                  name="email"
-                  type="email"
-                  placeholder="Email Address"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-3.5 size-5 text-slate-400 group-focus-within:text-[#0891b2] transition-colors" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="Password"
-                    value={formData.password}
+          {mode === "forgotPassword" ? (
+            /* FORGOT PASSWORD MODE */
+            <div>
+              {resetEmailSent ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center space-y-4 py-4"
+                >
+                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-8 h-8 text-emerald-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Check your inbox!</h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                      We've sent a password reset link to<br />
+                      <span className="font-bold text-slate-700">{formData.email}</span>
+                    </p>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Didn't receive it? Please check your spam folder.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      setResetEmailSent(false);
+                      setErrors({});
+                    }}
+                    className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-[#0891b2] transition-all mt-2 cursor-pointer shadow-md"
+                  >
+                    Back to Login
+                  </button>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <InputGroup
+                    icon={Mail}
+                    name="email"
+                    type="email"
+                    placeholder="Your registered email address"
+                    value={formData.email}
                     onChange={handleChange}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-12 outline-none focus:border-[#0891b2] focus:ring-1 focus:ring-[#0891b2] font-medium text-slate-700"
+                    error={errors.email}
                     required
                   />
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-slate-900 text-white font-bold text-base py-3.5 rounded-xl hover:bg-[#0891b2] transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    {showPassword ? (
-                      <EyeOff className="size-5" />
-                    ) : (
-                      <Eye className="size-5" />
-                    )}
-                  </button>
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setMode("forgotPassword")}
-                    className="text-sm font-bold text-[#0891b2] hover:text-[#5edff4]"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* FORGOT PASSWORD MODE */}
-            {mode === "forgotPassword" && (
-              <>
-                {resetEmailSent ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center space-y-4 py-4"
-                  >
-                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">Check your inbox!</h3>
-                      <p className="text-sm text-slate-500 mt-1">
-                        We've sent a password reset link to<br />
-                        <span className="font-bold text-slate-700">{formData.email}</span>
-                      </p>
-                    </div>
-                    <p className="text-xs text-slate-400">Didn't receive it? Check your spam folder.</p>
-                    <button
-                      type="button"
-                      onClick={() => { setMode("login"); setResetEmailSent(false); }}
-                      className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-[#0891b2] transition-all mt-2"
-                    >
-                      Back to Login
-                    </button>
-                  </motion.div>
-                ) : (
-                  <form onSubmit={handleForgotPassword} className="space-y-4">
-                    <InputGroup
-                      icon={Mail}
-                      name="email"
-                      type="email"
-                      placeholder="Your registered email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      error={errors.email}
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full bg-slate-900 text-white font-bold text-lg py-3.5 rounded-xl hover:bg-[#0891b2] transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? (
-                        <Loader2 className="animate-spin size-6" />
-                      ) : (
-                        <><Mail className="size-5" /> Send Reset Link</>
-                      )}
-                    </button>
-                    <div className="text-center">
-                      <button
-                        type="button"
-                        onClick={() => setMode("login")}
-                        className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                      >
-                        ← Back to Login
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </>
-            )}
-
-            {/* EMAIL VERIFICATION FIELD FOR PARTNER / SIGNUP */}
-            {(mode === "signup" || mode === "partner") && (
-              <div className="space-y-3">
-                <InputGroup
-                  icon={Mail}
-                  name="email"
-                  type="email"
-                  placeholder="Email Address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={mode === "partner" && partnerVerified}
-                  success={mode === "partner" && partnerVerified}
-                  error={errors.email}
-                />
-
-                {/* Show Verify Button ONLY for Partners if not verified */}
-                {mode === "partner" && !partnerVerified && (
-                  <button
-                    type="button"
-                    onClick={handleVerifyEmail}
-                    disabled={verifying}
-                    className="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold py-3 rounded-xl hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
-                  >
-                    {verifying ? (
+                    {loading ? (
                       <Loader2 className="animate-spin size-5" />
                     ) : (
                       <>
-                        <BadgeCheck className="size-5" /> Verify Access
+                        <Mail className="size-5" /> Send Reset Link
                       </>
                     )}
                   </button>
-                )}
-              </div>
-            )}
-
-            {/* SHOW REMAINING FIELDS ONLY IF SIGNUP OR (PARTNER && VERIFIED) */}
-            {(mode === "signup" || (mode === "partner" && partnerVerified)) && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="space-y-4 pt-1"
-              >
-                {mode === "partner" && partnerVerified && (
-                  <div className="bg-emerald-50 text-emerald-700 text-xs font-bold p-3 rounded-xl flex items-center gap-2 border border-emerald-200">
-                    <CheckCircle2Icon /> Email Verified! Please complete your
-                    profile below.
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode("login");
+                        setErrors({});
+                      }}
+                      className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                    >
+                      ← Back to Login
+                    </button>
                   </div>
-                )}
-                <InputGroup
-                  icon={User}
-                  name="name"
-                  placeholder="Full Name"
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-                <InputGroup
-                  icon={Phone}
-                  name="phone"
-                  placeholder="Phone Number"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
-
-                <div className="space-y-4">
+                </form>
+              )}
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* LOGIN MODE FIELDS */}
+              {mode === "login" && (
+                <>
+                  <InputGroup
+                    icon={Mail}
+                    name="email"
+                    type="email"
+                    placeholder="Email Address"
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
                   <div className="relative group">
                     <Lock className="absolute left-4 top-3.5 size-5 text-slate-400 group-focus-within:text-[#0891b2] transition-colors" />
                     <input
                       type={showPassword ? "text" : "password"}
                       name="password"
-                      placeholder="Create Password"
+                      placeholder="Password"
                       value={formData.password}
                       onChange={handleChange}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-12 outline-none focus:border-[#0891b2] focus:ring-1 focus:ring-[#0891b2] font-medium text-slate-700"
@@ -492,68 +424,173 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
                       )}
                     </button>
                   </div>
-
-                  {formData.password && (
-                    <div className="px-1 space-y-1.5">
-                      <div className="flex justify-between items-center px-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                          Security Strength
-                        </span>
-                        <span
-                          className={`text-[10px] font-black uppercase ${strength.color.replace("bg-", "text-")}`}
-                        >
-                          {strength.label}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${strength.score}%` }}
-                          className={`h-full ${strength.color} transition-all duration-500`}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-3.5 size-5 text-slate-400 group-focus-within:text-[#0891b2] transition-colors" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="confirmPassword"
-                      placeholder="Confirm Password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      className={`w-full bg-slate-50 border rounded-xl py-3 pl-12 pr-4 outline-none focus:ring-1 font-medium text-slate-700 ${errors.confirmPassword ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-slate-200 focus:border-[#0891b2] focus:ring-[#0891b2]"}`}
-                      required
-                    />
-                    {errors.confirmPassword && (
-                      <p className="text-xs text-red-500 mt-1 ml-1">
-                        {errors.confirmPassword}
-                      </p>
-                    )}
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode("forgotPassword");
+                        setErrors({});
+                        setResetEmailSent(false);
+                      }}
+                      className="text-sm font-bold text-[#0891b2] hover:text-[#5edff4] cursor-pointer"
+                    >
+                      Forgot Password?
+                    </button>
                   </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* MAIN ACTION BUTTON */}
-            <button
-              type="submit"
-              disabled={loading || (mode === "partner" && !partnerVerified)}
-              className="w-full bg-slate-900 text-white font-bold text-lg py-3.5 rounded-xl hover:bg-[#0891b2] transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-            >
-              {loading ? (
-                <Loader2 className="animate-spin size-6" />
-              ) : (
-                <>
-                  {mode === "login" && "Login"}
-                  {mode === "signup" && "Create Account"}
-                  {mode === "partner" && "Complete Registration"}{" "}
-                  <ArrowRight className="size-5" />
                 </>
               )}
-            </button>
-          </form>
+
+              {/* EMAIL VERIFICATION FIELD FOR PARTNER / SIGNUP */}
+              {(mode === "signup" || mode === "partner") && (
+                <div className="space-y-3">
+                  <InputGroup
+                    icon={Mail}
+                    name="email"
+                    type="email"
+                    placeholder="Email Address"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={mode === "partner" && partnerVerified}
+                    success={mode === "partner" && partnerVerified}
+                    error={errors.email}
+                  />
+
+                  {/* Show Verify Button ONLY for Partners if not verified */}
+                  {mode === "partner" && !partnerVerified && (
+                    <button
+                      type="button"
+                      onClick={handleVerifyEmail}
+                      disabled={verifying}
+                      className="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold py-3 rounded-xl hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
+                    >
+                      {verifying ? (
+                        <Loader2 className="animate-spin size-5" />
+                      ) : (
+                        <>
+                          <BadgeCheck className="size-5" /> Verify Access
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* SHOW REMAINING FIELDS ONLY IF SIGNUP OR (PARTNER && VERIFIED) */}
+              {(mode === "signup" || (mode === "partner" && partnerVerified)) && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="space-y-4 pt-1"
+                >
+                  {mode === "partner" && partnerVerified && (
+                    <div className="bg-emerald-50 text-emerald-700 text-xs font-bold p-3 rounded-xl flex items-center gap-2 border border-emerald-200">
+                      <CheckCircle2Icon /> Email Verified! Please complete your
+                      profile below.
+                    </div>
+                  )}
+                  <InputGroup
+                    icon={User}
+                    name="name"
+                    placeholder="Full Name"
+                    value={formData.name}
+                    onChange={handleChange}
+                  />
+                  <InputGroup
+                    icon={Phone}
+                    name="phone"
+                    placeholder="Phone Number"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                  />
+
+                  <div className="space-y-4">
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-3.5 size-5 text-slate-400 group-focus-within:text-[#0891b2] transition-colors" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        placeholder="Create Password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-12 outline-none focus:border-[#0891b2] focus:ring-1 focus:ring-[#0891b2] font-medium text-slate-700"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="size-5" />
+                        ) : (
+                          <Eye className="size-5" />
+                        )}
+                      </button>
+                    </div>
+
+                    {formData.password && (
+                      <div className="px-1 space-y-1.5">
+                        <div className="flex justify-between items-center px-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                            Security Strength
+                          </span>
+                          <span
+                            className={`text-[10px] font-black uppercase ${strength.color.replace("bg-", "text-")}`}
+                          >
+                            {strength.label}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${strength.score}%` }}
+                            className={`h-full ${strength.color} transition-all duration-500`}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-3.5 size-5 text-slate-400 group-focus-within:text-[#0891b2] transition-colors" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        placeholder="Confirm Password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className={`w-full bg-slate-50 border rounded-xl py-3 pl-12 pr-4 outline-none focus:ring-1 font-medium text-slate-700 ${errors.confirmPassword ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-slate-200 focus:border-[#0891b2] focus:ring-[#0891b2]"}`}
+                        required
+                      />
+                      {errors.confirmPassword && (
+                        <p className="text-xs text-red-500 mt-1 ml-1">
+                          {errors.confirmPassword}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* MAIN ACTION BUTTON */}
+              <button
+                type="submit"
+                disabled={loading || (mode === "partner" && !partnerVerified)}
+                className="w-full bg-slate-900 text-white font-bold text-lg py-3.5 rounded-xl hover:bg-[#0891b2] transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              >
+                {loading ? (
+                  <Loader2 className="animate-spin size-6" />
+                ) : (
+                  <>
+                    {mode === "login" && "Login"}
+                    {mode === "signup" && "Create Account"}
+                    {mode === "partner" && "Complete Registration"}{" "}
+                    <ArrowRight className="size-5" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           {/* FOOTER SWITCHES */}
           <div className="mt-8 text-center space-y-3">

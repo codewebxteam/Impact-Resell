@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { useAdminMode } from "../../context/AdminModeContext";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../firebase/config"; // Ensure this path is correct
 
@@ -29,6 +30,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, currentUser } = useAuth(); // Get currentUser for email
+  const { adminMode, toggleAdminMode } = useAdminMode();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -258,6 +260,17 @@ const AdminLayout = () => {
 
           {/* --- RIGHT HEADER WITH PROFILE DROPDOWN --- */}
           <div className="flex items-center gap-3 lg:gap-6">
+            {/* Toggle to New Admin Panel */}
+            <button
+              onClick={toggleAdminMode}
+              title="Click to switch to New Admin Panel"
+              className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer font-bold text-xs"
+            >
+              <span className="size-2 rounded-full bg-indigo-600 animate-pulse" />
+              <span>Switch to New Admin Panel</span>
+              <span className="text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-md uppercase font-black tracking-wider">NEW</span>
+            </button>
+
             <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
               <Lock size={14} className="text-emerald-500" />
               <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">

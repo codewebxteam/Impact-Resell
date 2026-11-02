@@ -91,7 +91,9 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
     { name: "Courses", path: getRoute("/courses"), icon: GraduationCap },
     { name: "About Us", path: getRoute("/about"), icon: Users },
     { name: "Contact Us", path: getRoute("/contact"), icon: Mail },
-    ...(currentUser ? [{ name: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
+    ...(currentUser
+      ? [{ name: "Dashboard", path: dashboardPath, icon: LayoutDashboard }]
+      : [{ name: "Login", icon: LogIn, onClick: () => openAuth("login") }]),
   ];
 
   return (
@@ -159,7 +161,71 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            {!currentUser && (
+            {currentUser ? (
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-purple-50 transition-all border border-purple-200 cursor-pointer bg-white"
+                >
+                  <div
+                    className="size-8 rounded-full text-white flex items-center justify-center font-bold text-xs bg-purple-600 shadow-sm"
+                  >
+                    {currentUser.displayName ? currentUser.displayName[0].toUpperCase() : "U"}
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-xs font-bold text-slate-900 leading-none">
+                      {currentUser.displayName ? currentUser.displayName.split(" ")[0] : "Student"}
+                    </p>
+                  </div>
+                  <ChevronDown className={`size-4 text-slate-400 transition-transform duration-300 ${showProfileMenu ? "rotate-180" : ""}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showProfileMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-purple-100 overflow-hidden z-[100]"
+                    >
+                      <div className="p-4 border-b border-slate-50 bg-purple-50/40">
+                        <p className="text-sm font-bold text-slate-900 truncate">
+                          {currentUser.displayName || "Student"}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {currentUser.email}
+                        </p>
+                      </div>
+                      <div className="p-2 space-y-1">
+                        <Link
+                          to={dashboardPath}
+                          onClick={() => setShowProfileMenu(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-purple-50 transition-colors"
+                        >
+                          <LayoutDashboard className="size-4 text-purple-600" /> Dashboard
+                        </Link>
+                        <Link
+                          to={profilePath}
+                          onClick={() => setShowProfileMenu(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-purple-50 transition-colors"
+                        >
+                          <Settings className="size-4" /> My Profile
+                        </Link>
+                      </div>
+                      <div className="p-2 border-t border-slate-50">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-500 rounded-xl hover:bg-red-50 transition-colors cursor-pointer text-left"
+                        >
+                          <LogOut className="size-4" /> Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
               <button
                 onClick={() => openAuth("login")}
                 className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-[13px] sm:text-[14px] font-bold px-5 sm:px-6 py-2 sm:py-2.5 rounded-full shadow-md shadow-purple-500/20 hover:shadow-lg transition-all duration-300 cursor-pointer"
@@ -176,6 +242,22 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-purple-50 lg:hidden pb-safe pt-2 px-6 shadow-md">
         <div className="flex justify-between items-center h-14">
           {navLinks.map((item) => {
+            if (item.onClick) {
+              return (
+                <button
+                  key={item.name}
+                  onClick={item.onClick}
+                  className="relative flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer"
+                >
+                  <div className="relative p-1">
+                    <item.icon className="w-5 h-5 text-slate-400 stroke-[1.5px]" />
+                  </div>
+                  <span className="text-[10px] tracking-tight font-medium text-slate-500">
+                    {item.name}
+                  </span>
+                </button>
+              );
+            }
             const isCourseDetails =
               item.name === "Courses" &&
               (location.pathname.startsWith("/courses") ||

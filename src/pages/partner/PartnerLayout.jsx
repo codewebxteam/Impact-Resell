@@ -19,6 +19,7 @@ import {
   Sparkles,
   BookOpen,
   Video,
+  GraduationCap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -268,8 +269,36 @@ const PartnerLayout = () => {
           </div>
 
           {/* Top Actions */}
-          <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-2 text-slate-400 bg-white/50 px-4 py-2 rounded-2xl border border-slate-100/50">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* On/Off Mode Switcher Toggle */}
+            <div
+              onClick={() => navigate("/dashboard")}
+              className="flex items-center gap-2 sm:gap-3 bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-sm hover:shadow-md rounded-full py-1.5 px-3 sm:px-4 cursor-pointer hover:border-indigo-300 transition-all group select-none"
+              title="Toggle to Student Mode (Watch & Study Courses)"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-black text-emerald-600">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Partner</span>
+              </div>
+
+              {/* Classic iOS / On-Off Toggle Switch */}
+              <div
+                role="switch"
+                aria-checked="false"
+                className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-200 group-hover:bg-indigo-100 transition-colors duration-200 ease-in-out"
+              >
+                <span
+                  className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-emerald-500 shadow-md ring-0 transition duration-200 ease-in-out translate-x-0"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 group-hover:text-indigo-600 transition-colors">
+                <GraduationCap size={15} />
+                <span className="hidden sm:inline">Student</span>
+              </div>
+            </div>
+
+            <div className="hidden xl:flex items-center gap-2 text-slate-400 bg-white/50 px-4 py-2 rounded-2xl border border-slate-100/50">
               <Sparkles size={14} className="text-indigo-400" />
               <span className="text-xs font-bold italic tracking-wide">
                 "Architecting the Future of Education"
@@ -345,6 +374,26 @@ const PartnerLayout = () => {
 
               {/* Scrollable Nav Items */}
               <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                {/* On/Off Mode Switcher in Mobile Drawer */}
+                <div
+                  onClick={() => {
+                    navigate("/dashboard");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-between p-3.5 mb-3 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer active:scale-95 transition-all"
+                  title="Toggle to Student Panel"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500">Panel Mode:</span>
+                    <span className="text-xs font-black text-emerald-600">Partner</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent bg-slate-200">
+                      <span className="inline-block h-5 w-5 rounded-full bg-emerald-500 shadow-md transform translate-x-0" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-400">Student</span>
+                  </div>
+                </div>
                 {navItems.map((item) => (
                   <button
                     key={item.path}

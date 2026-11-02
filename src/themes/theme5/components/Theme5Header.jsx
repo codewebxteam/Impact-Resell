@@ -230,7 +230,7 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => openAuth("login")}
-                  className="hidden sm:inline-flex px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  className="inline-flex px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                 >
                   Log In
                 </button>

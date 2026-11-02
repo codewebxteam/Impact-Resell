@@ -90,7 +90,9 @@ const Theme4Header = ({ currentTheme = "theme4" }) => {
     { name: "Courses", path: getRoute("/courses"), icon: GraduationCap },
     { name: "About Us", path: getRoute("/about"), icon: Users },
     { name: "Contact", path: getRoute("/contact"), icon: Mail },
-    ...(currentUser ? [{ name: "Dashboard", path: dashboardPath, isDashboard: true, icon: LayoutDashboard }] : []),
+    ...(currentUser
+      ? [{ name: "Dashboard", path: dashboardPath, isDashboard: true, icon: LayoutDashboard }]
+      : [{ name: "Login", icon: LogIn, onClick: () => openAuth("login") }]),
   ];
 
   return (
@@ -245,6 +247,22 @@ const Theme4Header = ({ currentTheme = "theme4" }) => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 lg:hidden pb-safe pt-2 px-4 sm:px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.06)]">
         <div className="flex justify-around items-center h-14 max-w-lg mx-auto">
           {navLinks.map((item) => {
+            if (item.onClick) {
+              return (
+                <button
+                  key={item.name}
+                  onClick={item.onClick}
+                  className="relative flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 cursor-pointer"
+                >
+                  <div className="relative p-1">
+                    <item.icon className="size-5 text-slate-400 stroke-[1.75px]" />
+                  </div>
+                  <span className="text-[10px] tracking-tight font-medium text-slate-500">
+                    {item.name}
+                  </span>
+                </button>
+              );
+            }
             const isCourseDetails =
               item.name === "Courses" &&
               (location.pathname.startsWith("/courses") ||

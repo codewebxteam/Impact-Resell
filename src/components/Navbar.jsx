@@ -326,24 +326,22 @@ const Navbar = () => {
               <>
                 <button
                   onClick={() => openAuth("login")}
-                  className="flex text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors items-center gap-1 sm:gap-2 px-2 py-1.5 cursor-pointer"
+                  className="flex text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors items-center gap-1 sm:gap-2 px-2.5 py-1.5 rounded-full hover:bg-slate-100/80 cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span className="hidden xs:inline">Login</span>
+                  <span>Login</span>
                 </button>
 
-                {!isMainSite && (
-                  <button
-                    onClick={() => openAuth("signup")}
-                    className="relative overflow-hidden px-3 py-1.5 sm:px-5 sm:py-2 rounded-full text-white text-[10px] sm:text-sm font-bold shadow-xl group transition-transform active:scale-95 shrink-0 cursor-pointer"
-                    style={{ backgroundColor: brandColor }}
-                  >
-                    <span className="relative z-10 group-hover:opacity-80 transition-opacity duration-300">
-                      Get Started
-                    </span>
-                    <div className="absolute inset-0 bg-black/10 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-                  </button>
-                )}
+                <button
+                  onClick={() => openAuth(isMainSite ? "partner" : "signup")}
+                  className="relative overflow-hidden px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-full text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg group transition-all duration-300 active:scale-95 shrink-0 cursor-pointer flex items-center gap-1.5"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  <span className="relative z-10 group-hover:opacity-90 transition-opacity duration-300">
+                    {isMainSite ? "Register" : "Get Started"}
+                  </span>
+                  <div className="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
+                </button>
               </>
             )}
           </div>

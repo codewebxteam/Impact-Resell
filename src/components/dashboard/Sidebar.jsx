@@ -18,7 +18,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase/config";
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { logout, currentUser } = useAuth();
+  const { logout, currentUser, userData } = useAuth();
   const { agency, isMainSite } = useAgency(); // [ADDED] Get Agency Data
   const [dashboard, setDashboard] = useState(null);
   const navigate = useNavigate();

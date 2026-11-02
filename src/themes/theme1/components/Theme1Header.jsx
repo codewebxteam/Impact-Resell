@@ -108,7 +108,9 @@ const Theme1Header = ({ currentTheme = "theme1" }) => {
     { name: "Courses", path: getRoute("/courses"), icon: GraduationCap },
     { name: "About Us", path: getRoute("/about"), icon: Users },
     { name: "Contact Us", path: getRoute("/contact"), icon: Mail },
-    ...(currentUser ? [{ name: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
+    ...(currentUser
+      ? [{ name: "Dashboard", path: dashboardPath, icon: LayoutDashboard }]
+      : [{ name: "Login", icon: LogIn, onClick: () => openAuth("login") }]),
   ];
 
   return (
@@ -282,6 +284,22 @@ const Theme1Header = ({ currentTheme = "theme1" }) => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 lg:hidden pb-safe pt-2 px-6 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
         <div className="flex justify-between items-center h-14">
           {navLinks.map((item) => {
+            if (item.onClick) {
+              return (
+                <button
+                  key={item.name}
+                  onClick={item.onClick}
+                  className="relative flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer"
+                >
+                  <div className="relative p-1">
+                    <item.icon className="w-5 h-5 text-slate-400 stroke-[1.5px]" />
+                  </div>
+                  <span className="text-[10px] tracking-tight font-medium text-slate-500">
+                    {item.name}
+                  </span>
+                </button>
+              );
+            }
             const isCourseDetails =
               item.name === "Courses" &&
               (location.pathname.startsWith("/courses") ||

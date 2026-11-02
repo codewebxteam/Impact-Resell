@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Search, Menu, User, LogOut } from "lucide-react";
+import { Bell, Search, Menu, User, LogOut, ShieldCheck, ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const DashboardHeader = ({ onMenuClick }) => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, userData, logout } = useAuth();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef(null);
+
+  const isPartner = userData?.role === "partner";
 
   // [NEW] Dynamic Greeting Logic
   const getGreeting = () => {
@@ -62,7 +64,37 @@ const DashboardHeader = ({ onMenuClick }) => {
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-4 sm:gap-6">
+      <div className="flex items-center gap-3 sm:gap-6">
+        {/* On/Off Mode Switcher Toggle (Only visible if partnership access is active) */}
+        {isPartner && (
+          <div
+            onClick={() => navigate("/partner")}
+            className="flex items-center gap-2 sm:gap-3 bg-slate-50 border border-slate-200/90 shadow-sm hover:shadow-md rounded-full py-1.5 px-3 sm:px-4 cursor-pointer hover:border-emerald-300 transition-all group select-none"
+            title="Toggle back to Partner Panel"
+          >
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 group-hover:text-emerald-600 transition-colors">
+              <ShieldCheck size={15} />
+              <span className="hidden sm:inline">Partner</span>
+            </div>
+
+            {/* Classic iOS / On-Off Toggle Switch */}
+            <div
+              role="switch"
+              aria-checked="true"
+              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-indigo-600 group-hover:bg-indigo-700 transition-colors duration-200 ease-in-out"
+            >
+              <span
+                className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out translate-x-5"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs font-black text-indigo-600">
+              <span className="size-2 rounded-full bg-indigo-500 animate-pulse"></span>
+              <span>Student</span>
+            </div>
+          </div>
+        )}
+
         <div className="hidden md:flex items-center bg-slate-100 rounded-full px-4 py-2.5 w-64">
           <Search className="size-4 text-slate-400" />
           <input
@@ -101,8 +133,28 @@ const DashboardHeader = ({ onMenuClick }) => {
                   <p className="text-xs text-slate-500 truncate">
                     {currentUser?.email}
                   </p>
+                  {isPartner && (
+                    <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                      Partner Active
+                    </span>
+                  )}
                 </div>
                 <div className="p-2 space-y-1">
+                  {isPartner && (
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        navigate("/partner");
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="size-4" />
+                        <span>Partner Panel</span>
+                      </div>
+                      <ArrowRight className="size-3.5" />
+                    </button>
+                  )}
                   <Link
                     to="/dashboard/profile"
                     onClick={() => setShowProfileMenu(false)}
