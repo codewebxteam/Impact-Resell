@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Calendar,
   Clock,
@@ -14,6 +14,7 @@ import {
   RefreshCw,
   ExternalLink,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Filter,
   Check,
@@ -25,6 +26,16 @@ import {
   ShieldCheck,
   CalendarCheck,
   UserCheck,
+  Mail,
+  TrendingUp,
+  Briefcase,
+  GraduationCap,
+  SlidersHorizontal,
+  Ban,
+  PlusCircle,
+  Copy,
+  Link2,
+  Utensils,
 } from "lucide-react";
 import {
   collection,
@@ -32,31 +43,99 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  setDoc,
   doc,
   serverTimestamp,
   increment,
   query,
 } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import {
+  DAY_KEYS,
+  DAY_LABELS,
+  DEFAULT_SCHEDULE_CONFIG,
+  TIME_OPTIONS,
+  generateUpcomingSlots,
+  generateSlotsForDate,
+} from "../../utils/demoSchedule";
 
 const HOURS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
 const MINUTES = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
 const PERIODS = ["AM", "PM"];
 
+const REMARK_OPTIONS = [
+  "Pending",
+  "Completed",
+  "Partnership Enrolled",
+  "Student Enrolled",
+  "Demo no show",
+  "Reschedule",
+  "Cancelled",
+];
+
+const REMARK_STYLES = {
+  Pending: "bg-slate-100 text-slate-700 border-slate-200",
+  Completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Partnership Enrolled": "bg-indigo-50 text-indigo-700 border-indigo-200",
+  "Student Enrolled": "bg-sky-50 text-sky-700 border-sky-200",
+  "Demo no show": "bg-amber-50 text-amber-700 border-amber-200",
+  Reschedule: "bg-purple-50 text-purple-700 border-purple-200",
+  Cancelled: "bg-rose-50 text-rose-700 border-rose-200",
+};
+
+const isIsoDate = (str) => typeof str === "string" && /^\d{4}-\d{2}-\d{2}$/.test(str);
+
+const getLocalDateStr = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getNormalizedRemark = (booking) => {
+  const raw = (booking?.remark || "").trim();
+  if (raw) {
+    if (raw === "Partnership Ernrolled") return "Partnership Enrolled";
+    return raw;
+  }
+  const legacyStatus = (booking?.status || "").toLowerCase();
+  if (legacyStatus === "attended") return "Completed";
+  if (legacyStatus === "converted") return "Partnership Enrolled";
+  if (legacyStatus === "cancelled") return "Cancelled";
+  return "Pending";
+};
+
 export default function DemoManager() {
   // Slots & Bookings data
   const [slots, setSlots] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [scheduleConfig, setScheduleConfig] = useState(DEFAULT_SCHEDULE_CONFIG);
   const [loadingSlots, setLoadingSlots] = useState(true);
   const [loadingBookings, setLoadingBookings] = useState(true);
 
-  // Active view tab: 'slots' | 'bookings'
-  const [activeTab, setActiveTab] = useState("slots");
+  // Google Calendar-Style Schedule Builder Modal State
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleDraft, setScheduleDraft] = useState(DEFAULT_SCHEDULE_CONFIG);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [copiedDayToast, setCopiedDayToast] = useState(null);
+  const [copiedLinkToast, setCopiedLinkToast] = useState(false);
 
-  // Filters & Search
+  // Date & Table Filters
+  const [dateFilter, setDateFilter] = useState("all"); // all | today | yesterday | 7days | 30days | month | specific | custom
+  const [specificDate, setSpecificDate] = useState(() => getLocalDateStr());
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  const [remarkFilter, setRemarkFilter] = useState("all");
+  const [stripFilter, setStripFilter] = useState("all"); // all | attending_today | upcoming | Demo no show | Reschedule | Cancelled
   const [selectedSlotFilter, setSelectedSlotFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Inline Staff Name editing state
+  const [staffDrafts, setStaffDrafts] = useState({});
+  const [savedStaffId, setSavedStaffId] = useState(null);
+
+  // Horizontal slots container ref
+  const slotsScrollRef = useRef(null);
 
   // Create / Edit Slot Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -98,24 +177,45 @@ export default function DemoManager() {
     maxCapacity: "10",
   });
 
-  // Real-time listener for demo_slots
+  // Real-time listener for demo_slots (including schedule_config & manual slots)
   useEffect(() => {
     const q = query(collection(db, "demo_slots"));
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const loadedSlots = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        }));
-        // Sort descending by date
-        loadedSlots.sort((a, b) => {
+        let foundSchedule = null;
+        const manualSlots = [];
+
+        snapshot.docs.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (docSnap.id === "schedule_config" || data.type === "schedule_config") {
+            foundSchedule = {
+              ...DEFAULT_SCHEDULE_CONFIG,
+              ...data,
+              availability: {
+                ...DEFAULT_SCHEDULE_CONFIG.availability,
+                ...(data.availability || {}),
+              },
+            };
+          } else if (data.type !== "slot_counter") {
+            manualSlots.push({
+              id: docSnap.id,
+              ...data,
+            });
+          }
+        });
+
+        if (foundSchedule) {
+          setScheduleConfig(foundSchedule);
+        }
+
+        manualSlots.sort((a, b) => {
           if (a.date && b.date) {
             return b.date.localeCompare(a.date);
           }
           return 0;
         });
-        setSlots(loadedSlots);
+        setSlots(manualSlots);
         setLoadingSlots(false);
       },
       (err) => {
@@ -344,15 +444,38 @@ export default function DemoManager() {
     }
   };
 
-  // Update booking status
-  const handleUpdateBookingStatus = async (bookingId, newStatus) => {
+  // Update Demo Remarks (and sync legacy status)
+  const handleUpdateRemark = async (bookingId, newRemark) => {
     try {
+      let mappedStatus = "confirmed";
+      if (newRemark === "Completed") mappedStatus = "attended";
+      else if (newRemark === "Partnership Enrolled" || newRemark === "Student Enrolled") mappedStatus = "converted";
+      else if (newRemark === "Cancelled") mappedStatus = "cancelled";
+
       await updateDoc(doc(db, "demo_bookings", bookingId), {
-        status: newStatus,
+        remark: newRemark,
+        status: mappedStatus,
         updatedAt: serverTimestamp(),
       });
     } catch (err) {
-      console.error("Error updating booking status:", err);
+      console.error("Error updating demo remark:", err);
+    }
+  };
+
+  // Save Staff Name inline
+  const handleSaveStaffName = async (bookingId, newName) => {
+    const clean = (newName || "").trim();
+    try {
+      await updateDoc(doc(db, "demo_bookings", bookingId), {
+        staffName: clean,
+        updatedAt: serverTimestamp(),
+      });
+      setSavedStaffId(bookingId);
+      setTimeout(() => {
+        setSavedStaffId((prev) => (prev === bookingId ? null : prev));
+      }, 1500);
+    } catch (err) {
+      console.error("Error updating staff name:", err);
     }
   };
 
@@ -375,45 +498,346 @@ export default function DemoManager() {
     }
   };
 
-  // Count bookings for a specific slot
-  const getSlotBookingsCount = (slotId) => {
-    return bookings.filter((b) => b.slotId === slotId).length;
+  // Horizontal scroll helper for slots
+  const scrollSlots = (offset) => {
+    if (slotsScrollRef.current) {
+      slotsScrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
+    }
   };
 
-  // Filtered bookings
-  const filteredBookings = useMemo(() => {
+  const todayStr = getLocalDateStr();
+
+  // Extract date string for a booking (prefer slotDate if YYYY-MM-DD, fallback to createdAt)
+  const getBookingDateStr = (b) => {
+    if (isIsoDate(b.slotDate)) return b.slotDate;
+    if (b.createdAt?.toDate) return getLocalDateStr(b.createdAt.toDate());
+    return "";
+  };
+
+  const getBookedOnDateStr = (b) => {
+    if (b.createdAt?.toDate) return getLocalDateStr(b.createdAt.toDate());
+    if (isIsoDate(b.slotDate)) return b.slotDate;
+    return "";
+  };
+
+  // 1. Date Filtered Bookings (drives all KPI cards, status strip, and table)
+  const dateFilteredBookings = useMemo(() => {
+    if (dateFilter === "all") return bookings;
+
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const yesterdayStr = getLocalDateStr(yesterday);
+
+    const last7 = new Date(now);
+    last7.setDate(now.getDate() - 6);
+    const last7Str = getLocalDateStr(last7);
+
+    const last30 = new Date(now);
+    last30.setDate(now.getDate() - 29);
+    const last30Str = getLocalDateStr(last30);
+
+    const monthStartStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
     return bookings.filter((b) => {
-      if (selectedSlotFilter !== "all" && b.slotId !== selectedSlotFilter) {
-        return false;
-      }
-      if (statusFilter !== "all" && b.status !== statusFilter) {
-        return false;
-      }
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        const nameMatch = b.name?.toLowerCase().includes(term);
-        const phoneMatch = b.phone?.includes(term);
-        if (!nameMatch && !phoneMatch) return false;
+      const targetDate = getBookingDateStr(b);
+      if (!targetDate) return false;
+
+      if (dateFilter === "today") return targetDate === todayStr;
+      if (dateFilter === "yesterday") return targetDate === yesterdayStr;
+      if (dateFilter === "7days") return targetDate >= last7Str && targetDate <= todayStr;
+      if (dateFilter === "30days") return targetDate >= last30Str && targetDate <= todayStr;
+      if (dateFilter === "month") return targetDate >= monthStartStr;
+      if (dateFilter === "specific") return specificDate ? targetDate === specificDate : true;
+      if (dateFilter === "custom") {
+        if (customStartDate && targetDate < customStartDate) return false;
+        if (customEndDate && targetDate > customEndDate) return false;
+        return true;
       }
       return true;
     });
-  }, [bookings, selectedSlotFilter, statusFilter, searchTerm]);
+  }, [bookings, dateFilter, specificDate, customStartDate, customEndDate, todayStr]);
 
-  // Total stats
-  const activeSlotsCount = slots.filter((s) => s.isActive).length;
-  const totalBookingsCount = bookings.length;
-  const confirmedBookingsCount = bookings.filter((b) => b.status === "confirmed" || !b.status).length;
-  const attendedBookingsCount = bookings.filter((b) => b.status === "attended").length;
+  // 2. KPI Metrics computed from dateFilteredBookings
+  const metrics = useMemo(() => {
+    const total = dateFilteredBookings.length;
+    const todayCount = dateFilteredBookings.filter(
+      (b) => getBookedOnDateStr(b) === todayStr
+    ).length;
+
+    let completedOnly = 0;
+    let studentEnrolled = 0;
+    let partnershipEnrolled = 0;
+    let noShow = 0;
+    let reschedule = 0;
+    let cancelled = 0;
+    let attendingToday = 0;
+    let upcoming = 0;
+
+    dateFilteredBookings.forEach((b) => {
+      const remark = getNormalizedRemark(b);
+      const slotDate = isIsoDate(b.slotDate) ? b.slotDate : "";
+
+      if (remark === "Completed") completedOnly++;
+      else if (remark === "Student Enrolled") studentEnrolled++;
+      else if (remark === "Partnership Enrolled") partnershipEnrolled++;
+      else if (remark === "Demo no show") noShow++;
+      else if (remark === "Reschedule") reschedule++;
+      else if (remark === "Cancelled") cancelled++;
+
+      if (
+        slotDate === todayStr &&
+        !["Demo no show", "Cancelled", "Reschedule"].includes(remark)
+      ) {
+        attendingToday++;
+      }
+
+      if (
+        slotDate > todayStr &&
+        !["Demo no show", "Cancelled", "Completed", "Partnership Enrolled", "Student Enrolled"].includes(remark)
+      ) {
+        upcoming++;
+      }
+    });
+
+    // All who completed the demo (Completed + Student Enrolled + Partnership Enrolled)
+    const totalCompleted = completedOnly + studentEnrolled + partnershipEnrolled;
+    const completedPct =
+      total > 0 ? Number(((totalCompleted / total) * 100).toFixed(1)) : 0;
+    const studentPct =
+      totalCompleted > 0
+        ? Number(((studentEnrolled / totalCompleted) * 100).toFixed(1))
+        : 0;
+    const partnershipPct =
+      totalCompleted > 0
+        ? Number(((partnershipEnrolled / totalCompleted) * 100).toFixed(1))
+        : 0;
+
+    return {
+      total,
+      todayCount,
+      totalCompleted,
+      completedPct,
+      studentEnrolled,
+      studentPct,
+      partnershipEnrolled,
+      partnershipPct,
+      attendingToday,
+      upcoming,
+      noShow,
+      reschedule,
+      cancelled,
+    };
+  }, [dateFilteredBookings, todayStr]);
+
+  // Schedule Builder Modal Handlers (Google Calendar-style)
+  const handleOpenScheduleModal = () => {
+    setScheduleDraft(JSON.parse(JSON.stringify(scheduleConfig)));
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleSaveSchedule = async (e) => {
+    e.preventDefault();
+    setSavingSchedule(true);
+    try {
+      await setDoc(doc(db, "demo_slots", "schedule_config"), {
+        ...scheduleDraft,
+        type: "schedule_config",
+        isActive: true,
+        updatedAt: serverTimestamp(),
+      });
+      setIsScheduleModalOpen(false);
+    } catch (err) {
+      console.error("Error saving demo schedule:", err);
+      alert("Failed to save schedule: " + err.message);
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
+
+  const handleAddWindow = (dayKey) => {
+    setScheduleDraft((prev) => {
+      const existing = prev.availability?.[dayKey] || [];
+      const nextWindow =
+        existing.length === 0
+          ? { start: "10:00", end: "18:00" }
+          : { start: "14:00", end: "18:30" };
+      return {
+        ...prev,
+        availability: {
+          ...prev.availability,
+          [dayKey]: [...existing, nextWindow],
+        },
+      };
+    });
+  };
+
+  const handleRemoveWindow = (dayKey, index) => {
+    setScheduleDraft((prev) => {
+      const existing = prev.availability?.[dayKey] || [];
+      return {
+        ...prev,
+        availability: {
+          ...prev.availability,
+          [dayKey]: existing.filter((_, idx) => idx !== index),
+        },
+      };
+    });
+  };
+
+  const handleUpdateWindow = (dayKey, index, field, value) => {
+    setScheduleDraft((prev) => {
+      const existing = [...(prev.availability?.[dayKey] || [])];
+      existing[index] = { ...existing[index], [field]: value };
+      return {
+        ...prev,
+        availability: {
+          ...prev.availability,
+          [dayKey]: existing,
+        },
+      };
+    });
+  };
+
+  const handleCopyToAllDays = (sourceDayKey) => {
+    setScheduleDraft((prev) => {
+      const sourceWindows = prev.availability?.[sourceDayKey] || [];
+      const updatedAvailability = { ...prev.availability };
+      DAY_KEYS.forEach((dk) => {
+        // Copy to Mon-Sat by default, or all if Sunday itself has windows
+        if (dk !== "sun" || sourceDayKey === "sun") {
+          updatedAvailability[dk] = sourceWindows.map((w) => ({ ...w }));
+        }
+      });
+      return {
+        ...prev,
+        availability: updatedAvailability,
+      };
+    });
+    setCopiedDayToast(sourceDayKey);
+    setTimeout(() => setCopiedDayToast(null), 1500);
+  };
+
+  const handleApplyLunchBreak = () => {
+    setScheduleDraft((prev) => {
+      const updatedAvailability = { ...prev.availability };
+      DAY_KEYS.forEach((dk) => {
+        const list = updatedAvailability[dk] || [];
+        if (list.length > 0) {
+          updatedAvailability[dk] = [
+            { start: list[0].start || "10:00", end: "13:00" },
+            { start: "14:00", end: list[list.length - 1].end || "18:30" },
+          ];
+        }
+      });
+      return { ...prev, availability: updatedAvailability };
+    });
+  };
+
+  const handleCopyBookingLink = () => {
+    const link = "https://www.alifestable.com/book-demo";
+    navigator.clipboard?.writeText(link);
+    setCopiedLinkToast(true);
+    setTimeout(() => setCopiedLinkToast(false), 2000);
+  };
+
+  // Count bookings for a specific slot
+  const getSlotBookingsCount = (slotId) => {
+    return dateFilteredBookings.filter(
+      (b) =>
+        (b.slotKey === slotId || b.slotId === slotId) &&
+        getNormalizedRemark(b) !== "Cancelled"
+    ).length;
+  };
+
+  // Upcoming & Available Slots (Generated from Google Calendar Schedule + any manual slots)
+  const sortedSlots = useMemo(() => {
+    const generated = generateUpcomingSlots(scheduleConfig, 7).map((s) => ({
+      ...s,
+      isGenerated: true,
+      isActive: true,
+    }));
+
+    const manualUpcoming = slots
+      .filter((s) => (s.date || "") >= todayStr)
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+
+    return [...generated, ...manualUpcoming];
+  }, [scheduleConfig, slots, todayStr]);
+
+  // 3. Final Filtered Bookings for Table (Date + Slot + Strip + Remarks + Search)
+  const filteredBookings = useMemo(() => {
+    return dateFilteredBookings.filter((b) => {
+      const remark = getNormalizedRemark(b);
+      const slotDate = isIsoDate(b.slotDate) ? b.slotDate : "";
+
+      if (
+        selectedSlotFilter !== "all" &&
+        b.slotId !== selectedSlotFilter &&
+        b.slotKey !== selectedSlotFilter
+      ) {
+        return false;
+      }
+
+      if (remarkFilter !== "all" && remark !== remarkFilter) {
+        return false;
+      }
+
+      if (stripFilter !== "all") {
+        if (stripFilter === "attending_today") {
+          if (
+            !(
+              slotDate === todayStr &&
+              !["Demo no show", "Cancelled", "Reschedule"].includes(remark)
+            )
+          ) {
+            return false;
+          }
+        } else if (stripFilter === "upcoming") {
+          if (
+            !(
+              slotDate > todayStr &&
+              ![
+                "Demo no show",
+                "Cancelled",
+                "Completed",
+                "Partnership Enrolled",
+                "Student Enrolled",
+              ].includes(remark)
+            )
+          ) {
+            return false;
+          }
+        } else if (remark !== stripFilter) {
+          return false;
+        }
+      }
+
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const nameMatch = b.name?.toLowerCase().includes(term);
+        const phoneMatch = b.phone?.toLowerCase().includes(term);
+        const emailMatch = b.email?.toLowerCase().includes(term);
+        const staffMatch = b.staffName?.toLowerCase().includes(term);
+        if (!nameMatch && !phoneMatch && !emailMatch && !staffMatch) return false;
+      }
+
+      return true;
+    });
+  }, [dateFilteredBookings, selectedSlotFilter, remarkFilter, stripFilter, searchTerm, todayStr]);
 
   // Export Bookings CSV
   const handleExportCSV = () => {
-    const headers = "ID,Name,Phone,Slot Date,Slot Time,Duration,Status,Booked At\n";
+    const headers = "Name,WhatsApp,Email,Slot Time,Slot Date,Duration,Staff Name,Demo Remarks,Booked At\n";
     const rows = filteredBookings
       .map((b) => {
         const dateStr = b.createdAt?.toDate ? b.createdAt.toDate().toISOString() : "";
-        return `"${b.id}","${b.name || ""}","${b.phone || ""}","${b.slotDate || ""}","${
-          b.slotStartTime || ""
-        }","${b.slotDuration || ""}","${b.status || "confirmed"}","${dateStr}"`;
+        const slotTime = b.slotEndTime
+          ? `${b.slotStartTime || ""} - ${b.slotEndTime}`
+          : b.slotStartTime || "";
+        return `"${b.name || ""}","${b.phone || ""}","${b.email || ""}","${slotTime}","${
+          b.slotDate || ""
+        }","${b.slotDuration || ""}","${b.staffName || ""}","${getNormalizedRemark(b)}","${dateStr}"`;
       })
       .join("\n");
 
@@ -429,28 +853,94 @@ export default function DemoManager() {
 
   return (
     <div className="space-y-6 pb-20 font-sans">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200/80 pb-6">
+      {/* Top Header + Filter by Date */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4 border-b border-slate-200/80 pb-5">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center gap-1.5">
               <Video className="w-3.5 h-3.5 text-emerald-600" />
-              Alife Stable • Demo Hub
+              Alife Stable • Demo Manager
             </span>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Live Demo Slots & Bookings
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Demo Manager & Analytics
           </h1>
-          <p className="text-sm text-slate-500 font-medium mt-1 max-w-2xl">
-            Configure live demonstration time slots, manage slot durations, and track incoming student and partner booking requests in real time.
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 max-w-2xl">
+            Configure weekly availability, lunch breaks, buffer time & capacity like Google Calendar, and track attendee remarks in real time.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {bookings.length > 0 && (
+        {/* Right Controls: Filter by Date + Export + Copy Link + Schedule */}
+        <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-start xl:justify-end">
+          {/* Filter by Date */}
+          <div className="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-xs">
+            <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="text-xs font-bold text-slate-600">Filter by Date:</span>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="text-xs font-bold text-slate-900 bg-transparent focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+              <option value="month">This Month</option>
+              <option value="specific">Specific Date</option>
+              <option value="custom">Custom Range</option>
+            </select>
+
+            {dateFilter === "specific" && (
+              <input
+                type="date"
+                value={specificDate}
+                onChange={(e) => setSpecificDate(e.target.value)}
+                className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500"
+              />
+            )}
+
+            {dateFilter === "custom" && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500"
+                />
+                <span className="text-xs text-slate-400">to</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCopyBookingLink}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-xs transition-all cursor-pointer"
+          >
+            {copiedLinkToast ? (
+              <>
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span className="text-emerald-700">Link Copied!</span>
+              </>
+            ) : (
+              <>
+                <Link2 className="w-4 h-4 text-slate-500" />
+                <span>Copy Booking Link</span>
+              </>
+            )}
+          </button>
+
+          {filteredBookings.length > 0 && (
             <button
               onClick={handleExportCSV}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-xs transition-all cursor-pointer"
             >
               <Download className="w-4 h-4 text-slate-500" />
               Export CSV
@@ -458,417 +948,576 @@ export default function DemoManager() {
           )}
 
           <button
-            onClick={handleOpenCreateModal}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer"
+            type="button"
+            onClick={handleOpenScheduleModal}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            Create Demo Slot
+            <SlidersHorizontal className="w-4 h-4" />
+            Set Demo Schedule
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Cards (Light Theme) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1: Active Slots */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Active Time Slots
-            </p>
-            <p className="text-3xl font-black text-slate-900 mt-1">
-              {activeSlotsCount}
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">
-              {slots.length} total scheduled
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-xs">
-            <Calendar className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Metric 2: Total Bookings */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Total Demo Bookings
-            </p>
-            <p className="text-3xl font-black text-indigo-600 mt-1">
-              {totalBookingsCount}
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">
-              Registered from website
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
-            <Users className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Metric 3: Confirmed Bookings */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Confirmed Queue
-            </p>
-            <p className="text-3xl font-black text-amber-600 mt-1">
-              {confirmedBookingsCount}
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">
-              Ready for walkthrough
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shadow-xs">
-            <CalendarCheck className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Metric 4: Attended Sessions */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Attended Demos
-            </p>
-            <p className="text-3xl font-black text-sky-600 mt-1">
-              {attendedBookingsCount}
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">
-              Completed walkthroughs
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shadow-xs">
-            <UserCheck className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs Navigation (Pill Style) */}
-      <div className="flex border-b border-slate-200 gap-4">
-        <button
-          onClick={() => setActiveTab("slots")}
-          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-            activeTab === "slots"
-              ? "border-emerald-600 text-emerald-700 font-extrabold"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <Calendar className="w-4 h-4" />
-          <span>Configured Slots</span>
-          <span className="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600 font-bold">
-            {slots.length}
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("bookings")}
-          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-            activeTab === "bookings"
-              ? "border-emerald-600 text-emerald-700 font-extrabold"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>User Bookings</span>
-          <span className="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600 font-bold">
-            {bookings.length}
-          </span>
-        </button>
-      </div>
-
-      {/* TAB 1: SLOTS MANAGEMENT (LIGHT THEME) */}
-      {activeTab === "slots" && (
-        <div className="space-y-4">
+      {/* 5 KPI CARDS ROW (Matches Wireframe) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        {/* Card 1: Total Booking */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col justify-between gap-2 hover:border-slate-300 transition-colors">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">Available Time Slots</h2>
-              <p className="text-xs text-slate-500 font-medium">
-                These slots dynamically appear on the Alife Stable booking modal for visitors.
-              </p>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Total Booking
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+              <Users className="w-4 h-4" />
             </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900">
+              {metrics.total}
+            </p>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              {dateFilter === "all" ? "All time bookings" : "In selected date range"}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 2: Today Booking */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col justify-between gap-2 hover:border-emerald-200 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Today Booking
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+              <CalendarCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-black text-emerald-600">
+              {metrics.todayCount}
+            </p>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              Booked today ({todayStr})
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3: Demo Completed (%) */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col justify-between gap-2 hover:border-teal-200 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Demo Completed (%)
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl sm:text-3xl font-black text-teal-700">
+                {metrics.completedPct}%
+              </p>
+              <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
+                {metrics.totalCompleted}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              {metrics.totalCompleted} of {metrics.total} total bookings
+            </p>
+          </div>
+        </div>
+
+        {/* Card 4: Enrolled Student (%) */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col justify-between gap-2 hover:border-sky-200 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Enrolled Student (%)
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
+              <GraduationCap className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl sm:text-3xl font-black text-sky-600">
+                {metrics.studentPct}%
+              </p>
+              <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">
+                {metrics.studentEnrolled}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              {metrics.studentEnrolled} of {metrics.totalCompleted} completed demos
+            </p>
+          </div>
+        </div>
+
+        {/* Card 5: Enrolled Partnership (%) */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col justify-between gap-2 hover:border-indigo-200 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Enrolled Partnership (%)
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+              <Briefcase className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl sm:text-3xl font-black text-indigo-600">
+                {metrics.partnershipPct}%
+              </p>
+              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                {metrics.partnershipEnrolled}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              {metrics.partnershipEnrolled} of {metrics.totalCompleted} completed demos
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* STATUS SUMMARY BAR: Attending Today : Upcoming Booking : Demo no show : Reschedule : Cancelled */}
+      <div className="bg-slate-900 text-white rounded-2xl px-4 py-3 shadow-sm flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full justify-between">
+          {[
+            { key: "attending_today", label: "Attending Today", count: metrics.attendingToday, dot: "bg-emerald-400" },
+            { key: "upcoming", label: "Upcoming Booking", count: metrics.upcoming, dot: "bg-sky-400" },
+            { key: "Demo no show", label: "Demo no show", count: metrics.noShow, dot: "bg-amber-400" },
+            { key: "Reschedule", label: "Reschedule", count: metrics.reschedule, dot: "bg-purple-400" },
+            { key: "Cancelled", label: "Cancelled", count: metrics.cancelled, dot: "bg-rose-400" },
+          ].map((item) => {
+            const isSelected = stripFilter === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setStripFilter(isSelected ? "all" : item.key)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "bg-white/10 hover:bg-white/15 text-slate-100"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${item.dot}`} />
+                <span>
+                  {item.label} ({item.count})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* UPCOMING & AVAILABLE TIME SLOTS (HORIZONTAL SCROLLABLE SECTION) */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-emerald-600" />
+              Available & Upcoming Slots
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                {sortedSlots.length}
+              </span>
+            </h2>
+            <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500 font-semibold">
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                ⏱ Duration: {scheduleConfig.durationMinutes} Mins
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                ⏸ Buffer:{" "}
+                {scheduleConfig.bufferEnabled
+                  ? `${scheduleConfig.bufferValue} ${scheduleConfig.bufferUnit}`
+                  : "None"}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                👥 Max Capacity: {scheduleConfig.maxCapacity}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                ⏳ Min Notice:{" "}
+                {scheduleConfig.minNoticeEnabled
+                  ? `${scheduleConfig.minNoticeValue} ${scheduleConfig.minNoticeUnit}`
+                  : "None"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {sortedSlots.length > 0 && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => scrollSlots(-320)}
+                  aria-label="Scroll slots left"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 cursor-pointer transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollSlots(320)}
+                  aria-label="Scroll slots right"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 cursor-pointer transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             <button
+              type="button"
+              onClick={handleOpenScheduleModal}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 flex items-center gap-1 cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Edit Schedule
+            </button>
+
+            <button
+              type="button"
               onClick={handleOpenCreateModal}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              Add Another Slot
+              Custom Slot
             </button>
           </div>
+        </div>
 
-          {loadingSlots ? (
-            <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3 bg-white rounded-2xl border border-slate-200">
-              <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
-              <span className="font-semibold text-xs">Loading slots from database...</span>
-            </div>
-          ) : slots.length === 0 ? (
-            <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center space-y-3 shadow-xs">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mx-auto shadow-xs">
-                <Calendar className="w-7 h-7" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900">No Demo Time Slots Configured Yet</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                Create your first time slot with date, time, and session duration. Website visitors will immediately see and book it.
-              </p>
-              <button
-                onClick={handleOpenCreateModal}
-                className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Create First Time Slot
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {slots.map((slot) => {
-                const bookedCount = getSlotBookingsCount(slot.id);
-                const isFull = slot.maxCapacity && bookedCount >= slot.maxCapacity;
+        {loadingSlots ? (
+          <div className="py-8 text-center text-slate-500 flex flex-col items-center gap-2">
+            <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
+            <span className="font-semibold text-xs">Loading slots...</span>
+          </div>
+        ) : sortedSlots.length === 0 ? (
+          <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center space-y-2">
+            <p className="text-sm font-black text-slate-800">No Upcoming Slots Available</p>
+            <p className="text-xs text-slate-500">
+              Set your weekly availability in Demo Schedule so slots automatically generate for visitors.
+            </p>
+            <button
+              type="button"
+              onClick={handleOpenScheduleModal}
+              className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" /> Configure Demo Schedule
+            </button>
+          </div>
+        ) : (
+          <div
+            ref={slotsScrollRef}
+            className="flex gap-3.5 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory"
+          >
+            {sortedSlots.map((slot) => {
+              const bookedCount = getSlotBookingsCount(slot.id);
+              const capacity = slot.maxCapacity || 10;
+              const fillPct = Math.min(100, Math.round((bookedCount / capacity) * 100));
+              const isSelected = selectedSlotFilter === slot.id;
 
-                return (
-                  <div
-                    key={slot.id}
-                    className={`bg-white border rounded-2xl p-5 space-y-4 transition-all duration-200 shadow-xs relative overflow-hidden ${
-                      slot.isActive
-                        ? "border-slate-200/90 hover:border-emerald-500 hover:shadow-md"
-                        : "border-slate-200/60 opacity-60 bg-slate-50/50"
-                    }`}
-                  >
-                    {/* Status Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`w-2.5 h-2.5 rounded-full ${
-                            slot.isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                          }`}
-                        />
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
-                          {slot.isActive ? "Live on Website" : "Paused"}
-                        </span>
-                      </div>
+              return (
+                <div
+                  key={slot.id}
+                  className={`min-w-[260px] sm:min-w-[280px] shrink-0 snap-start border rounded-2xl p-4 space-y-3 transition-all duration-200 ${
+                    isSelected
+                      ? "bg-emerald-50/40 border-emerald-500 ring-2 ring-emerald-500/20"
+                      : slot.isActive
+                      ? "bg-slate-50/50 border-slate-200 hover:border-emerald-400 hover:bg-white"
+                      : "bg-slate-50 border-slate-200/70 opacity-65"
+                  }`}
+                >
+                  {/* Card Top Bar */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          slot.isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+                        }`}
+                      />
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
+                        {slot.isGenerated ? "Auto Schedule" : slot.isActive ? "Custom Live" : "Paused"}
+                      </span>
+                    </div>
 
-                      <div className="flex items-center gap-1.5">
+                    {!slot.isGenerated && (
+                      <div className="flex items-center gap-1">
                         <button
+                          type="button"
                           onClick={() => handleOpenEditModal(slot)}
-                          title="Edit Time Slot"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer border border-transparent hover:border-emerald-200"
+                          title="Edit Slot"
+                          className="p-1 rounded-md text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleToggleActive(slot.id, slot.isActive)}
-                          title={slot.isActive ? "Pause Slot" : "Activate Slot"}
-                          className={`text-xs px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                            slot.isActive
-                              ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
-                          }`}
+                          className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer"
                         >
                           {slot.isActive ? "Pause" : "Activate"}
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteSlot(slot.id)}
                           title="Delete Slot"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </div>
-
-                    {/* Date & Time */}
-                    <div>
-                      <div className="text-xl font-black text-slate-900 flex items-center gap-2">
-                        <span>{slot.startTime}</span>
-                        {slot.endTime && (
-                          <>
-                            <span className="text-slate-400 text-sm font-normal">–</span>
-                            <span className="text-slate-600 text-base font-bold">{slot.endTime}</span>
-                          </>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                          {slot.date}
-                        </span>
-                        <span className="text-slate-300">•</span>
-                        <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 flex items-center gap-1">
-                          <Timer className="w-3 h-3 text-sky-600" />
-                          Duration: {slot.duration || "45 Mins"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Topic Note */}
-                    {slot.topic && (
-                      <p className="text-xs text-slate-600 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 font-medium truncate">
-                        📌 {slot.topic}
-                      </p>
                     )}
+                  </div>
 
-                    {/* Booked Attendees Counter */}
-                    <div className="pt-3 border-t border-slate-100 space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-600 flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-indigo-600" />
-                          Registered Attendees:
-                        </span>
-                        <span
-                          className={`font-black ${
-                            bookedCount > 0 ? "text-indigo-600" : "text-slate-400"
-                          }`}
-                        >
-                          {bookedCount} {slot.maxCapacity ? `/ ${slot.maxCapacity}` : "users"}
-                        </span>
-                      </div>
-
-                      {/* View Users Button */}
-                      <button
-                        onClick={() => {
-                          setSelectedSlotFilter(slot.id);
-                          setActiveTab("bookings");
-                        }}
-                        className="w-full py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-xs border border-slate-200/80 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                      >
-                        <Users className="w-3.5 h-3.5 text-emerald-600" />
-                        View Booked Users ({bookedCount})
-                      </button>
+                  {/* Time & Date */}
+                  <div>
+                    <div className="text-lg font-black text-slate-900 flex items-center gap-1.5">
+                      <span>{slot.startTime}</span>
+                      {slot.endTime && (
+                        <span className="text-slate-500 text-xs font-bold">– {slot.endTime}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 text-[11px] font-semibold text-slate-600">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-emerald-600" />
+                        {slot.date === todayStr ? `Today (${slot.date})` : slot.date}
+                      </span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-sky-700 font-bold">{slot.duration || "30 Mins"}</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* TAB 2: BOOKINGS LIST (LIGHT THEME TABLE) */}
-      {activeTab === "bookings" && (
-        <div className="space-y-4">
-          {/* Filters Bar */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                  {/* Bookings Progress */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-slate-500">Slot Bookings</span>
+                      <span className="font-black text-indigo-600">
+                        {bookedCount} / {capacity} booked
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                        style={{ width: `${fillPct}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Filter Table by Slot */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSlotFilter(isSelected ? "all" : slot.id)}
+                    className={`w-full py-2 px-3 rounded-xl text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      isSelected
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : "bg-white hover:bg-slate-100 text-slate-800 border-slate-200"
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    {isSelected ? "Showing This Slot (Clear)" : `View Bookings (${bookedCount})`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* BOOKINGS TABLE SECTION WITH REMARKS FILTER */}
+      <div className="space-y-3">
+        {/* Search & Filter (Remarks) Bar */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 flex-1">
             {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <div className="relative flex-1 min-w-[220px] max-w-sm">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search attendee by Name or Phone..."
+                placeholder="Search Name, WhatsApp, Email, Staff..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-emerald-500 transition-colors"
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-emerald-500 transition-colors"
               />
             </div>
 
-            {/* Filter Dropdowns */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                <Filter className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Slot:</span>
-              </div>
-              <select
-                value={selectedSlotFilter}
-                onChange={(e) => setSelectedSlotFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 cursor-pointer"
+            {/* Active Filter Badges */}
+            {selectedSlotFilter !== "all" && (
+              <button
+                type="button"
+                onClick={() => setSelectedSlotFilter("all")}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold cursor-pointer hover:bg-emerald-100"
               >
-                <option value="all">All Time Slots ({bookings.length})</option>
-                {slots.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.date} • {s.startTime} ({s.duration}) - [{getSlotBookingsCount(s.id)} booked]
+                <span>Slot Filter Active</span>
+                <X className="w-3 h-3" />
+              </button>
+            )}
+
+            {stripFilter !== "all" && (
+              <button
+                type="button"
+                onClick={() => setStripFilter("all")}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-[11px] font-bold cursor-pointer hover:bg-slate-800"
+              >
+                <span>{stripFilter.replace("_", " ")}</span>
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Right Filter: Filter (Remarks) */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5">
+              <Filter className="w-3.5 h-3.5 text-emerald-700" />
+              <span className="text-xs font-extrabold text-emerald-800">Filter (Remarks):</span>
+              <select
+                value={remarkFilter}
+                onChange={(e) => setRemarkFilter(e.target.value)}
+                className="text-xs font-bold text-emerald-900 bg-transparent focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Remarks ({dateFilteredBookings.length})</option>
+                {REMARK_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
                   </option>
                 ))}
               </select>
-
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 cursor-pointer"
-              >
-                <option value="all">All Statuses</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="attended">Attended</option>
-                <option value="converted">Converted to Partner</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
             </div>
           </div>
+        </div>
 
-          {/* Bookings Table */}
-          {loadingBookings ? (
-            <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3 bg-white rounded-2xl border border-slate-200">
-              <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
-              <span className="font-semibold text-xs">Loading attendee bookings...</span>
-            </div>
-          ) : filteredBookings.length === 0 ? (
-            <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center space-y-2 shadow-xs">
-              <Users className="w-10 h-10 text-slate-300 mx-auto" />
-              <p className="text-base font-black text-slate-800">No Booking Records Found</p>
-              <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto">
-                No users have booked for this filtered criteria yet.
-              </p>
-              {selectedSlotFilter !== "all" && (
-                <button
-                  onClick={() => setSelectedSlotFilter("all")}
-                  className="mt-2 text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
-                >
-                  View all slot bookings
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[11px] font-bold border-b border-slate-200">
-                    <tr>
-                      <th className="py-3.5 px-4">Attendee Details</th>
-                      <th className="py-3.5 px-4">Scheduled Slot</th>
-                      <th className="py-3.5 px-4">Duration</th>
-                      <th className="py-3.5 px-4">Booking Time</th>
-                      <th className="py-3.5 px-4">Status</th>
-                      <th className="py-3.5 px-4 text-right">Direct Contact & Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                    {filteredBookings.map((b) => {
-                      const cleanPhone = (b.phone || "").replace(/\D/g, "");
-                      const waLink = `https://wa.me/91${cleanPhone}?text=Hello%20${encodeURIComponent(
-                        b.name || "Student"
-                      )},%20I%20am%20from%20Alife%20Stable.%20Regarding%20your%20free%20demo%20booking%20for%20${encodeURIComponent(
-                        b.slotDate || ""
-                      )}%20${encodeURIComponent(b.slotStartTime || "")}.`;
+        {/* Bookings Data Table */}
+        {loadingBookings ? (
+          <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3 bg-white rounded-2xl border border-slate-200">
+            <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
+            <span className="font-semibold text-xs">Loading demo bookings...</span>
+          </div>
+        ) : filteredBookings.length === 0 ? (
+          <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center space-y-2 shadow-xs">
+            <Users className="w-10 h-10 text-slate-300 mx-auto" />
+            <p className="text-base font-black text-slate-800">No Booking Records Found</p>
+            <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto">
+              No demo bookings match the selected date, slot, or remark filter.
+            </p>
+            {(selectedSlotFilter !== "all" || remarkFilter !== "all" || stripFilter !== "all" || dateFilter !== "all") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSlotFilter("all");
+                  setRemarkFilter("all");
+                  setStripFilter("all");
+                  setDateFilter("all");
+                  setSearchTerm("");
+                }}
+                className="mt-2 text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 uppercase tracking-wider text-[11px] font-extrabold border-b border-slate-200">
+                  <tr>
+                    <th className="py-3.5 px-4">Name</th>
+                    <th className="py-3.5 px-4">Whatsapp & Email</th>
+                    <th className="py-3.5 px-4">Slot time</th>
+                    <th className="py-3.5 px-4">Date</th>
+                    <th className="py-3.5 px-4">Staff Name</th>
+                    <th className="py-3.5 px-4">Demo Remarks</th>
+                    <th className="py-3.5 px-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                  {filteredBookings.map((b) => {
+                    const cleanPhone = (b.phone || "").replace(/\D/g, "");
+                    const waLink = `https://wa.me/91${cleanPhone}?text=Hello%20${encodeURIComponent(
+                      b.name || "Partner"
+                    )},%20I%20am%20from%20Alife%20Stable.%20Regarding%20your%20free%20demo%20booking%20for%20${encodeURIComponent(
+                      b.slotDate || ""
+                    )}%20${encodeURIComponent(b.slotStartTime || "")}.`;
 
-                      return (
-                        <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
-                          {/* Attendee Name & Phone */}
-                          <td className="py-3.5 px-4">
-                            <div className="font-extrabold text-sm text-slate-900">{b.name}</div>
-                            <div className="text-slate-500 font-mono text-[11px] flex items-center gap-1.5 mt-0.5">
-                              <Phone className="w-3 h-3 text-emerald-600" />
-                              {b.phone}
+                    const currentRemark = getNormalizedRemark(b);
+                    const remarkStyle =
+                      REMARK_STYLES[currentRemark] || REMARK_STYLES.Pending;
+                    const staffValue =
+                      staffDrafts[b.id] !== undefined
+                        ? staffDrafts[b.id]
+                        : b.staffName || "";
+
+                    return (
+                      <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
+                        {/* 1. Name */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs flex items-center justify-center shrink-0 uppercase">
+                              {(b.name || "U").charAt(0)}
                             </div>
-                          </td>
-
-                          {/* Slot Info */}
-                          <td className="py-3.5 px-4">
-                            <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                              {b.slotDate || b.slotTitle || "Flexible Slot"}
+                            <div className="font-extrabold text-sm text-slate-900">
+                              {b.name || "Unnamed"}
                             </div>
-                            <div className="text-slate-500 text-[11px] mt-0.5 flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-sky-600" />
-                              {b.slotStartTime || "Direct Callback"}
-                            </div>
-                          </td>
+                          </div>
+                        </td>
 
-                          {/* Duration Badge */}
-                          <td className="py-3.5 px-4">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-extrabold text-[11px] border border-sky-200">
-                              <Timer className="w-3 h-3 text-sky-600" />
-                              {b.slotDuration || "45 Mins"}
+                        {/* 2. Whatsapp & Email */}
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-slate-800">
+                                {b.phone || "—"}
+                              </span>
+                              {cleanPhone && (
+                                <div className="flex items-center gap-1">
+                                  <a
+                                    href={waLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title="Message on WhatsApp"
+                                    className="p-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                  </a>
+                                  <a
+                                    href={`tel:${cleanPhone}`}
+                                    title="Call User"
+                                    className="p-1 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                                  >
+                                    <Phone className="w-3.5 h-3.5" />
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                              <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span className="truncate max-w-[180px]">
+                                {b.email || "No email provided"}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* 3. Slot time */}
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                            <span>
+                              {b.slotStartTime || "Flexible"}
+                              {b.slotEndTime ? ` – ${b.slotEndTime}` : ""}
                             </span>
-                          </td>
+                          </div>
+                          {b.slotDuration && (
+                            <span className="inline-block mt-0.5 text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">
+                              {b.slotDuration}
+                            </span>
+                          )}
+                        </td>
 
-                          {/* Timestamp */}
-                          <td className="py-3.5 px-4 text-slate-500 text-[11px]">
+                        {/* 4. Date */}
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                            <span>{b.slotDate || "Flexible"}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            Booked:{" "}
                             {b.createdAt?.toDate
                               ? b.createdAt.toDate().toLocaleString("en-IN", {
                                   day: "numeric",
@@ -877,65 +1526,78 @@ export default function DemoManager() {
                                   minute: "2-digit",
                                 })
                               : "Just now"}
-                          </td>
+                          </div>
+                        </td>
 
-                          {/* Status Dropdown */}
-                          <td className="py-3.5 px-4">
-                            <select
-                              value={b.status || "confirmed"}
-                              onChange={(e) => handleUpdateBookingStatus(b.id, e.target.value)}
-                              className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
-                            >
-                              <option value="confirmed">Confirmed</option>
-                              <option value="attended">Attended</option>
-                              <option value="converted">Converted</option>
-                              <option value="cancelled">Cancelled</option>
-                            </select>
-                          </td>
+                        {/* 5. Staff Name */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5 max-w-[160px]">
+                            <input
+                              type="text"
+                              placeholder="Assign staff..."
+                              value={staffValue}
+                              onChange={(e) =>
+                                setStaffDrafts((prev) => ({
+                                  ...prev,
+                                  [b.id]: e.target.value,
+                                }))
+                              }
+                              onBlur={() => {
+                                if (
+                                  staffDrafts[b.id] !== undefined &&
+                                  staffDrafts[b.id] !== (b.staffName || "")
+                                ) {
+                                  handleSaveStaffName(b.id, staffDrafts[b.id]);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.target.blur();
+                                }
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            />
+                            {savedStaffId === b.id && (
+                              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                            )}
+                          </div>
+                        </td>
 
-                          {/* Contact Actions */}
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {/* WhatsApp Direct */}
-                              <a
-                                href={waLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold transition-all shadow-2xs"
-                              >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                WhatsApp
-                              </a>
+                        {/* 6. Demo Remarks */}
+                        <td className="py-3.5 px-4">
+                          <select
+                            value={currentRemark}
+                            onChange={(e) => handleUpdateRemark(b.id, e.target.value)}
+                            className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold focus:outline-none cursor-pointer transition-colors ${remarkStyle}`}
+                          >
+                            {REMARK_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt} className="bg-white text-slate-800">
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
 
-                              {/* Direct Phone Call */}
-                              <a
-                                href={`tel:${cleanPhone}`}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-bold transition-all shadow-2xs"
-                              >
-                                <Phone className="w-3.5 h-3.5" />
-                                Call
-                              </a>
-
-                              {/* Delete */}
-                              <button
-                                onClick={() => handleDeleteBooking(b.id, b.slotId)}
-                                title="Delete Booking Record"
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                        {/* Delete */}
+                        <td className="py-3.5 px-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBooking(b.id, b.slotId)}
+                            title="Delete Booking Record"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {/* CREATE SLOT MODAL (LIGHT THEME) */}
       {isCreateModalOpen && (
@@ -1295,6 +1957,418 @@ export default function DemoManager() {
                     "Save Changes"
                   ) : (
                     "Publish Time Slot"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* GOOGLE CALENDAR-STYLE DEMO SCHEDULE BUILDER MODAL */}
+      {isScheduleModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/55 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setIsScheduleModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[92vh] bg-white border border-slate-200 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <SlidersHorizontal className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    Customize Demo Booking Schedule
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Google Calendar-style availability, lunch breaks, buffer time, capacity & advance notice.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsScheduleModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-200/60 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <form onSubmit={handleSaveSchedule} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 text-xs">
+              {/* Booking Page Title & Subtitle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                    Booking Page Title
+                  </label>
+                  <input
+                    type="text"
+                    value={scheduleDraft.title || ""}
+                    onChange={(e) =>
+                      setScheduleDraft((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                    placeholder="Alife Stable — Live 1-on-1 Demo"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                    Booking Window (Days Ahead)
+                  </label>
+                  <select
+                    value={scheduleDraft.bookingWindowDays || 14}
+                    onChange={(e) =>
+                      setScheduleDraft((prev) => ({
+                        ...prev,
+                        bookingWindowDays: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  >
+                    <option value={7}>Next 7 Days</option>
+                    <option value={14}>Next 14 Days</option>
+                    <option value={30}>Next 30 Days</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 1. Appointment Duration */}
+              <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-2.5">
+                <div className="flex items-start gap-3">
+                  <Clock className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <h4 className="text-sm font-extrabold text-slate-900">Appointment duration</h4>
+                      <p className="text-[11px] text-slate-500">
+                        How long should each appointment last?
+                      </p>
+                    </div>
+                    <select
+                      value={scheduleDraft.durationMinutes}
+                      onChange={(e) =>
+                        setScheduleDraft((prev) => ({
+                          ...prev,
+                          durationMinutes: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full sm:w-56 px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                    >
+                      <option value={15}>15 minutes</option>
+                      <option value={30}>30 minutes</option>
+                      <option value={45}>45 minutes</option>
+                      <option value={60}>60 minutes</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. General Availability (Weekly + Multiple Windows for Lunch Break) */}
+              <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-extrabold text-slate-900">General availability</h4>
+                      <p className="text-[11px] text-slate-500">
+                        Set when you&apos;re regularly available. Add multiple periods per day for lunch breaks.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleApplyLunchBreak}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-bold cursor-pointer shrink-0 self-start sm:self-center"
+                  >
+                    <Utensils className="w-3.5 h-3.5" />
+                    Add 1–2 PM Lunch Break
+                  </button>
+                </div>
+
+                <div className="pl-0 sm:pl-7 space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
+                    <span>Repeat weekly</span>
+                  </div>
+
+                  {/* Day Rows: Mon to Sun */}
+                  <div className="space-y-2.5">
+                    {DAY_KEYS.map((dayKey) => {
+                      const windows = scheduleDraft.availability?.[dayKey] || [];
+                      return (
+                        <div
+                          key={dayKey}
+                          className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 py-1.5 border-b border-slate-100 last:border-b-0"
+                        >
+                          <div className="w-12 pt-1.5 font-extrabold text-xs text-slate-700 shrink-0">
+                            {DAY_LABELS[dayKey]}
+                          </div>
+
+                          {windows.length === 0 ? (
+                            <div className="flex items-center justify-between flex-1 py-1">
+                              <span className="text-xs font-semibold text-slate-400">
+                                Unavailable
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleAddWindow(dayKey)}
+                                title={`Add availability for ${DAY_LABELS[dayKey]}`}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                              >
+                                <PlusCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex-1 space-y-2">
+                              {windows.map((win, idx) => (
+                                <div key={idx} className="flex flex-wrap items-center gap-2">
+                                  <select
+                                    value={win.start}
+                                    onChange={(e) =>
+                                      handleUpdateWindow(dayKey, idx, "start", e.target.value)
+                                    }
+                                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                                  >
+                                    {TIME_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+
+                                  <span className="text-slate-400 font-bold">–</span>
+
+                                  <select
+                                    value={win.end}
+                                    onChange={(e) =>
+                                      handleUpdateWindow(dayKey, idx, "end", e.target.value)
+                                    }
+                                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                                  >
+                                    {TIME_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+
+                                  {/* Action icons matching Google Calendar */}
+                                  <div className="flex items-center gap-1 ml-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveWindow(dayKey, idx)}
+                                      title="Unavailable / Remove period"
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                    >
+                                      <Ban className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddWindow(dayKey)}
+                                      title="Add another period (e.g. after lunch break)"
+                                      className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                                    >
+                                      <PlusCircle className="w-4 h-4" />
+                                    </button>
+                                    {idx === 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyToAllDays(dayKey)}
+                                        title="Copy time to all weekdays (Mon–Sat)"
+                                        className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 transition-colors cursor-pointer flex items-center gap-1"
+                                      >
+                                        <Copy className="w-4 h-4" />
+                                        {copiedDayToast === dayKey && (
+                                          <span className="text-[10px] font-bold text-emerald-600">
+                                            Copied!
+                                          </span>
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Buffer Time & 4. Max Capacity */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Buffer Time */}
+                <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                  <div>
+                    <h4 className="text-sm font-extrabold text-slate-900">Buffer time</h4>
+                    <p className="text-[11px] text-slate-500">
+                      Add break time between appointment slots
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      id="bufferEnabled"
+                      checked={!!scheduleDraft.bufferEnabled}
+                      onChange={(e) =>
+                        setScheduleDraft((prev) => ({
+                          ...prev,
+                          bufferEnabled: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      disabled={!scheduleDraft.bufferEnabled}
+                      value={scheduleDraft.bufferValue}
+                      onChange={(e) =>
+                        setScheduleDraft((prev) => ({
+                          ...prev,
+                          bufferValue: Math.max(0, Number(e.target.value)),
+                        }))
+                      }
+                      className="w-16 px-2.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-900 text-center disabled:opacity-40 focus:bg-white focus:outline-none focus:border-emerald-500"
+                    />
+                    <select
+                      disabled={!scheduleDraft.bufferEnabled}
+                      value={scheduleDraft.bufferUnit}
+                      onChange={(e) =>
+                        setScheduleDraft((prev) => ({
+                          ...prev,
+                          bufferUnit: e.target.value,
+                        }))
+                      }
+                      className="px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 disabled:opacity-40 focus:bg-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                    >
+                      <option value="minutes">minutes</option>
+                      <option value="hours">hours</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Max Capacity */}
+                <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                  <div>
+                    <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                      Max Capacity (Max Bookings)
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Maximum attendees allowed per time slot
+                    </p>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    value={scheduleDraft.maxCapacity}
+                    onChange={(e) =>
+                      setScheduleDraft((prev) => ({
+                        ...prev,
+                        maxCapacity: Math.max(1, Number(e.target.value) || 1),
+                      }))
+                    }
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-black text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* 5. Minimum Notice Before Appointment */}
+              <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                <div>
+                  <h4 className="text-sm font-extrabold text-slate-900">
+                    Minimum time before the appointment start that it can be booked
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Prevent last-minute bookings (e.g. leads must book at least 20 minutes before slot starts).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="minNoticeEnabled"
+                    checked={!!scheduleDraft.minNoticeEnabled}
+                    onChange={(e) =>
+                      setScheduleDraft((prev) => ({
+                        ...prev,
+                        minNoticeEnabled: e.target.checked,
+                      }))
+                    }
+                    className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    disabled={!scheduleDraft.minNoticeEnabled}
+                    value={scheduleDraft.minNoticeValue}
+                    onChange={(e) =>
+                      setScheduleDraft((prev) => ({
+                        ...prev,
+                        minNoticeValue: Math.max(0, Number(e.target.value)),
+                      }))
+                    }
+                    className="w-20 px-2.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-900 text-center disabled:opacity-40 focus:bg-white focus:outline-none focus:border-emerald-500"
+                  />
+                  <select
+                    disabled={!scheduleDraft.minNoticeEnabled}
+                    value={scheduleDraft.minNoticeUnit}
+                    onChange={(e) =>
+                      setScheduleDraft((prev) => ({
+                        ...prev,
+                        minNoticeUnit: e.target.value,
+                      }))
+                    }
+                    className="px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 disabled:opacity-40 focus:bg-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  >
+                    <option value="minutes">minutes</option>
+                    <option value="hours">hours</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Live Preview Count */}
+              <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
+                <span className="font-bold text-emerald-900">
+                  Live Preview (Today&apos;s Remaining Slots):
+                </span>
+                <span className="font-black text-emerald-700">
+                  {generateSlotsForDate(scheduleDraft, todayStr).length} slots available today
+                </span>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsScheduleModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingSchedule}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-2 cursor-pointer shadow-sm shadow-emerald-600/30 disabled:opacity-50"
+                >
+                  {savingSchedule ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Saving Schedule...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      Save & Publish Schedule
+                    </>
                   )}
                 </button>
               </div>
