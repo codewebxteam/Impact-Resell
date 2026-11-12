@@ -133,6 +133,16 @@ export default function DemoManager() {
   // Inline Staff Name editing state
   const [staffDrafts, setStaffDrafts] = useState({});
   const [savedStaffId, setSavedStaffId] = useState(null);
+  const [copiedPhoneId, setCopiedPhoneId] = useState(null);
+
+  const handleCopyPhone = (bookingId, phoneStr) => {
+    if (!phoneStr) return;
+    navigator.clipboard?.writeText(phoneStr);
+    setCopiedPhoneId(bookingId);
+    setTimeout(() => {
+      setCopiedPhoneId((prev) => (prev === bookingId ? null : prev));
+    }, 1500);
+  };
 
   // Horizontal slots container ref
   const slotsScrollRef = useRef(null);
@@ -1423,7 +1433,8 @@ export default function DemoManager() {
                 <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
                   {filteredBookings.map((b) => {
                     const cleanPhone = (b.phone || "").replace(/\D/g, "");
-                    const waLink = `https://wa.me/91${cleanPhone}?text=Hello%20${encodeURIComponent(
+                    const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                    const waLink = `https://wa.me/${waNumber}?text=Hello%20${encodeURIComponent(
                       b.name || "Partner"
                     )},%20I%20am%20from%20Alife%20Stable.%20Regarding%20your%20free%20demo%20booking%20for%20${encodeURIComponent(
                       b.slotDate || ""
@@ -1460,11 +1471,23 @@ export default function DemoManager() {
                               </span>
                               {cleanPhone && (
                                 <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyPhone(b.id, b.phone)}
+                                    title="Copy Number"
+                                    className="p-1 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
+                                  >
+                                    {copiedPhoneId === b.id ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                    ) : (
+                                      <Copy className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
                                   <a
                                     href={waLink}
                                     target="_blank"
                                     rel="noreferrer"
-                                    title="Message on WhatsApp"
+                                    title="Open in WhatsApp"
                                     className="p-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
                                   >
                                     <MessageCircle className="w-3.5 h-3.5" />
