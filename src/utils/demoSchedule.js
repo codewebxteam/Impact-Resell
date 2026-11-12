@@ -17,7 +17,7 @@ export const DEFAULT_SCHEDULE_CONFIG = {
   type: "schedule_config",
   title: "Alife Stable - Partnership Meeting",
   subtitle:
-    "Book a live 1-on-1 walkthrough to see how you can launch your own branded AI course academy in 24 hours. Our partnership specialist will guide you through platform features, pricing, and complete onboarding.",
+    "Book your free demo and explore Alife Stable's AI Courses Partnership Program. Choose your preferred date and time!",
   durationMinutes: 30,
   repeatMode: "weekly",
   bookingWindowDays: 14,
