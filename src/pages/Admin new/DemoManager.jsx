@@ -587,14 +587,14 @@ export default function DemoManager() {
 
       if (
         slotDate === todayStr &&
-        !["Demo no show", "Cancelled", "Reschedule"].includes(remark)
+        !["Demo no show", "Cancelled"].includes(remark)
       ) {
         attendingToday++;
       }
 
       if (
         slotDate > todayStr &&
-        !["Demo no show", "Cancelled", "Completed", "Partnership Enrolled", "Student Enrolled"].includes(remark)
+        !["Demo no show", "Cancelled"].includes(remark)
       ) {
         upcoming++;
       }
@@ -788,7 +788,7 @@ export default function DemoManager() {
           if (
             !(
               slotDate === todayStr &&
-              !["Demo no show", "Cancelled", "Reschedule"].includes(remark)
+              !["Demo no show", "Cancelled"].includes(remark)
             )
           ) {
             return false;
@@ -797,13 +797,7 @@ export default function DemoManager() {
           if (
             !(
               slotDate > todayStr &&
-              ![
-                "Demo no show",
-                "Cancelled",
-                "Completed",
-                "Partnership Enrolled",
-                "Student Enrolled",
-              ].includes(remark)
+              !["Demo no show", "Cancelled"].includes(remark)
             )
           ) {
             return false;
