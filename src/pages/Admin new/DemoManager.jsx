@@ -1492,13 +1492,6 @@ export default function DemoManager() {
                                   >
                                     <MessageCircle className="w-3.5 h-3.5" />
                                   </a>
-                                  <a
-                                    href={`tel:${cleanPhone}`}
-                                    title="Call User"
-                                    className="p-1 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors"
-                                  >
-                                    <Phone className="w-3.5 h-3.5" />
-                                  </a>
                                 </div>
                               )}
                             </div>
