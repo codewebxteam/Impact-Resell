@@ -31,34 +31,65 @@ export const useCourse = () => useContext(CourseContext);
 
 export const CourseProvider = ({ children }) => {
   const { currentUser, userData } = useAuth();
-  const { isPartner, agency, isMainSite } = useAgency();
+  const { isPartner: isPartnerSite, agency, isMainSite } = useAgency();
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const updateTimeoutRef = useRef(null);
 
-  const resolveBundleCourses = async (coursesData = []) => {
-    const isPartnerUser = userData?.role === "partner" || isPartner;
-    const hasBundle = (coursesData || []).some(c => c.courseId === "bundle");
+  // Helper to strictly check if the LOGGED-IN USER has partner privileges
+  // (Prevents new student registrations from being mistakenly treated as partners)
+  const checkIsPartnerUser = async () => {
+    if (userData?.role === "partner" || userData?.isReseller === true) {
+      return true;
+    }
+    const emailLower = (currentUser?.email || "").toLowerCase().trim();
+    if (emailLower) {
+      try {
+        const resellerSnap = await getDoc(doc(db, "allowedResellers", emailLower));
+        if (resellerSnap.exists()) {
+          const resData = resellerSnap.data();
+          if (
+            resData?.accessType === "partnership" ||
+            resData?.isPartner === true ||
+            resData?.role === "partner"
+          ) {
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn("Could not check partner status from allowedResellers:", e);
+      }
+    }
+    return false;
+  };
+
+  const resolveBundleCourses = async (coursesData = [], isPartnerUser = false) => {
+    const hasBundle = (coursesData || []).some((c) => c.courseId === "bundle");
+    // Strictly only grant all courses if user actually owns a bundle or is verified partner account
     if (!hasBundle && !isPartnerUser) return coursesData;
 
     try {
       const coursesSnap = await getDocs(collection(db, "courseVideos"));
-      let allCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
+      let allCourses = coursesSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
       if (isMainSite) {
-        allCourses = allCourses.filter(c => !c.partnerId || c.partnerId === "admin");
+        allCourses = allCourses.filter((c) => !c.partnerId || c.partnerId === "admin");
       } else {
-        allCourses = allCourses.filter(c => !c.partnerId || c.partnerId === "admin" || c.partnerId === agency?.id);
+        allCourses = allCourses.filter(
+          (c) => !c.partnerId || c.partnerId === "admin" || c.partnerId === agency?.id
+        );
       }
-      
-      const dynamicCourses = allCourses.map(c => {
-        const existing = (coursesData || []).find(ec => ec.courseId === c.id);
+
+      const dynamicCourses = allCourses.map((c) => {
+        const existing = (coursesData || []).find((ec) => ec.courseId === c.id);
         if (existing) return existing;
 
         let safeLectures = [];
         if (c.lectures && Array.isArray(c.lectures)) {
           safeLectures = c.lectures;
         } else if (c.videoId) {
-          safeLectures = [{ id: Date.now(), videoId: c.videoId, title: c.title, url: c.url || "" }];
+          safeLectures = [
+            { id: Date.now(), videoId: c.videoId, title: c.title, url: c.url || "" },
+          ];
         }
 
         return {
@@ -77,11 +108,11 @@ export const CourseProvider = ({ children }) => {
           category: String(c.category || "General"),
           lectures: safeLectures,
           rating: Number(c.rating || 0),
-          level: String(c.level || "Beginner")
+          level: String(c.level || "Beginner"),
         };
       });
 
-      const bundleItem = (coursesData || []).find(c => c.courseId === "bundle");
+      const bundleItem = (coursesData || []).find((c) => c.courseId === "bundle");
       return bundleItem ? [...dynamicCourses, bundleItem] : dynamicCourses;
     } catch (err) {
       console.error("Failed to dynamically load bundle courses", err);
@@ -94,13 +125,13 @@ export const CourseProvider = ({ children }) => {
       const docRef = doc(db, "enrolledCourses", currentUser.uid);
 
       const unsubscribe = onSnapshot(docRef, async (docSnap) => {
-        const isPartnerUser = userData?.role === "partner" || isPartner;
+        const isPartnerUser = await checkIsPartnerUser();
         if (docSnap.exists()) {
           const coursesData = docSnap.data().courses || [];
-          const resolvedData = await resolveBundleCourses(coursesData);
+          const resolvedData = await resolveBundleCourses(coursesData, isPartnerUser);
           setEnrolledCourses(resolvedData);
         } else if (isPartnerUser) {
-          const resolvedData = await resolveBundleCourses([]);
+          const resolvedData = await resolveBundleCourses([], isPartnerUser);
           setEnrolledCourses(resolvedData);
         } else {
           setEnrolledCourses([]);
@@ -111,21 +142,23 @@ export const CourseProvider = ({ children }) => {
     } else {
       setEnrolledCourses([]);
     }
-  }, [currentUser, userData, isPartner, isMainSite, agency?.id]);
+  }, [currentUser, userData, isMainSite, agency?.id]);
 
   const loadEnrolledCourses = async () => {
     if (!currentUser) return;
     try {
-      const isPartnerUser = userData?.role === "partner" || isPartner;
+      const isPartnerUser = await checkIsPartnerUser();
       const docRef = doc(db, "enrolledCourses", currentUser.uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const coursesData = docSnap.data().courses || [];
-        const resolvedData = await resolveBundleCourses(coursesData);
+        const resolvedData = await resolveBundleCourses(coursesData, isPartnerUser);
         setEnrolledCourses(resolvedData);
       } else if (isPartnerUser) {
-        const resolvedData = await resolveBundleCourses([]);
+        const resolvedData = await resolveBundleCourses([], isPartnerUser);
         setEnrolledCourses(resolvedData);
+      } else {
+        setEnrolledCourses([]);
       }
     } catch (error) {
       console.error("Error loading courses:", error);
@@ -149,8 +182,8 @@ export const CourseProvider = ({ children }) => {
     if (offerPriceStr && offerPriceStr !== "Free") {
       const numericPrice = parseInt(offerPriceStr.replace(/[^0-9]/g, ""));
       if (!isNaN(numericPrice) && numericPrice > 0) {
-        actualPrice = isPartner
-          ? Math.round(numericPrice * (agency.pricingMultiplier || 1))
+        actualPrice = isPartnerSite
+          ? Math.round(numericPrice * (agency?.pricingMultiplier || 1))
           : numericPrice;
       }
     }
@@ -207,9 +240,9 @@ export const CourseProvider = ({ children }) => {
       await addDoc(collection(db, "payments"), {
         amount: actualPrice,
         status: "completed",
-        source: isPartner ? "partner" : "direct",
-        partnerId: isPartner ? agency.id : null,
-        partnerName: isPartner ? agency.name : null,
+        source: isPartnerSite ? "partner" : "direct",
+        partnerId: isPartnerSite ? agency?.id : null,
+        partnerName: isPartnerSite ? agency?.name : null,
         type: "purchase",
         courseId: courseId,
         courseName: course.title,
@@ -222,7 +255,7 @@ export const CourseProvider = ({ children }) => {
     // Add enrollment entry
     await addDoc(collection(db, "enrollments"), {
       courseName: course.title,
-      source: isPartner ? "partner" : "direct",
+      source: isPartnerSite ? "partner" : "direct",
       studentId: currentUser.uid,
       courseId: courseId,
       price: actualPrice,
@@ -237,9 +270,9 @@ export const CourseProvider = ({ children }) => {
       assetName: course.title,
       type: "course",
       saleValue: actualPrice,
-      commission: isPartner ? Math.round(actualPrice * 0.1) : 0,
-      partnerId: isPartner ? agency.id : "direct",
-      partnerName: isPartner ? agency.name : "Direct",
+      commission: isPartnerSite ? Math.round(actualPrice * 0.1) : 0,
+      partnerId: isPartnerSite ? agency?.id : "direct",
+      partnerName: isPartnerSite ? agency?.name : "Direct",
       courseId: courseId,
       ebookId: null,
     });
