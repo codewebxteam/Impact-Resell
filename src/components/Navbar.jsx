@@ -38,8 +38,12 @@ const Navbar = () => {
   // --- Destructure userData for Role Detection ---
   const { currentUser, userData, logout } = useAuth();
   const { agency, isMainSite } = useAgency();
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState("login");
+
+  // On main site (i-cpp.com), if visitor is not logged in, modal is mandatory (Govt / Official portal style)
+  const isMandatory = Boolean(isMainSite && !currentUser);
+
+  const [isAuthOpen, setIsAuthOpen] = useState(isMandatory);
+  const [authMode, setAuthMode] = useState(isMandatory ? "partner" : "login");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef(null);
 
@@ -103,6 +107,14 @@ const Navbar = () => {
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  // Mandatory modal sync for main site (i-cpp.com) visitor
+  useEffect(() => {
+    if (isMandatory) {
+      setIsAuthOpen(true);
+      setAuthMode("partner");
+    }
+  }, [isMandatory]);
 
   const openAuth = (mode) => {
     setAuthMode(mode);
@@ -415,8 +427,10 @@ const Navbar = () => {
       <div className="h-16 lg:hidden" />
 
       <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
+        isOpen={isMandatory ? true : isAuthOpen}
+        onClose={() => {
+          if (!isMandatory) setIsAuthOpen(false);
+        }}
         defaultMode={authMode}
       />
     </>

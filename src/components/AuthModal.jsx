@@ -14,17 +14,24 @@ import {
   Loader2,
   ArrowRight,
   AlertCircle,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
-  const { login, signup, resetPassword } = useAuth();
+  const { login, signup, resetPassword, currentUser } = useAuth();
   const { isPartner, isMainSite, agency } = useAgency();
   const navigate = useNavigate();
 
-  const [mode, setMode] = useState(defaultMode); // 'login' | 'signup' | 'partner' | 'forgotPassword'
+  // On main site (i-cpp.com), if visitor is not logged in, modal is mandatory (Govt / Official portal style)
+  const isMandatory = Boolean(isMainSite && !currentUser);
+
+  const [mode, setMode] = useState(
+    isMandatory ? (defaultMode === "login" ? "login" : "partner") : defaultMode
+  ); // 'login' | 'signup' | 'partner' | 'forgotPassword'
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -66,7 +73,9 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
   // Reset state when modal opens/closes or mode changes
   useEffect(() => {
     if (isOpen) {
-      const initialMode = isMainSite && defaultMode === "signup" ? "login" : defaultMode;
+      const initialMode = isMandatory
+        ? (defaultMode === "login" ? "login" : "partner")
+        : (isMainSite && defaultMode === "signup" ? "login" : defaultMode);
       setMode(initialMode);
       setErrors({});
       setPartnerVerified(false);
@@ -80,7 +89,7 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
       });
       setStrength({ score: 0, label: "", color: "" });
     }
-  }, [isOpen, defaultMode, isMainSite]);
+  }, [isOpen, defaultMode, isMainSite, isMandatory]);
 
   useEffect(() => {
     setErrors({});
@@ -267,40 +276,61 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        onClick={isMandatory ? undefined : onClose}
+        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
       />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200/80"
       >
-        <div className="px-8 pt-8 flex justify-between items-start shrink-0">
-        <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              {mode === "login" && "Welcome Back"}
+        {/* Government / Institutional Gateway Header Ribbon */}
+        {isMandatory && (
+          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white px-6 sm:px-8 py-3.5 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="size-6 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <ShieldCheck className="size-3.5" />
+              </div>
+              <span className="text-[11px] font-black tracking-wider uppercase text-slate-200">
+                Official Partner Gateway
+              </span>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Authorized Access
+            </span>
+          </div>
+        )}
+
+        <div className="px-6 sm:px-8 pt-6 sm:pt-7 flex justify-between items-start shrink-0">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              {mode === "login" && (isMandatory ? "Authorized Partner Login" : "Welcome Back")}
               {mode === "signup" && "Create Account"}
               {mode === "partner" && "Partner Registration"}
               {mode === "forgotPassword" && "Reset Password"}
             </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              {mode === "login" && "Enter your details to access your account."}
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
+              {mode === "login" && (isMandatory ? "Enter your registered credentials to access the partner portal." : "Enter your details to access your account.")}
               {mode === "signup" && "Start your learning journey today."}
-              {mode === "partner" && "Verify your pre-approved email to join."}
+              {mode === "partner" && "Verify your pre-approved email address to complete registration."}
               {mode === "forgotPassword" && "Enter your email to receive a reset link."}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors text-slate-500"
-          >
-            <X className="size-5" />
-          </button>
+          {!isMandatory && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors text-slate-500 cursor-pointer"
+            >
+              <X className="size-5" />
+            </button>
+          )}
         </div>
 
-        <div className="p-8 overflow-y-auto custom-scrollbar">
+        <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar">
           {mode === "forgotPassword" ? (
             /* FORGOT PASSWORD MODE */
             <div>
@@ -594,44 +624,39 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }) => {
 
           {/* FOOTER SWITCHES */}
           <div className="mt-8 text-center space-y-3">
-            {mode === "login" && !isMainSite && (
-              <>
-                <p className="text-slate-500 text-sm">
-                  Don't have an account?{" "}
-                  <button
-                    onClick={() => setMode("signup")}
-                    className="font-bold text-slate-900 hover:text-[#0891b2]"
-                  >
-                    Sign Up
-                  </button>
-                </p>
-                <div className="relative py-2">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-slate-200"></span>
-                  </div>
-                </div>
-                
-              </>
+            {mode === "login" && (
+              <p className="text-slate-500 text-sm font-medium">
+                {isMainSite ? "New authorized partner? " : "Don't have an account? "}
+                <button
+                  type="button"
+                  onClick={() => setMode(isMainSite ? "partner" : "signup")}
+                  className="font-bold text-slate-900 hover:text-[#0891b2] cursor-pointer"
+                >
+                  {isMainSite ? "Register as Partner" : "Sign Up"}
+                </button>
+              </p>
             )}
             {mode === "signup" && (
-              <p className="text-slate-500 text-sm">
+              <p className="text-slate-500 text-sm font-medium">
                 Already have an account?{" "}
                 <button
+                  type="button"
                   onClick={() => setMode("login")}
-                  className="font-bold text-slate-900 hover:text-[#0891b2]"
+                  className="font-bold text-slate-900 hover:text-[#0891b2] cursor-pointer"
                 >
                   Login
                 </button>
               </p>
             )}
             {mode === "partner" && (
-              <p className="text-slate-500 text-sm">
-                Already registered?{" "}
+              <p className="text-slate-500 text-sm font-medium">
+                Already an authorized partner?{" "}
                 <button
+                  type="button"
                   onClick={() => setMode("login")}
-                  className="font-bold text-slate-900 hover:text-[#0891b2]"
+                  className="font-bold text-slate-900 hover:text-[#0891b2] cursor-pointer"
                 >
-                  Login
+                  Login to Portal
                 </button>
               </p>
             )}
