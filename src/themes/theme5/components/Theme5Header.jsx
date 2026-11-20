@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Menu,
   X,
-  Play
+  Play,
+  Smartphone,
 } from "lucide-react";
 import {
   NavLink,
@@ -35,7 +36,7 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
   const navigate = useNavigate();
 
   const { currentUser, userData, logout } = useAuth();
-  const { agency, isMainSite } = useAgency();
+  const { agency, isMainSite, installPWA } = useAgency();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -162,7 +163,20 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
           </div>
 
           {/* Right Action Items */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {!isMainSite && (
+              <button
+                type="button"
+                onClick={installPWA}
+                title={`Install ${agency?.name || "Academy"} App`}
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border border-slate-200/80 hover:border-indigo-300 text-slate-700 hover:text-indigo-900 bg-white shadow-xs hover:bg-indigo-50 transition-all cursor-pointer"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden sm:inline">Install App</span>
+                <span className="sm:hidden">App</span>
+              </button>
+            )}
+
             {/* Quick Courses Search Button */}
             <Link
               to={getRoute("/courses")}
@@ -214,6 +228,20 @@ const Theme5Header = ({ currentTheme = "theme5" }) => {
                         <LayoutDashboard className="size-4" />
                         Go to Dashboard
                       </Link>
+
+                      {!isMainSite && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            installPWA();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/60 transition-colors text-left cursor-pointer"
+                        >
+                          <Smartphone className="size-4 text-indigo-600" />
+                          Install App
+                        </button>
+                      )}
 
                       <button
                         onClick={handleLogout}

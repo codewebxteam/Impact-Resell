@@ -40,10 +40,122 @@ const DEFAULT_AGENCY = {
   demoVideoLink: "",
 };
 
+// Helper to build compliant PWA icons for any image format or CDN
+const getManifestIcons = (rawLogo) => {
+  if (!rawLogo) {
+    return [
+      {
+        src: "/vite.svg",
+        sizes: "192x192 512x512",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+    ];
+  }
+
+  const isSvg = rawLogo.endsWith(".svg") || rawLogo.includes(".svg?");
+  if (isSvg) {
+    return [
+      {
+        src: rawLogo,
+        sizes: "192x192 512x512",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+    ];
+  }
+
+  const isImageKit = rawLogo.includes("imagekit.io");
+  const icon192 = isImageKit
+    ? (rawLogo.includes("?") ? `${rawLogo}&tr=w-192,h-192,cm-pad_resize` : `${rawLogo}?tr=w-192,h-192,cm-pad_resize`)
+    : rawLogo;
+  const icon512 = isImageKit
+    ? (rawLogo.includes("?") ? `${rawLogo}&tr=w-512,h-512,cm-pad_resize` : `${rawLogo}?tr=w-512,h-512,cm-pad_resize`)
+    : rawLogo;
+
+  return [
+    {
+      src: icon192,
+      sizes: "192x192",
+      type: "image/png",
+      purpose: "any",
+    },
+    {
+      src: icon512,
+      sizes: "512x512",
+      type: "image/png",
+      purpose: "any",
+    },
+    {
+      src: icon512,
+      sizes: "512x512",
+      type: "image/png",
+      purpose: "maskable",
+    },
+  ];
+};
+
 export const AgencyProvider = ({ children }) => {
   const [agency, setAgency] = useState(DEFAULT_AGENCY);
   const [isMainSite, setIsMainSite] = useState(true);
   const [loading, setLoading] = useState(true);
+
+  // --- PWA Native Install States ---
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setCanInstall(false);
+    };
+
+    const checkIOS =
+      typeof navigator !== "undefined" &&
+      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      !window.MSStream;
+    setIsIOS(Boolean(checkIOS));
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
+
+  const installPWA = useCallback(async () => {
+    const appDisplayName = !isMainSite && agency?.name ? agency.name : "AI Courses";
+
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          setDeferredPrompt(null);
+          setCanInstall(false);
+        }
+      } catch (err) {
+        console.warn("PWA Prompt error:", err);
+      }
+    } else if (isIOS) {
+      alert(
+        `To download & install ${appDisplayName} App on iPhone/iPad:\n\n1. Tap the Share button (square with arrow pointing up) at the bottom of Safari.\n2. Scroll down and tap "Add to Home Screen".\n3. Tap "Add" at top right.`
+      );
+    } else {
+      alert(
+        `To download & install ${appDisplayName} App:\n\nTap your browser menu (⋮) at top-right and select "Install app" or "Add to Home screen".`
+      );
+    }
+  }, [deferredPrompt, isIOS, isMainSite, agency]);
 
   const refreshAgency = useCallback(async () => {
     setLoading(true);
@@ -208,7 +320,8 @@ export const AgencyProvider = ({ children }) => {
               ? agency.name.substring(0, 15)
               : agency.name
             : "AI Courses";
-        const logoUrl = agency?.logo || agency?.logoUrl || "/vite.svg";
+        const rawLogo = agency?.logoUrl || agency?.logo || "";
+        const logoUrl = rawLogo || "/vite.svg";
         const themeColor = agency?.themeColor || "#0f172a";
         const tagline =
           agency?.tagline ||
@@ -226,36 +339,56 @@ export const AgencyProvider = ({ children }) => {
           background_color: "#ffffff",
           theme_color: themeColor,
           orientation: "portrait-primary",
-          icons: [
-            {
-              src: logoUrl,
-              sizes: "192x192 256x256 512x512",
-              type: "image/png",
-              purpose: "any",
-            },
-          ],
+          icons: getManifestIcons(rawLogo),
         };
 
-        const blob = new Blob([JSON.stringify(manifestData)], {
-          type: "application/manifest+json",
-        });
-        const manifestBlobUrl = URL.createObjectURL(blob);
+        // 1. Data URI update for immediate DOM recognition
+        const encodedManifest =
+          "data:application/manifest+json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(manifestData));
 
-        let manifestLink = document.getElementById("dynamic-manifest");
-        if (!manifestLink) {
+        let manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink) {
+          manifestLink.setAttribute("href", encodedManifest);
+        } else {
           manifestLink = document.createElement("link");
-          manifestLink.id = "dynamic-manifest";
+          manifestLink.id = "app-manifest";
           manifestLink.rel = "manifest";
+          manifestLink.href = encodedManifest;
           document.head.appendChild(manifestLink);
         }
-        manifestLink.href = manifestBlobUrl;
 
-        // Dynamic Favicon & Apple Touch Icon
+        // 2. Put into CacheStorage so Service Worker serves dynamic /manifest.json
+        if ("caches" in window) {
+          caches.open("pwa-dynamic-manifest-v2").then((cache) => {
+            cache.put(
+              "/manifest.json",
+              new Response(JSON.stringify(manifestData), {
+                headers: {
+                  "Content-Type": "application/manifest+json; charset=utf-8",
+                  "Cache-Control": "public, max-age=0, must-revalidate",
+                },
+              })
+            );
+          }).catch((err) => {
+            console.warn("Failed to put dynamic manifest into CacheStorage:", err);
+          });
+        }
+
+        // 3. Post to active Service Worker controller
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: "SET_DYNAMIC_MANIFEST",
+            manifest: manifestData,
+          });
+        }
+
+        // 4. Dynamic Favicon, Apple Touch Icon & Shortcut Icon (iOS & Desktop)
         if (logoUrl) {
-          let appleIcon = document.getElementById("dynamic-apple-icon");
+          let appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
           if (!appleIcon) {
             appleIcon = document.createElement("link");
-            appleIcon.id = "dynamic-apple-icon";
+            appleIcon.id = "apple-touch-icon";
             appleIcon.rel = "apple-touch-icon";
             document.head.appendChild(appleIcon);
           }
@@ -265,9 +398,17 @@ export const AgencyProvider = ({ children }) => {
           if (favIcon) {
             favIcon.href = logoUrl;
           }
+
+          let shortcutIcon = document.querySelector("link[rel='shortcut icon']");
+          if (!shortcutIcon) {
+            shortcutIcon = document.createElement("link");
+            shortcutIcon.rel = "shortcut icon";
+            document.head.appendChild(shortcutIcon);
+          }
+          shortcutIcon.href = logoUrl;
         }
 
-        // Meta Tags for Native PWA Install
+        // 5. Meta Tags for Native PWA Install & iOS Home Screen Title
         let metaTheme = document.querySelector("meta[name='theme-color']");
         if (!metaTheme) {
           metaTheme = document.createElement("meta");
@@ -333,6 +474,9 @@ export const AgencyProvider = ({ children }) => {
         refreshAgency,
         getPrice,
         hasPartnerSetPrice,
+        canInstall,
+        isIOS,
+        installPWA,
       }}
     >
       {children}

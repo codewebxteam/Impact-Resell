@@ -12,7 +12,8 @@ import {
   Settings,
   ChevronDown,
   Lock,
-  Sparkles
+  Sparkles,
+  Smartphone,
 } from "lucide-react";
 import {
   NavLink,
@@ -32,7 +33,7 @@ const Theme3Header = ({ currentTheme = "theme3" }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { currentUser, userData, logout } = useAuth();
-  const { agency, isMainSite } = useAgency();
+  const { agency, isMainSite, installPWA } = useAgency();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -147,7 +148,20 @@ const Theme3Header = ({ currentTheme = "theme3" }) => {
             })}
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {!isMainSite && (
+              <button
+                type="button"
+                onClick={installPWA}
+                title={`Install ${agency?.name || "Academy"} App`}
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black border border-slate-700 hover:border-amber-400 text-slate-200 hover:text-white bg-slate-900 shadow-xs hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-[#fedc5c]" />
+                <span className="hidden sm:inline">Install App</span>
+                <span className="sm:hidden">App</span>
+              </button>
+            )}
+
             {currentUser ? (
               <div className="relative" ref={profileMenuRef}>
                 <button
@@ -201,6 +215,19 @@ const Theme3Header = ({ currentTheme = "theme3" }) => {
                           <LayoutDashboard className="size-4 text-[#fedc5c]" />
                           <span>{isPartner ? "Partner Dashboard" : isAdmin ? "Admin Panel" : "My Dashboard"}</span>
                         </Link>
+                        {!isMainSite && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              installPWA();
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-slate-700 rounded-xl hover:bg-amber-50 hover:text-amber-900 transition-colors text-left cursor-pointer"
+                          >
+                            <Smartphone className="size-4 text-[#fedc5c]" />
+                            <span>Install App</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setShowProfileMenu(false);
