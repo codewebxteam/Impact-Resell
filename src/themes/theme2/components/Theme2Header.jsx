@@ -136,7 +136,7 @@ const Theme2Header = ({ currentTheme = "theme2" }) => {
           </NavLink>
 
           <div className="hidden lg:flex items-center gap-8 xl:gap-10">
-            {navLinks.map((item) => {
+            {navLinks.filter((item) => item.path).map((item) => {
               const isCourseDetails =
                 item.name === "Courses" &&
                 (location.pathname.startsWith("/courses") ||

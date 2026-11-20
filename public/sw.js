@@ -1,12 +1,12 @@
 // Service Worker for PWA Support
-const CACHE_NAME = 'impact-resell-pwa-v1';
+const CACHE_NAME = 'impact-resell-pwa-v2';
 
 // Install event - activate immediately
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - claim clients immediately
+// Activate event - claim clients immediately and flush obsolete caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -19,22 +19,20 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - network first with cache fallback
+// Fetch event - network first with cache fallback for same-origin assets
 self.addEventListener('fetch', (event) => {
-  // Pass through non-GET requests, dev server requests, Firestore / Firebase auth / Google APIs directly
   const url = event.request.url;
+
+  // Only intercept same-origin GET requests.
+  // Never intercept external CDNs, ImageKit, Unsplash, Firebase, or Google APIs.
   if (
     event.request.method !== 'GET' ||
+    !url.startsWith(self.location.origin) ||
     url.includes('/@vite/') ||
     url.includes('/@fs/') ||
     url.includes('/node_modules/') ||
-    url.includes('?v=') ||
-    url.includes('firestore.googleapis.com') ||
-    url.includes('identitytoolkit.googleapis.com') ||
-    url.includes('securetoken.googleapis.com') ||
-    url.includes('firebaseinstallations.googleapis.com') ||
-    url.includes('firebaseio.com') ||
-    url.includes('chrome-extension://')
+    url.includes('/api/') ||
+    url.includes('?v=')
   ) {
     return;
   }
@@ -42,15 +40,28 @@ self.addEventListener('fetch', (event) => {
   // Network first strategy
   event.respondWith(
     fetch(event.request)
-      .then((response) => response)
+      .then((response) => {
+        // Cache valid same-origin static responses
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return response;
+      })
       .catch(async () => {
+        // Try cache fallback
         const cached = await caches.match(event.request);
         if (cached) return cached;
-        return new Response('Offline or Network Error', {
-          status: 503,
-          statusText: 'Service Unavailable',
-          headers: { 'Content-Type': 'text/plain' },
-        });
+
+        // If navigation fails while offline, serve cached index
+        if (event.request.mode === 'navigate') {
+          const cachedRoot = await caches.match('/');
+          if (cachedRoot) return cachedRoot;
+        }
+
+        return Response.error();
       })
   );
 });

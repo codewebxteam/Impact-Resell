@@ -133,43 +133,45 @@ const Theme4Header = ({ currentTheme = "theme4" }) => {
 
           {/* Desktop Nav Links */}
           <div className="hidden lg:flex items-center gap-8 xl:gap-9">
-            {navLinks.map((item) => {
-              const isAnchor = item.path.includes("#");
-              return isAnchor ? (
-                <a
-                  key={item.name}
-                  href={item.path}
-                  className="text-[13.5px] font-bold text-slate-700 hover:text-violet-600 transition-colors py-1 cursor-pointer"
-                >
-                  {item.name}
-                </a>
-              ) : (
-                <NavLink
-                  key={item.name}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `text-[13.5px] font-bold transition-colors py-1 relative ${
-                      isActive
-                        ? "text-violet-600 font-black"
-                        : "text-slate-700 hover:text-violet-600"
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <span>{item.name}</span>
-                      {isActive && (
-                        <motion.span
-                          layoutId="activeTab4"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full"
-                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                        />
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              );
-            })}
+            {navLinks
+              .filter((item) => item.path)
+              .map((item) => {
+                const isAnchor = Boolean(item.path && item.path.includes("#"));
+                return isAnchor ? (
+                  <a
+                    key={item.name}
+                    href={item.path}
+                    className="text-[13.5px] font-bold text-slate-700 hover:text-violet-600 transition-colors py-1 cursor-pointer"
+                  >
+                    {item.name}
+                  </a>
+                ) : (
+                  <NavLink
+                    key={item.name}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `text-[13.5px] font-bold transition-colors py-1 relative ${
+                        isActive
+                          ? "text-violet-600 font-black"
+                          : "text-slate-700 hover:text-violet-600"
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <span>{item.name}</span>
+                        {isActive && (
+                          <motion.span
+                            layoutId="activeTab4"
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full"
+                            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                          />
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
           </div>
 
           {/* Right Action Buttons */}
@@ -247,11 +249,11 @@ const Theme4Header = ({ currentTheme = "theme4" }) => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 lg:hidden pb-safe pt-2 px-4 sm:px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.06)]">
         <div className="flex justify-around items-center h-14 max-w-lg mx-auto">
           {navLinks.map((item) => {
-            if (item.onClick) {
+            if (item.onClick || !item.path) {
               return (
                 <button
                   key={item.name}
-                  onClick={item.onClick}
+                  onClick={item.onClick || (() => openAuth("login"))}
                   className="relative flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 cursor-pointer"
                 >
                   <div className="relative p-1">
