@@ -38,6 +38,9 @@ const DEFAULT_AGENCY = {
   promoType: "none",
   bundlePrice: "",
   demoVideoLink: "",
+  razorpayKeyId: "",
+  razorpayKeySecret: "",
+  enableRazorpay: false,
 };
 
 // Helper to build compliant PWA icons for any image format or CDN
@@ -273,6 +276,9 @@ export const AgencyProvider = ({ children }) => {
             customDomain: data.customDomain || "",
             demoVideoLink: data.demoVideoLink || "",
             courseDemoOverrides: data.courseDemoOverrides || {},
+            razorpayKeyId: data.razorpayKeyId || "",
+            razorpayKeySecret: data.razorpayKeySecret || "",
+            enableRazorpay: Boolean(data.enableRazorpay ?? Boolean(data.razorpayKeyId)),
           });
           setIsMainSite(false);
         } else {

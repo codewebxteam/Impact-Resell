@@ -25,8 +25,13 @@ import CourseHero from "../../components/course-details/CourseHero";
 import Curriculum from "../../components/course-details/Curriculum";
 import PricingCard from "../../components/course-details/PricingCard";
 import AuthModal from "../../components/AuthModal";
+import PaymentSuccessModal from "../../components/PaymentSuccessModal";
 import CourseVideoPlayer from "../../components/CourseVideoPlayer";
-import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
+import {
+  getCoursePaymentLink,
+  openPaymentLink,
+  handleUniversalCheckout,
+} from "../../utils/paymentHelper";
 
 // ==========================================
 // THEME 3 CONFIGURATION (Aesthetic: #fedc5c & Slate-950)
@@ -58,6 +63,11 @@ const CourseDetails = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successModalData, setSuccessModalData] = useState({
+    isOpen: false,
+    paymentId: "",
+    amount: "",
+  });
 
   const [activeVideoPlaylist, setActiveVideoPlaylist] = useState(null);
   const [startIndex, setStartIndex] = useState(0);
@@ -145,34 +155,27 @@ const CourseDetails = () => {
   }, [id, isMainSite, agency, currentUser]);
 
   const handleEnroll = async () => {
-    const finalPaymentLink = getCoursePaymentLink(course, agency);
+    if (!course) return;
+    const finalPrice =
+      course?.price !== undefined && getPrice
+        ? getPrice(course.id, course.price)
+        : course?.price || "499";
 
-    if (finalPaymentLink) {
-      openPaymentLink(finalPaymentLink);
-      return;
-    }
-
-    const finalPrice = course?.price !== undefined && getPrice ? getPrice(course.id, course.price) : (course?.price || 0);
-
-    if (!currentUser) {
-      localStorage.setItem("pendingCheckoutCourse", JSON.stringify({ ...course, finalPrice }));
-      setIsAuthOpen(true);
-      return;
-    }
-
-    const targetPhone = agency?.whatsapp || "919999999999";
-    if (!agency?.whatsapp && !isMainSite) {
-      alert("Partner WhatsApp contact not configured. Please contact support.");
-      return;
-    }
-    const cleanPhone = targetPhone.replace(/[^0-9]/g, "");
-    const promoText = agency.isBogoActive
-      ? "\n🎁 Offer: Buy 1 Get All Free (BOGO Applied)"
-      : agency.bundleDiscountActive
-      ? "\n🎁 Offer: All Courses Bundle Special"
-      : "";
-    const text = `Hello ${agency.name || "Academy"},\n\nI want to enroll in the course:\n📚 *${course.title}*\n🆔 Course ID: ${course.id}\n💰 Price: ₹${finalPrice}${promoText}\n\n*My Details:*\n👤 Name: ${currentUser?.displayName || "Student"}\n📧 Email: ${currentUser?.email}\n\nPlease share the payment details/QR code so I can complete my enrollment.`;
-    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+    await handleUniversalCheckout({
+      course,
+      agency,
+      currentUser,
+      rawPrice: finalPrice,
+      setIsAuthOpen,
+      isMainSite,
+      onPaymentSuccess: (allocResult, rzpResponse) => {
+        setSuccessModalData({
+          isOpen: true,
+          paymentId: rzpResponse.razorpay_payment_id,
+          amount: String(finalPrice).replace(/[^0-9]/g, "") || "499",
+        });
+      },
+    });
   };
 
   const openPlayer = (playlist, index = 0) => {
@@ -420,6 +423,17 @@ const CourseDetails = () => {
           isOpen={isAuthOpen}
           onClose={() => setIsAuthOpen(false)}
           defaultMode="login"
+        />
+
+        <PaymentSuccessModal
+          isOpen={successModalData.isOpen}
+          onClose={() =>
+            setSuccessModalData({ isOpen: false, paymentId: "", amount: "" })
+          }
+          courseTitle={course?.title}
+          courseId={course?.id}
+          paymentId={successModalData.paymentId}
+          amount={successModalData.amount}
         />
       </div>
     </div>

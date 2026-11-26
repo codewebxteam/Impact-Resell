@@ -32,6 +32,10 @@ import {
   ExternalLink,
   Upload,
   Image as ImageIcon,
+  CreditCard,
+  Key,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { THEMES_METADATA } from "../../themes/themeMap";
 import { uploadToImageKit } from "../../services/imagekitService";
@@ -80,6 +84,9 @@ const AgencySetup = () => {
     bundlePrice: "",
     bundlePaymentLink: "",
     demoVideoLink: "",
+    razorpayKeyId: "",
+    razorpayKeySecret: "",
+    enableRazorpay: false,
   });
 
   const [logoUploading, setLogoUploading] = useState(false);
@@ -133,6 +140,9 @@ const AgencySetup = () => {
             bundlePrice: data.bundlePrice || "",
             bundlePaymentLink: data.bundlePaymentLink || data.customPaymentLinks?.["bundle"] || "",
             demoVideoLink: data.demoVideoLink || "",
+            razorpayKeyId: data.razorpayKeyId || "",
+            razorpayKeySecret: data.razorpayKeySecret || "",
+            enableRazorpay: Boolean(data.enableRazorpay ?? Boolean(data.razorpayKeyId)),
           });
           setOldSubdomain(data.subdomain);
           setIsEditMode(true);
@@ -273,6 +283,9 @@ const AgencySetup = () => {
         bundlePrice: formData.bundlePrice,
         bundlePaymentLink: formData.bundlePaymentLink,
         demoVideoLink: formData.demoVideoLink,
+        razorpayKeyId: (formData.razorpayKeyId || "").trim(),
+        razorpayKeySecret: (formData.razorpayKeySecret || "").trim(),
+        enableRazorpay: Boolean(formData.enableRazorpay),
         updatedAt: new Date(),
         ownerId: currentUser.uid,
         status: "Active",
@@ -865,6 +878,108 @@ const AgencySetup = () => {
                             </div>
                           </div>
                         )}
+                      </section>
+
+                      {/* --- RAZORPAY GATEWAY (BYOK - Instant Auto Allocation) --- */}
+                      <section className="mb-6 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-7 rounded-3xl text-white shadow-xl shadow-indigo-950/20 border border-indigo-800/40">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="size-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400">
+                              <CreditCard className="size-5" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-base font-black tracking-tight text-white uppercase">
+                                  Razorpay Payment Gateway
+                                </h3>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black border border-emerald-500/30">
+                                  <Sparkles className="size-3" /> Auto-Allocation
+                                </span>
+                              </div>
+                              <p className="text-xs text-indigo-200/70 font-medium mt-0.5">
+                                Connect your Razorpay API keys for 1-second automated course unlocking & direct bank settlements.
+                              </p>
+                            </div>
+                          </div>
+
+                          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(formData.enableRazorpay)}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  enableRazorpay: e.target.checked,
+                                })
+                              }
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            <span className="ml-2 text-xs font-bold text-slate-300">
+                              {formData.enableRazorpay ? "Active" : "Disabled"}
+                            </span>
+                          </label>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+                          <div className="flex flex-col">
+                            <label className="text-[11px] font-black uppercase tracking-wider text-indigo-200 mb-1.5 flex items-center gap-1.5">
+                              <Key className="size-3.5 text-indigo-400" /> Razorpay Key ID
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.razorpayKeyId || ""}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  razorpayKeyId: e.target.value,
+                                  enableRazorpay: e.target.value.trim() ? true : formData.enableRazorpay,
+                                })
+                              }
+                              placeholder="rzp_live_xxxxxxxxxxxxxx"
+                              className="w-full px-4 py-3 bg-slate-950/60 border border-indigo-700/50 rounded-xl text-xs font-mono font-bold text-white placeholder-slate-500 outline-none focus:border-indigo-400 transition-colors"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-1 font-medium">
+                              Found in Razorpay Dashboard → Settings → API Keys.
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col">
+                            <label className="text-[11px] font-black uppercase tracking-wider text-indigo-200 mb-1.5 flex items-center gap-1.5">
+                              <ShieldCheck className="size-3.5 text-indigo-400" /> Razorpay Key Secret (Optional)
+                            </label>
+                            <input
+                              type="password"
+                              value={formData.razorpayKeySecret || ""}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  razorpayKeySecret: e.target.value,
+                                })
+                              }
+                              placeholder="••••••••••••••••••••"
+                              className="w-full px-4 py-3 bg-slate-950/60 border border-indigo-700/50 rounded-xl text-xs font-mono font-bold text-white placeholder-slate-500 outline-none focus:border-indigo-400 transition-colors"
+                            />
+                            <span className="text-[10px] text-slate-400 mt-1 font-medium">
+                              Used for server-side HMAC validation (never exposed to students).
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-indigo-800/30 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] text-indigo-200/80 font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2 className="size-3.5 text-emerald-400" />
+                            <span>100% Direct Student-to-Partner Settlement</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2 className="size-3.5 text-emerald-400" />
+                            <span>Auto-Allot Course Immediately on Success</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2 className="size-3.5 text-emerald-400" />
+                            <span>Fallback to Custom Link / WhatsApp when empty</span>
+                          </div>
+                        </div>
                       </section>
 
                       {/* Courses */}

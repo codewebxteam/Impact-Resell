@@ -21,7 +21,8 @@ import PricingCard from "../components/course-details/PricingCard";
 import AuthModal from "../components/AuthModal";
 import CourseVideoPlayer from "../components/CourseVideoPlayer";
 import FullPageSkeleton from "../components/FullPageSkeleton";
-import { getCoursePaymentLink, openPaymentLink } from "../utils/paymentHelper";
+import { getCoursePaymentLink, openPaymentLink, handleUniversalCheckout } from "../utils/paymentHelper";
+import PaymentSuccessModal from "../components/PaymentSuccessModal";
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -34,6 +35,7 @@ const CourseDetails = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successModalData, setSuccessModalData] = useState(null);
 
   const [activeVideoPlaylist, setActiveVideoPlaylist] = useState(null);
   const [startIndex, setStartIndex] = useState(0);
@@ -130,18 +132,18 @@ const CourseDetails = () => {
     fetchCourseDetails();
   }, [id, isMainSite, agency, currentUser]);
 
-  const handleEnroll = () => {
-    const finalPaymentLink = getCoursePaymentLink(course, agency);
-    if (finalPaymentLink) {
-      openPaymentLink(finalPaymentLink);
-      return;
-    }
-    if (!currentUser) {
-      localStorage.setItem("pendingCheckoutCourse", JSON.stringify(course));
-      setIsAuthOpen(true);
-      return;
-    }
-    alert("Payment link not configured.");
+  const handleEnroll = async () => {
+    await handleUniversalCheckout({
+      course,
+      agency,
+      currentUser,
+      rawPrice: course?.price,
+      setIsAuthOpen,
+      isMainSite,
+      onPaymentSuccess: (allocResult) => {
+        setSuccessModalData(allocResult);
+      },
+    });
   };
 
   const openPlayer = (playlist, index = 0) => {
@@ -335,6 +337,12 @@ const CourseDetails = () => {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         defaultMode="login"
+      />
+
+      <PaymentSuccessModal
+        isOpen={!!successModalData}
+        onClose={() => setSuccessModalData(null)}
+        data={successModalData}
       />
     </div>
   );

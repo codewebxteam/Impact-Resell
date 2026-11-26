@@ -20,8 +20,13 @@ import CourseHero from "../../components/course-details/CourseHero";
 import Curriculum from "../../components/course-details/Curriculum";
 import PricingCard from "../../components/course-details/PricingCard";
 import AuthModal from "../../components/AuthModal";
+import PaymentSuccessModal from "../../components/PaymentSuccessModal";
 import CourseVideoPlayer from "../../components/CourseVideoPlayer";
-import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
+import {
+  getCoursePaymentLink,
+  openPaymentLink,
+  handleUniversalCheckout,
+} from "../../utils/paymentHelper";
 
 // ==========================================
 // THEME CONFIGURATION (Centralized Colors)
@@ -66,6 +71,11 @@ const CourseDetails = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successModalData, setSuccessModalData] = useState({
+    isOpen: false,
+    paymentId: "",
+    amount: "",
+  });
 
   const [activeVideoPlaylist, setActiveVideoPlaylist] = useState(null);
   const [startIndex, setStartIndex] = useState(0);
@@ -168,58 +178,22 @@ const CourseDetails = () => {
       typeof getPrice === "function"
         ? getPrice(course.id, course.price || "499")
         : course.price || "499";
-    const priceDisplay =
-      !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
-        ? "₹499"
-        : `${rawPrice}`.startsWith("₹")
-        ? rawPrice
-        : `₹${rawPrice}`;
 
-    // 1. If partner set a custom payment link, open it directly
-    const finalPaymentLink = getCoursePaymentLink(course, agency);
-
-    if (finalPaymentLink) {
-      openPaymentLink(finalPaymentLink);
-      return;
-    }
-
-    if (!currentUser) {
-      setIsAuthOpen(true);
-      return;
-    }
-
-    const targetWhatsapp = agency?.whatsapp || "919999999999";
-    if (!agency?.whatsapp && !isMainSite) {
-      return alert("Partner contact number not configured. Please contact support.");
-    }
-
-    const studentName = currentUser?.displayName || "Student";
-    const studentEmail = currentUser?.email || "Email Not Provided";
-
-    let offerText = "";
-    if (agency?.promoType === "bogo" && course.id !== "bundle") {
-      offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
-    } else if (course.id === "bundle") {
-      offerText = `\n🎁 *Promo Applied:* All Courses Bundle`;
-    }
-
-    const message =
-      `*New Course Enrollment Request* 🎓\n\n` +
-      `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
-      `👤 *Student Name:* ${studentName}\n` +
-      `📧 *Mail:* ${studentEmail}\n\n` +
-      `📚 *Course Name:* ${course.title}\n` +
-      `💰 *Price:* ${priceDisplay}\n` +
-      `🆔 *Course ID:* ${course.id}\n` +
-      offerText +
-      `\n\n` +
-      `Please share payment details so I can complete enrollment and get access.`;
-
-    const whatsappUrl = `https://wa.me/${targetWhatsapp.replace(
-      /\D/g,
-      ""
-    )}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, "_blank");
+    await handleUniversalCheckout({
+      course,
+      agency,
+      currentUser,
+      rawPrice,
+      setIsAuthOpen,
+      isMainSite,
+      onPaymentSuccess: (allocResult, rzpResponse) => {
+        setSuccessModalData({
+          isOpen: true,
+          paymentId: rzpResponse.razorpay_payment_id,
+          amount: String(rawPrice).replace(/[^0-9]/g, "") || "499",
+        });
+      },
+    });
   };
 
   const openPlayer = (playlist, index = 0) => {
@@ -436,6 +410,17 @@ const CourseDetails = () => {
           isOpen={isAuthOpen}
           onClose={() => setIsAuthOpen(false)}
           defaultMode="login"
+        />
+
+        <PaymentSuccessModal
+          isOpen={successModalData.isOpen}
+          onClose={() =>
+            setSuccessModalData({ isOpen: false, paymentId: "", amount: "" })
+          }
+          courseTitle={course?.title}
+          courseId={course?.id}
+          paymentId={successModalData.paymentId}
+          amount={successModalData.amount}
         />
       </div>
     </div>

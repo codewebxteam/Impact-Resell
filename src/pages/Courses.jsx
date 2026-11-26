@@ -11,7 +11,8 @@ import CourseVideoPlayer from "../components/CourseVideoPlayer";
 import DemoVideoSection from "../components/DemoVideoSection";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { getCoursePaymentLink, openPaymentLink } from "../utils/paymentHelper";
+import { getCoursePaymentLink, openPaymentLink, handleUniversalCheckout } from "../utils/paymentHelper";
+import PaymentSuccessModal from "../components/PaymentSuccessModal";
 
 const Courses = () => {
   const { currentUser } = useAuth();
@@ -25,6 +26,7 @@ const Courses = () => {
   const [loading, setLoading] = useState(true);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [playingCourse, setPlayingCourse] = useState(null);
+  const [successModalData, setSuccessModalData] = useState(null);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -69,65 +71,17 @@ const Courses = () => {
 
   // --- [UPDATED] Handle Buy/Enroll Logic ---
   const handleBuyClick = async (course, rawPrice) => {
-    // 1. Check Login First (Global Rule)
-    if (!currentUser) {
-      setIsAuthOpen(true);
-      return; // Stop here if not logged in
-    }
-
-    const priceDisplay =
-      !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
-        ? "₹499"
-        : `${rawPrice}`.startsWith("₹")
-        ? rawPrice
-        : `₹${rawPrice}`;
-
-    // 1. Custom payment link
-    const finalPaymentLink = getCoursePaymentLink(course, agency);
-
-    if (finalPaymentLink) {
-      openPaymentLink(finalPaymentLink);
-      return;
-    }
-
-    // 2. Partner Site Logic (WhatsApp Redirect with Details)
-    const targetWhatsapp = agency?.whatsapp || "919999999999";
-    if (!agency?.whatsapp && !isMainSite) {
-      return alert(
-        "Partner contact number not configured. Please contact support."
-      );
-    }
-
-    // Prepare Student Details (User is definitely logged in here)
-    const studentName = currentUser?.displayName || "Student";
-    const studentEmail = currentUser?.email || "Email Not Provided";
-
-    // Construct Message
-    let offerText = "";
-    if (agency?.promoType === "bogo" && course.id !== "bundle") {
-      offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
-    } else if (course.id === "bundle") {
-      offerText = `\n🎁 *Promo Applied:* All Courses Bundle`;
-    }
-
-    const message =
-      `*New Course Enrollment Request* 🎓\n\n` +
-      `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
-      `👤 *Student Name:* ${studentName}\n` +
-      `📧 *Mail:* ${studentEmail}\n\n` +
-      `📚 *Course Name:* ${course.title}\n` +
-      `💰 *Price:* ${priceDisplay}\n` +
-      `🆔 *Course ID:* ${course.id}\n` +
-      offerText +
-      `\n\n` +
-      `Please share payment details so I can complete enrollment and get access.`;
-
-    const whatsappUrl = `https://wa.me/${targetWhatsapp.replace(
-      /\D/g,
-      ""
-    )}?text=${encodeURIComponent(message)}`;
-
-    window.open(whatsappUrl, "_blank");
+    await handleUniversalCheckout({
+      course,
+      agency,
+      currentUser,
+      rawPrice,
+      setIsAuthOpen,
+      isMainSite,
+      onPaymentSuccess: (allocResult) => {
+        setSuccessModalData(allocResult);
+      },
+    });
   };
 
   // Filter Logic
@@ -316,6 +270,12 @@ const Courses = () => {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         defaultMode="login"
+      />
+
+      <PaymentSuccessModal
+        isOpen={!!successModalData}
+        onClose={() => setSuccessModalData(null)}
+        data={successModalData}
       />
 
       {showVideoPlayer && playingCourse && (

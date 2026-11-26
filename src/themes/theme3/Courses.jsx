@@ -11,7 +11,12 @@ import CourseVideoPlayer from "../../components/CourseVideoPlayer";
 import DemoVideoSection from "../../components/DemoVideoSection";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/config";
-import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
+import PaymentSuccessModal from "../../components/PaymentSuccessModal";
+import {
+  getCoursePaymentLink,
+  openPaymentLink,
+  handleUniversalCheckout,
+} from "../../utils/paymentHelper";
 
 // ==========================================
 // THEME CONFIGURATION (#fedc5c Driven)
@@ -44,6 +49,13 @@ const Courses = () => {
   const [loading, setLoading] = useState(true);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [playingCourse, setPlayingCourse] = useState(null);
+  const [successModalData, setSuccessModalData] = useState({
+    isOpen: false,
+    paymentId: "",
+    amount: "",
+    courseTitle: "",
+    courseId: "",
+  });
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -86,58 +98,23 @@ const Courses = () => {
   };
 
   const handleBuyClick = async (course, rawPrice) => {
-    const priceDisplay =
-      !rawPrice || rawPrice === "Free" || rawPrice === 0 || rawPrice === "0"
-        ? "₹499"
-        : `${rawPrice}`.startsWith("₹")
-        ? rawPrice
-        : `₹${rawPrice}`;
-
-    // 1. If partner set a custom payment link, open it directly
-    const finalPaymentLink = getCoursePaymentLink(course, agency);
-
-    if (finalPaymentLink) {
-      openPaymentLink(finalPaymentLink);
-      return;
-    }
-
-    if (!currentUser) {
-      setIsAuthOpen(true);
-      return;
-    }
-
-    const targetWhatsapp = agency?.whatsapp || "919999999999";
-    if (!agency?.whatsapp && !isMainSite) {
-      return alert("Partner contact number not configured. Please contact support.");
-    }
-
-    const studentName = currentUser?.displayName || "Student";
-    const studentEmail = currentUser?.email || "Email Not Provided";
-
-    let offerText = "";
-    if (agency?.promoType === "bogo" && course.id !== "bundle") {
-      offerText = `\n🎁 *Promo Applied:* Buy 1 Get All Free! 🎉`;
-    } else if (course.id === "bundle") {
-      offerText = `\n🎁 *Promo Applied:* All Courses Bundle`;
-    }
-
-    const message =
-      `*New Course Enrollment Request* 🎓\n\n` +
-      `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
-      `👤 *Student Name:* ${studentName}\n` +
-      `📧 *Mail:* ${studentEmail}\n\n` +
-      `📚 *Course Name:* ${course.title}\n` +
-      `💰 *Price:* ${priceDisplay}\n` +
-      `🆔 *Course ID:* ${course.id}\n` +
-      offerText +
-      `\n\n` +
-      `Please share payment details so I can complete enrollment and get access.`;
-
-    const whatsappUrl = `https://wa.me/${targetWhatsapp.replace(
-      /\D/g,
-      ""
-    )}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, "_blank");
+    await handleUniversalCheckout({
+      course,
+      agency,
+      currentUser,
+      rawPrice,
+      setIsAuthOpen,
+      isMainSite,
+      onPaymentSuccess: (allocResult, rzpResponse) => {
+        setSuccessModalData({
+          isOpen: true,
+          paymentId: rzpResponse.razorpay_payment_id,
+          amount: String(rawPrice).replace(/[^0-9]/g, "") || "499",
+          courseTitle: course.title,
+          courseId: course.id,
+        });
+      },
+    });
   };
 
   const filteredCourses = courses.filter((course) => {
@@ -404,6 +381,23 @@ const Courses = () => {
       </div>
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} defaultMode="login" />
+
+      <PaymentSuccessModal
+        isOpen={successModalData.isOpen}
+        onClose={() =>
+          setSuccessModalData({
+            isOpen: false,
+            paymentId: "",
+            amount: "",
+            courseTitle: "",
+            courseId: "",
+          })
+        }
+        courseTitle={successModalData.courseTitle}
+        courseId={successModalData.courseId}
+        paymentId={successModalData.paymentId}
+        amount={successModalData.amount}
+      />
 
       {showVideoPlayer && playingCourse && (
         <CourseVideoPlayer course={playingCourse} onClose={() => setShowVideoPlayer(false)} />

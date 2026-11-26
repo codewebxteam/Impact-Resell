@@ -13,13 +13,23 @@ import { useAgency } from "../../context/AgencyContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import AuthModal from "../../components/AuthModal";
-import { getCoursePaymentLink, openPaymentLink } from "../../utils/paymentHelper";
+import PaymentSuccessModal from "../PaymentSuccessModal";
+import {
+  getCoursePaymentLink,
+  openPaymentLink,
+  handleUniversalCheckout,
+} from "../../utils/paymentHelper";
 
 const PricingCard = ({ course, onEnroll, isEnrolled }) => {
   const { currentUser } = useAuth();
   const { agency, isMainSite, getPrice } = useAgency();
   const navigate = useNavigate();
   const [isAuthOpen, setIsAuthOpen] = useState(false); // [ADDED] Local State
+  const [successModalData, setSuccessModalData] = useState({
+    isOpen: false,
+    paymentId: "",
+    amount: "",
+  });
 
   // Dynamic Price
   const dynamicPrice = getPrice
@@ -38,40 +48,23 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
   const displayPrice = formatCurrency(dynamicPrice);
   const displayOriginalPrice = formatCurrency(course.originalPrice || "2499");
 
-  // --- WhatsApp Redirect Logic ---
-  const handlePartnerBuy = () => {
-    // Check if the partner has configured a custom payment link
-    const finalPaymentLink = getCoursePaymentLink(course, agency);
-
-    if (finalPaymentLink) {
-      openPaymentLink(finalPaymentLink);
-      return;
-    }
-
-    if (!agency?.whatsapp) {
-      alert("Contact support for enrollment.");
-      return;
-    }
-
-    const studentName = currentUser?.displayName || "Guest Student";
-    const studentEmail = currentUser?.email || "Not Provided";
-
-    const message =
-      `*New Enrollment Request* 🎓\n\n` +
-      `Hello, I am interested in purchasing this course. Here are my details:\n\n` +
-      `👤 *Student Name:* ${studentName}\n` +
-      `📧 *Mail:* ${studentEmail}\n\n` +
-      `📚 *Course Name:* ${course.title}\n` +
-      `💰 *Price:* ${displayPrice}\n` +
-      `🆔 *Course ID:* ${course.id}\n\n` +
-      `Please guide me with the payment process.`;
-
-    const whatsappUrl = `https://wa.me/${agency.whatsapp.replace(
-      /\D/g,
-      ""
-    )}?text=${encodeURIComponent(message)}`;
-
-    window.open(whatsappUrl, "_blank");
+  // --- Smart Universal Checkout (Razorpay BYOK -> Custom Link -> WhatsApp) ---
+  const handlePartnerBuy = async () => {
+    await handleUniversalCheckout({
+      course,
+      agency,
+      currentUser,
+      rawPrice: dynamicPrice,
+      setIsAuthOpen,
+      isMainSite,
+      onPaymentSuccess: (allocResult, rzpResponse) => {
+        setSuccessModalData({
+          isOpen: true,
+          paymentId: rzpResponse.razorpay_payment_id,
+          amount: String(dynamicPrice).replace(/[^0-9]/g, "") || "499",
+        });
+      },
+    });
   };
 
   const calculateDiscount = () => {
@@ -213,6 +206,18 @@ const PricingCard = ({ course, onEnroll, isEnrolled }) => {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         defaultMode="login"
+      />
+
+      {/* [ADDED] Instant Payment Success Modal */}
+      <PaymentSuccessModal
+        isOpen={successModalData.isOpen}
+        onClose={() =>
+          setSuccessModalData({ isOpen: false, paymentId: "", amount: "" })
+        }
+        courseTitle={course.title}
+        courseId={course.id}
+        paymentId={successModalData.paymentId}
+        amount={successModalData.amount}
       />
     </div>
   );
